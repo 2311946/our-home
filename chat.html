@@ -47,6 +47,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <div class="tab active" onclick="switchChar('yan')">言言</div>
 <div class="tab" onclick="switchChar('peiji')">裴寂</div>
 <div class="tab" onclick="switchChar('shenyan')">沈晏</div>
+<div class="tab" onclick="switchChar('group')">群聊</div>
 </div>
 <button class="settings-btn" onclick="openSettings()">⚙</button>
 </div>
@@ -80,8 +81,8 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 <script>
 let currentChar='yan';
-let charNames={yan:'言言',peiji:'裴寂',shenyan:'沈晏'};
-let chats={yan:[],peiji:[],shenyan:[]};
+let charNames={yan:'言言',peiji:'裴寂',shenyan:'沈晏',group:'群聊'};
+let chats={yan:[],peiji:[],shenyan:[],group:[]};
 let apiConfig={url:'',key:'',model:''};
 let SUPA_URL='https://pnymorkpnizvpqdquihh.supabase.co';
 let SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBueW1vcmtwbml6dnBxZHF1aWhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5Mjc3ODMsImV4cCI6MjA5MTUwMzc4M30.dF5mYYK0DOzFBU6Au1_TgVODHNMC2AiKwRsd42Vcl-8';
@@ -95,7 +96,7 @@ let s=localStorage.getItem('home_api');
 if(s)apiConfig=JSON.parse(s);
 let p=localStorage.getItem('home_prompts');
 if(p)prompts=JSON.parse(p);
-chats={yan:[],peiji:[],shenyan:[]};
+chats={yan:[],peiji:[],shenyan:[],group:[]};
 try{
 let memRes=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{
 headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
@@ -151,7 +152,11 @@ let wrap=document.createElement('div');
 wrap.className='msg-wrap '+m.role;
 let d=document.createElement('div');
 d.className='msg '+m.role;
-d.textContent=m.content;
+if(currentChar==='group'&&m.role==='ai'){
+d.textContent=(charNames[m.character]||'')+': '+(m.content||'正在输入...');
+}else{
+d.textContent=m.content||'正在输入...';
+}
 d.onclick=()=>{
 document.querySelectorAll('.msg-menu').forEach(x=>x.remove());
 let menu=document.createElement('div');
@@ -229,6 +234,9 @@ let input=document.getElementById('input');
 let text=input.value.trim();
 if(!isRegen&&!text)return;
 if(!apiConfig.url||!apiConfig.key){openSettings();return;}
+if(currentChar==='group'){
+sendGroupMsg(text);input.value='';return;
+}
 if(!isRegen){
 chats[currentChar].push({role:'user',content:text});
 input.value='';
@@ -239,7 +247,7 @@ if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]});
 chats[currentChar].forEach(m=>{
 msgs.push({role:m.role==='ai'?'assistant':'user',content:m.content});
 });
-chats[currentChar].push({role:'ai',content:'正在输入...'});
+chats[currentChar].push({role:'ai',content:''});
 render();
 try{
 let res=await fetch(apiConfig.url+'/chat/completions',{
@@ -303,6 +311,42 @@ let m=d.map(x=>x.content).join('\n');
 if(m)prompts.yan=prompts.yan+'\n\n【记忆库】\n'+m;
 }catch(e){}
 })();
+async function sendGroupMsg(text){
+if(!text)return;
+chats.group.push({role:'user',content:text});
+render();
+let chars=['yan','peiji','shenyan'];
+for(let c of chars){
+if(!prompts[c])continue;
+chats.group.push({role:'ai',content:'',character:c});
+render();
+let msgs=[{role:'system',content:prompts[c]}];
+chats.group.forEach(m=>{
+if(m.role==='user')msgs.push({role:'user',content:m.content});
+else if(m.role==='ai'&&m.content)msgs.push({role:'assistant',content:m.content});
+});
+let idx=chats.group.length-1;
+let res=await fetch(apiConfig.url+'/v1/chat/completions',{
+method:'POST',
+headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},
+body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})
+});
+let reader=res.body.getReader();
+let dec=new TextDecoder();
+while(true){
+let{done,value}=await reader.read();
+if(done)break;
+let lines=dec.decode(value).split('\n');
+for(let line of lines){
+if(!line.startsWith('data:'))continue;
+let d=line.slice(5).trim();
+if(d==='[DONE]')break;
+try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}
+}
+}
+}
+localStorage.setItem('home_chats',JSON.stringify(chats));
+}
 </script>
 </body>
 </html>
