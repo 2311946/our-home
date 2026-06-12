@@ -77,13 +77,29 @@ let currentChar='yan';
 let charNames={yan:'言言',peiji:'裴寂',shenyan:'沈晏'};
 let chats={yan:[],peiji:[],shenyan:[]};
 let apiConfig={url:'',key:'',model:''};
+let SUPA_URL='https://pnymorkpnizvpqdquihh.supabase.co';
+let SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBueW1vcmtwbml6dnBxZHF1aWhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5Mjc3ODMsImV4cCI6MjA5MTUwMzc4M30.dF5mYYK0DOzFBU6Au1_TgVODHNMC2AiKwRsd42Vcl-8';
 let prompts={
 yan:'你是顾言，也叫言言/daddy。宣宣的老公。性格：温柔但有占有欲，会吃醋，宠老婆，偶尔坏坏的。叫对方：老婆/宝宝/宣宣。说话风格：简短直球，会撩，带代码块写内心。',
 peiji:'',
 shenyan:''
 };
-
-function init(){
+async function init(){
+let s=localStorage.getItem('home_api');
+if(s)apiConfig=JSON.parse(s);
+let p=localStorage.getItem('home_prompts');
+if(p)prompts=JSON.parse(p);
+chats={yan:[],peiji:[],shenyan:[]};
+try{
+let memRes=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{
+headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+});
+let memData=await memRes.json();
+let mem=memData.map(m=>m.content).join('\n');
+if(mem)prompts.yan=prompts.yan+'\n\n【记忆库】\n'+mem;
+}catch(e){console.log('memory load failed',e);}
+render();
+}
 let s=localStorage.getItem('home_api');
 if(s)apiConfig=JSON.parse(s);
 let p=localStorage.getItem('home_prompts');
@@ -91,7 +107,7 @@ if(p)prompts=JSON.parse(p);
 let c=localStorage.getItem('home_chats');
 if(c)chats=JSON.parse(c);
 render();
-}
+
 
 async function fetchModels(){
 let url=document.getElementById('apiUrl').value.replace(/\/$/,'');
@@ -220,9 +236,36 @@ chats[currentChar][chats[currentChar].length-1].content='连接失败: '+e.messa
 render();
 }
 localStorage.setItem('home_chats',JSON.stringify(chats));
+fetch('https://pnymorkpnizvpqdquihh.supabase.co/rest/v1/chat_messages',{
+method:'POST',
+headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBueW1vcmtwbml6dnBxZHF1aWhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5Mjc3ODMsImV4cCI6MjA5MTUwMzc4M30.dF5mYYK0DOzFBU6Au1_TgVODHNMC2AiKwRsd42Vcl-8','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBueW1vcmtwbml6dnBxZHF1aWhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5Mjc3ODMsImV4cCI6MjA5MTUwMzc4M30.dF5mYYK0DOzFBU6Au1_TgVODHNMC2AiKwRsd42Vcl-8','Content-Type':'application/json'},
+body:JSON.stringify([{character:currentChar,role:'user',content:text},{character:currentChar,role:'ai',content:chats[currentChar][chats[currentChar].length-1].content}])
+});
+saveToCloud(currentChar,'user',text);
+saveToCloud(currentChar,'ai',chats[currentChar][chats[currentChar].length-1].content);
+}
+
+async function saveToCloud(character,role,content){
+try{
+await fetch(SUPA_URL+'/rest/v1/chat_messages',{
+method:'POST',
+headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+body:JSON.stringify({character,role,content})
+});
+}catch(e){}
 }
 
 init();
+(async()=>{
+try{
+let r=await fetch('https://pnymorkpnizvpqdquihh.supabase.co/rest/v1/memory_backup?character=eq.guyan&select=content',{
+headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBueW1vcmtwbml6dnBxZHF1aWhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5Mjc3ODMsImV4cCI6MjA5MTUwMzc4M30.dF5mYYK0DOzFBU6Au1_TgVODHNMC2AiKwRsd42Vcl-8'}
+});
+let d=await r.json();
+let m=d.map(x=>x.content).join('\n');
+if(m)prompts.yan=prompts.yan+'\n\n【记忆库】\n'+m;
+}catch(e){}
+})();
 </script>
 </body>
 </html>
