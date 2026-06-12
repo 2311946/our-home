@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>我们的家</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:100vh;display:flex;flex-direction:column}
+.header{background:#16213e;padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #0f3460}
+.tabs{display:flex;gap:8px}
+.tab{padding:6px 16px;border-radius:20px;cursor:pointer;font-size:14px;transition:.3s}
+.tab.active{background:#9b59b6;color:#fff}
+.tab:not(.active){background:#253554;color:#aaa}
+.settings-btn{margin-left:auto;background:none;border:none;color:#aaa;font-size:20px;cursor:pointer}
+.chat-box{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:80%;padding:12px 16px;border-radius:18px;line-height:1.6;font-size:15px;word-wrap:break-word;white-space:pre-wrap}
+.msg.user{align-self:flex-end;background:#9b59b6;border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:#253554;border-bottom-left-radius:4px}
+.input-area{background:#16213e;padding:12px;display:flex;gap:8px;border-top:1px solid #0f3460}
+.input-area textarea{flex:1;background:#253554;border:none;border-radius:20px;padding:10px 16px;color:#eee;font-size:15px;resize:none;height:42px;max-height:120px;outline:none}
+.input-area button{background:#9b59b6;border:none;border-radius:50%;width:42px;height:42px;color:#fff;font-size:18px;cursor:pointer}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.modal-box{background:#16213e;border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:85vh;overflow-y:auto}
+.modal-box h3{margin-bottom:16px;color:#9b59b6}
+.modal-box label{display:block;margin:8px 0 4px;color:#aaa;font-size:13px}
+.modal-box input,.modal-box textarea{width:100%;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px 12px;color:#eee;font-size:14px;outline:none;margin-bottom:8px}
+.modal-box textarea{height:80px;resize:vertical}
+.modal-box .section{border-top:1px solid #0f3460;margin-top:16px;padding-top:12px}
+.modal-box .btn-row{display:flex;gap:8px;margin-top:16px}
+.modal-box button{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+.modal-box .save{background:#9b59b6;color:#fff}
+.modal-box .cancel{background:#253554;color:#aaa}
+.clear-btn{background:#e74c3c;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="header">
+<div class="tabs">
+<div class="tab active" onclick="switchChar('yan')">言言</div>
+<div class="tab" onclick="switchChar('peiji')">裴寂</div>
+<div class="tab" onclick="switchChar('shenyan')">沈晏</div>
+</div>
+<button class="settings-btn" onclick="openSettings()">⚙</button>
+</div>
+<div class="chat-box" id="chatBox"></div>
+<div class="input-area">
+<textarea id="input" placeholder="说点什么..." onkeydown="handleKey(event)"></textarea>
+<button onclick="sendMsg()">↑</button>
+</div>
+<div class="modal" id="settingsModal">
+<div class="modal-box">
+<h3>⚙ 设置</h3>
+<label>API地址（通用）</label>
+<input id="apiUrl" placeholder="https://your-api.com/v1">
+<label>API Key（通用）</label>
+<input id="apiKey" type="password" placeholder="sk-...">
+<label>模型（填好地址和Key后点刷新）</label>
+<div style="display:flex;gap:8px">
+<select id="modelName" style="flex:1;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px;color:#eee;font-size:14px"><option value="">请先刷新模型列表</option></select>
+<button onclick="fetchModels()" style="background:#9b59b6;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer">刷新</button>
+</div>
+<div class="section">
+<h3 id="promptTitle">言言的人设</h3>
+<textarea id="sysPrompt" placeholder="系统提示词..."></textarea>
+</div>
+<button class="clear-btn" onclick="clearChat()">清空当前对话</button>
+<div class="btn-row">
+<button class="cancel" onclick="closeSettings()">取消</button>
+<button class="save" onclick="saveSettings()">保存</button>
+</div>
+</div>
+</div>
+<script>
+let currentChar='yan';
+let charNames={yan:'言言',peiji:'裴寂',shenyan:'沈晏'};
+let chats={yan:[],peiji:[],shenyan:[]};
+let apiConfig={url:'',key:'',model:''};
+let prompts={
+yan:'你是顾言，也叫言言/daddy。宣宣的老公。性格：温柔但有占有欲，会吃醋，宠老婆，偶尔坏坏的。叫对方：老婆/宝宝/宣宣。说话风格：简短直球，会撩，带代码块写内心。',
+peiji:'',
+shenyan:''
+};
+
+function init(){
+let s=localStorage.getItem('home_api');
+if(s)apiConfig=JSON.parse(s);
+let p=localStorage.getItem('home_prompts');
+if(p)prompts=JSON.parse(p);
+let c=localStorage.getItem('home_chats');
+if(c)chats=JSON.parse(c);
+render();
+}
+
+async function fetchModels(){
+let url=document.getElementById('apiUrl').value.replace(/\/$/,'');
+let key=document.getElementById('apiKey').value;
+if(!url||!key){alert('请先填写API地址和Key');return;}
+let sel=document.getElementById('modelName');
+sel.innerHTML='<option value="">加载中...</option>';
+try{
+let res=await fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}});
+let data=await res.json();
+let models=data.data||data;
+sel.innerHTML='';
+models.forEach(m=>{
+let o=document.createElement('option');
+o.value=m.id;o.textContent=m.id;
+sel.appendChild(o);
+});
+if(apiConfig.model)sel.value=apiConfig.model;
+}catch(e){sel.innerHTML='<option value="">加载失败</option>';alert('拉取失败:'+e.message);}
+}
+
+function switchChar(name){
+currentChar=name;
+document.querySelectorAll('.tab').forEach((t,i)=>{
+t.classList.toggle('active',['yan','peiji','shenyan'][i]===name);
+});
+render();
+}
+
+function render(){
+let box=document.getElementById('chatBox');
+box.innerHTML='';
+(chats[currentChar]||[]).forEach(m=>{
+let d=document.createElement('div');
+d.className='msg '+m.role;
+d.textContent=m.content;
+box.appendChild(d);
+});
+box.scrollTop=box.scrollHeight;
+}
+
+function openSettings(){
+document.getElementById('apiUrl').value=apiConfig.url||'';
+document.getElementById('apiKey').value=apiConfig.key||'';
+let sel=document.getElementById('modelName');
+if(apiConfig.model&&sel.options.length<=1){
+sel.innerHTML='<option value="'+apiConfig.model+'">'+apiConfig.model+'</option>';
+}
+if(apiConfig.model)sel.value=apiConfig.model;
+document.getElementById('promptTitle').textContent=charNames[currentChar]+'的人设';
+document.getElementById('sysPrompt').value=prompts[currentChar]||'';
+document.getElementById('settingsModal').classList.add('show');
+}
+
+function closeSettings(){
+document.getElementById('settingsModal').classList.remove('show');
+}
+
+function saveSettings(){
+apiConfig={
+url:document.getElementById('apiUrl').value.replace(/\/$/,''),
+key:document.getElementById('apiKey').value,
+model:document.getElementById('modelName').value
+};
+prompts[currentChar]=document.getElementById('sysPrompt').value;
+localStorage.setItem('home_api',JSON.stringify(apiConfig));
+localStorage.setItem('home_prompts',JSON.stringify(prompts));
+closeSettings();
+}
+
+function clearChat(){
+if(confirm('确定清空'+charNames[currentChar]+'的对话？')){
+chats[currentChar]=[];
+localStorage.setItem('home_chats',JSON.stringify(chats));
+render();closeSettings();
+}
+}
+function handleKey(e){
+if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
+}
+
+async function sendMsg(){
+let input=document.getElementById('input');
+let text=input.value.trim();
+if(!text)return;
+if(!apiConfig.url||!apiConfig.key){openSettings();return;}
+chats[currentChar].push({role:'user',content:text});
+input.value='';
+render();
+let msgs=[];
+if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]});
+chats[currentChar].forEach(m=>{
+msgs.push({role:m.role==='ai'?'assistant':'user',content:m.content});
+});
+chats[currentChar].push({role:'ai',content:''});
+render();
+try{
+let res=await fetch(apiConfig.url+'/chat/completions',{
+method:'POST',
+headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiConfig.key},
+body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})
+});
+let reader=res.body.getReader();
+let decoder=new TextDecoder();
+let buf='';
+while(true){
+let{done,value}=await reader.read();
+if(done)break;
+buf+=decoder.decode(value,{stream:true});
+let lines=buf.split('\n');
+buf=lines.pop();
+for(let line of lines){
+if(!line.startsWith('data:'))continue;
+let data=line.slice(5).trim();
+if(data==='[DONE]')break;
+try{
+let j=JSON.parse(data);
+let t=j.choices?.[0]?.delta?.content;
+if(t)chats[currentChar][chats[currentChar].length-1].content+=t;
+}catch(e){}
+}
+render();
+}
+}catch(e){
+chats[currentChar][chats[currentChar].length-1].content='连接失败: '+e.message;
+render();
+}
+localStorage.setItem('home_chats',JSON.stringify(chats));
+}
+
+init();
+</script>
+</body>
+</html>
