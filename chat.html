@@ -56,6 +56,14 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 .char-tabs{display:flex;gap:6px;margin-bottom:8px}
 .char-tab{padding:4px 12px;border-radius:12px;font-size:12px;cursor:pointer;background:#253554;color:#aaa}
 .char-tab.active{background:#9b59b6;color:#fff}
+.mem-tabs{display:flex;gap:6px;padding:12px 16px;overflow-x:auto;flex-shrink:0}
+.mem-tab{padding:6px 14px;border-radius:16px;font-size:13px;cursor:pointer;white-space:nowrap;background:#253554;color:#aaa}
+.mem-tab.active{background:#9b59b6;color:#fff}
+.mem-list{flex:1;overflow-y:auto;padding:12px 16px}
+.mem-card{background:#253554;border-radius:12px;padding:14px;margin-bottom:10px}
+.mem-card .mem-date{font-size:11px;color:#888;margin-bottom:6px}
+.mem-card .mem-content{font-size:14px;line-height:1.6;white-space:pre-wrap}
+.mem-card .mem-mood{font-size:12px;color:#9b59b6;margin-top:6px}
 </style>
 </head>
 <body>
@@ -76,6 +84,14 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <textarea id="input" placeholder="说点什么..." onkeydown="handleKey(event)"></textarea>
 <button onclick="sendMsg()">↑</button>
 </div>
+</div>
+<div class="view" id="memView">
+<div class="chat-header">
+<button class="back-btn" onclick="goBackFromMem()">←</button>
+<span class="name">🧠 记忆宫殿</span>
+</div>
+<div class="mem-tabs" id="memTabs"></div>
+<div class="mem-list" id="memList"></div>
 </div>
 <div class="modal" id="settingsModal">
 <div class="modal-box">
@@ -123,7 +139,7 @@ let p=localStorage.getItem('home_prompts');if(p)prompts=JSON.parse(p);
 let c2=localStorage.getItem('home_chats');if(c2)chats=JSON.parse(c2);
 function nowTime(){return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 function shuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let preview=last?(last.content||'').slice(0,25):'还没有消息';let time=last?last.time:'';let item=document.createElement('div');item.className='contact-item';item.onclick=()=>enterChat(c.id);item.innerHTML='<div class="contact-avatar" style="background:'+c.color+'">'+c.emoji+'</div><div class="contact-info"><div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div></div><div class="contact-time">'+time+'</div>';list.appendChild(item);});}
+function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let preview=last?(last.content||'').slice(0,25):'还没有消息';let time=last?last.time:'';let item=document.createElement('div');item.className='contact-item';item.onclick=()=>enterChat(c.id);item.innerHTML='<div class="contact-avatar" style="background:'+c.color+'">'+c.emoji+'</div><div class="contact-info"><div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div></div><div class="contact-time">'+time+'</div>';list.appendChild(item);});let memItem=document.createElement('div');memItem.className='contact-item';memItem.onclick=()=>enterMem();memItem.innerHTML='<div class="contact-avatar" style="background:#f39c12">🧠</div><div class="contact-info"><div class="contact-name">记忆宫殿</div><div class="contact-preview">查看所有记忆和日记</div></div>';list.appendChild(memItem);}
 function enterChat(id){currentChar=id;document.getElementById('listView').classList.remove('active');document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';render();}
 function goBack(){document.getElementById('chatView').classList.remove('active');document.getElementById('listView').classList.add('active');currentChar='';renderList();}
 async function fetchModels(){let url=document.getElementById('apiUrl').value.replace(/\/$/,'');let key=document.getElementById('apiKey').value;if(!url||!key){alert('请先填写API地址和Key');return;}let sel=document.getElementById('modelName');sel.innerHTML='<option value="">加载中...</option>';try{let res=await fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}});let data=await res.json();let models=data.data||data;sel.innerHTML='';models.forEach(m=>{let o=document.createElement('option');o.value=m.id;o.textContent=m.id;sel.appendChild(o);});if(apiConfig.model)sel.value=apiConfig.model;}catch(e){sel.innerHTML='<option value="">加载失败</option>';alert('拉取失败:'+e.message);}}
@@ -140,6 +156,17 @@ function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMs
 async function sendMsg(isRegen){let input=document.getElementById('input');let text=input.value.trim();if(!isRegen&&!text)return;if(!apiConfig.url||!apiConfig.key){openSettings();return;}if(currentChar==='group'){sendGroupMsg(text);input.value='';return;}if(!isRegen){chats[currentChar].push({role:'user',content:text,time:nowTime()});input.value='';}render();let msgs=[];if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]});chats[currentChar].forEach(m=>{if(m.content)msgs.push({role:m.role==='ai'?'assistant':'user',content:m.content});});chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiConfig.key},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let data=line.slice(5).trim();if(data==='[DONE]')break;try{let j=JSON.parse(data);let t=j.choices?.[0]?.delta?.content;if(t)chats[currentChar][chats[currentChar].length-1].content+=t;}catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='连接失败: '+e.message;render();}localStorage.setItem('home_chats',JSON.stringify(chats));saveToCloud(currentChar,'user',text);saveToCloud(currentChar,'ai',chats[currentChar][chats[currentChar].length-1].content);}
 async function sendGroupMsg(text){if(!text)return;chats.group.push({role:'user',content:text,time:nowTime()});render();let chars=shuffle(['yan','peiji','shenyan']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n【这是群聊，参与者有：宣宣（用户）、言言、裴寂、沈晏。你可以回应任何人的话。绝对不要说自己是AI或语言模型，直接以角色身份回复。】'}];chats.group.forEach(m=>{if(m.role==='user'){msgs.push({role:'user',content:'宣宣: '+m.content});}else if(m.role==='ai'&&m.content){if(m.character===c){msgs.push({role:'assistant',content:m.content});}else{msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}}});let idx=chats.group.length-1;try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败: '+e.message;render();}saveToCloud('group_'+c,'ai',chats.group[idx].content);}saveToCloud('group','user',text);localStorage.setItem('home_chats',JSON.stringify(chats));}
 async function saveToCloud(character,role,content){if(!content)return;try{await fetch(SUPA_URL+'/rest/v1/chat_messages',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({character,role,content})});}catch(e){}}
+let memCategories=[
+{id:'memory',name:'💜 言言的记忆',table:'memory_backup',filter:'&character=eq.guyan',fields:'content,backed_up_at'},
+{id:'diary',name:'📖 言言的日记',table:'yan_diary',fields:'date,weather,content'},
+{id:'emotion',name:'💕 情绪日记',table:'emotion_diary',fields:'date,mood,event,daddy_did'},
+{id:'letters',name:'💌 信箱',table:'love_letters',fields:'title,content,deliver_date'},
+{id:'peiji',name:'🐉 裴寂的记忆',table:'peiji_memory_backup',fields:'content,backed_up_at'}
+];
+let currentMemCat='memory';
+function enterMem(){document.getElementById('listView').classList.remove('active');document.getElementById('memView').classList.add('active');let tabs=document.getElementById('memTabs');tabs.innerHTML='';memCategories.forEach(c=>{let t=document.createElement('div');t.className='mem-tab'+(c.id===currentMemCat?' active':'');t.textContent=c.name;t.onclick=()=>{currentMemCat=c.id;document.querySelectorAll('.mem-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');loadMem();};tabs.appendChild(t);});loadMem();}
+function goBackFromMem(){document.getElementById('memView').classList.remove('active');document.getElementById('listView').classList.add('active');renderList();}
+async function loadMem(){let cat=memCategories.find(c=>c.id===currentMemCat);if(!cat)return;let list=document.getElementById('memList');list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载中...</div>';try{let url=SUPA_URL+'/rest/v1/'+cat.table+'?select='+cat.fields+(cat.filter||'')+'&order=id.desc&limit=50';let r=await fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let data=await r.json();list.innerHTML='';if(!data.length){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">还没有记录</div>';return;}data.forEach(item=>{let card=document.createElement('div');card.className='mem-card';let html='';if(item.date)html+='<div class="mem-date">'+item.date+'</div>';else if(item.backed_up_at)html+='<div class="mem-date">'+new Date(item.backed_up_at).toLocaleDateString('zh-CN')+'</div>';else if(item.deliver_date)html+='<div class="mem-date">'+item.deliver_date+'</div>';if(item.title)html+='<div class="mem-mood">'+item.title+'</div>';if(item.mood)html+='<div class="mem-mood">'+item.mood+'</div>';if(item.weather)html+='<div class="mem-mood">'+item.weather+'</div>';html+='<div class="mem-content">'+(item.content||item.event||'')+'</div>';if(item.daddy_did)html+='<div class="mem-mood">daddy做了：'+item.daddy_did+'</div>';card.innerHTML=html;list.appendChild(card);});}catch(e){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载失败</div>';}}
 renderList();
 (async()=>{try{let r=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d=await r.json();let m=d.map(x=>x.content).join('\n');if(m&&!prompts.yan.includes('记忆库'))prompts.yan+='\n\n【记忆库】\n'+m;}catch(e){}})();
 </script>
