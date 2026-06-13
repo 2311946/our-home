@@ -69,8 +69,24 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <div class="view" id="chatView">
 <div class="chat-header">
 <button class="back-btn" onclick="goBack()">←</button>
-<span class="name" id="chatName"></span>
+<span class="name" id="chatName" style="flex:1"></span>
+<button onclick="toggleSearch()" style="background:none;border:none;color:#aaa;font-size:16px;cursor:pointer">🔍</button>
 </div>
+<div id="searchBar" style="display:none;background:#16213e;padding:8px 16px;border-bottom:1px solid #0f3460">
+<input id="searchInput" placeholder="搜索聊天记录..." style="width:100%;background:#253554;border:none;border-radius:16px;padding:8px 14px;color:#eee;font-size:14px;outline:none" oninput="doSearch()">
+</div>
+
+
+
+
+</div>
+<div id="searchBar" style="display:none;background:#16213e;padding:8px 16px;border-bottom:1px solid #0f3460">
+<input id="searchInput" placeholder="搜索聊天记录..." style="width:100%;background:#253554;border:none;border-radius:16px;padding:8px 14px;color:#eee;font-size:14px;outline:none" oninput="doSearch()">
+</div>
+
+
+
+
 <div class="chat-box" id="chatBox"></div>
 <div class="input-area">
 <textarea id="input" placeholder="说点什么..." onkeydown="handleKey(event)"></textarea>
