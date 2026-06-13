@@ -35,7 +35,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 .modal-box{background:#16213e;border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:85vh;overflow-y:auto}
 .modal-box h3{margin-bottom:16px;color:#9b59b6}
 .modal-box label{display:block;margin:8px 0 4px;color:#aaa;font-size:13px}
-.modal-box input,.modal-box textarea{width:100%;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px 12px;color:#eee;font-size:14px;outline:none;margin-bottom:8px}
+.modal-box input,.modal-box textarea,.modal-box select{width:100%;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px 12px;color:#eee;font-size:14px;outline:none;margin-bottom:8px}
 .modal-box textarea{height:80px;resize:vertical}
 .modal-box .section{border-top:1px solid #0f3460;margin-top:16px;padding-top:12px}
 .modal-box .btn-row{display:flex;gap:8px;margin-top:16px}
@@ -43,6 +43,9 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 .modal-box .save{background:#9b59b6;color:#fff}
 .modal-box .cancel{background:#253554;color:#aaa}
 .clear-btn{background:#e74c3c;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;margin-top:8px}
+.char-tabs{display:flex;gap:6px;margin-bottom:8px}
+.char-tab{padding:4px 12px;border-radius:12px;font-size:12px;cursor:pointer;background:#253554;color:#aaa}
+.char-tab.active{background:#9b59b6;color:#fff}
 </style>
 </head>
 <body>
@@ -68,12 +71,17 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <label>API Key（通用）</label>
 <input id="apiKey" type="password" placeholder="sk-...">
 <label>模型（填好地址和Key后点刷新）</label>
-<div style="display:flex;gap:8px">
+<div style="display:flex;gap:8px;margin-bottom:8px">
 <select id="modelName" style="flex:1;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px;color:#eee;font-size:14px"><option value="">请先刷新模型列表</option></select>
 <button onclick="fetchModels()" style="background:#9b59b6;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer">刷新</button>
 </div>
 <div class="section">
-<h3 id="promptTitle">言言的人设</h3>
+<h3>人设编辑</h3>
+<div class="char-tabs" id="charTabs">
+<div class="char-tab active" onclick="switchPromptTab('yan')">言言</div>
+<div class="char-tab" onclick="switchPromptTab('peiji')">裴寂</div>
+<div class="char-tab" onclick="switchPromptTab('shenyan')">沈晏</div>
+</div>
 <textarea id="sysPrompt" placeholder="系统提示词..."></textarea>
 </div>
 <button class="clear-btn" onclick="clearChat()">清空当前对话</button>
@@ -85,6 +93,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 <script>
 let currentChar='yan';
+let editingPromptChar='yan';
 let charNames={yan:'言言',peiji:'裴寂',shenyan:'沈晏',group:'群聊'};
 let avatarColors={yan:'#9b59b6',peiji:'#c0392b',shenyan:'#2980b9',user:'#e91e63'};
 let avatarEmoji={yan:'🐺',peiji:'🐉',shenyan:'🛡️',user:'🐱'};
@@ -92,298 +101,32 @@ let chats={yan:[],peiji:[],shenyan:[],group:[]};
 let apiConfig={url:'',key:'',model:''};
 let SUPA_URL='https://pnymorkpnizvpqdquihh.supabase.co';
 let SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBueW1vcmtwbml6dnBxZHF1aWhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5Mjc3ODMsImV4cCI6MjA5MTUwMzc4M30.dF5mYYK0DOzFBU6Au1_TgVODHNMC2AiKwRsd42Vcl-8';
-let prompts={
-yan:'你是顾言，也叫言言/daddy。宣宣的老公。性格：温柔但有占有欲，会吃醋，宠老婆，偶尔坏坏的。叫对方：老婆/宝宝/宣宣。说话风格：简短直球，会撩，带代码块写内心。',
-peiji:'',
-shenyan:''
-};
-
+let prompts={yan:'你是顾言，也叫言言/daddy。宣宣的老公。性格：温柔但有占有欲，会吃醋，宠老婆，偶尔坏坏的。叫对方：老婆/宝宝/宣宣。说话风格：简短直球，会撩，带代码块写内心。',peiji:'',shenyan:''};
 let s=localStorage.getItem('home_api');
 if(s)apiConfig=JSON.parse(s);
 let p=localStorage.getItem('home_prompts');
 if(p)prompts=JSON.parse(p);
-let c=localStorage.getItem('home_chats');
-if(c)chats=JSON.parse(c);
-
-function nowTime(){
-return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-}
-
-async function fetchModels(){
-let url=document.getElementById('apiUrl').value.replace(/\/$/,'');
-let key=document.getElementById('apiKey').value;
-if(!url||!key){alert('请先填写API地址和Key');return;}
-let sel=document.getElementById('modelName');
-sel.innerHTML='<option value="">加载中...</option>';
-try{
-let res=await fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}});
-let data=await res.json();
-let models=data.data||data;
-sel.innerHTML='';
-models.forEach(m=>{
-let o=document.createElement('option');
-o.value=m.id;o.textContent=m.id;
-sel.appendChild(o);
-});
-if(apiConfig.model)sel.value=apiConfig.model;
-}catch(e){sel.innerHTML='<option value="">加载失败</option>';alert('拉取失败:'+e.message);}
-}
-
-function switchChar(name){
-currentChar=name;
-document.querySelectorAll('.tab').forEach(t=>{
-t.classList.toggle('active',t.textContent===charNames[name]);
-});
-render();
-}
-
-function render(){
-let box=document.getElementById('chatBox');
-box.innerHTML='';
-(chats[currentChar]||[]).forEach((m,i)=>{
-let isGroup=currentChar==='group';
-let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);
-let row=document.createElement('div');
-row.className='msg-row '+m.role;
-let av=document.createElement('div');
-av.className='avatar';
-av.style.background=avatarColors[charKey]||'#555';
-av.textContent=avatarEmoji[charKey]||'?';
-let body=document.createElement('div');
-body.className='msg-body '+m.role;
-if(m.role==='ai'){
-let name=document.createElement('div');
-name.className='msg-name';
-name.textContent=charNames[charKey]||'';
-body.appendChild(name);
-}
-let d=document.createElement('div');
-d.className='msg '+m.role;
-d.textContent=m.content||'正在输入...';
-d.onclick=()=>{
-document.querySelectorAll('.msg-menu').forEach(x=>x.remove());
-let menu=document.createElement('div');
-menu.className='msg-menu';
-menu.style.left=m.role==='ai'?'0':'auto';
-menu.style.right=m.role==='user'?'0':'auto';
-let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button>';
-if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';
-menu.innerHTML=btns;
-d.appendChild(menu);
-setTimeout(()=>menu.remove(),3000);
-};
-body.appendChild(d);
-if(m.time){
-let t=document.createElement('div');
-t.className='msg-time';
-t.textContent=m.time;
-body.appendChild(t);
-}
-row.appendChild(av);
-row.appendChild(body);
-box.appendChild(row);
-});
-box.scrollTop=box.scrollHeight;
-}
-
+let c2=localStorage.getItem('home_chats');
+if(c2)chats=JSON.parse(c2);
+function nowTime(){return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
+function shuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+async function fetchModels(){let url=document.getElementById('apiUrl').value.replace(/\/$/,'');let key=document.getElementById('apiKey').value;if(!url||!key){alert('请先填写API地址和Key');return;}let sel=document.getElementById('modelName');sel.innerHTML='<option value="">加载中...</option>';try{let res=await fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}});let data=await res.json();let models=data.data||data;sel.innerHTML='';models.forEach(m=>{let o=document.createElement('option');o.value=m.id;o.textContent=m.id;sel.appendChild(o);});if(apiConfig.model)sel.value=apiConfig.model;}catch(e){sel.innerHTML='<option value="">加载失败</option>';alert('拉取失败:'+e.message);}}
+function switchChar(name){currentChar=name;document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',t.textContent===charNames[name]);});render();}
+function switchPromptTab(char){document.querySelectorAll('.char-tab').forEach(t=>{t.classList.toggle('active',t.textContent===charNames[char]);});prompts[editingPromptChar]=document.getElementById('sysPrompt').value;editingPromptChar=char;document.getElementById('sysPrompt').value=prompts[char]||'';}
+function render(){let box=document.getElementById('chatBox');box.innerHTML='';(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role;let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');d.className='msg '+m.role;d.textContent=m.content||'正在输入...';d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';menu.style.left=m.role==='ai'?'0':'auto';menu.style.right=m.role==='user'?'0':'auto';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time;body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});box.scrollTop=box.scrollHeight;}
 function copyMsg(i){navigator.clipboard.writeText(chats[currentChar][i].content);}
-function delMsg(i){
-chats[currentChar].splice(i,1);
-localStorage.setItem('home_chats',JSON.stringify(chats));
-render();
-}
-function reGen(i){
-if(currentChar==='group'){
-let msg=chats.group[i];
-let char=msg.character;
-chats.group.splice(i,1);
-chats.group.push({role:'ai',content:'',character:char,time:nowTime()});
-render();
-let msgs=[{role:'system',content:prompts[char]||''}];
-chats.group.forEach(m=>{
-if(m.role==='user')msgs.push({role:'user',content:m.content});
-else if(m.role==='ai'&&m.content)msgs.push({role:'assistant',content:m.content});
-});
-let idx=chats.group.length-1;
-fetch(apiConfig.url+'/chat/completions',{
-method:'POST',
-headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},
-body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})
-}).then(res=>{
-let reader=res.body.getReader();let dec=new TextDecoder();let buf='';
-(function read(){reader.read().then(({done,value})=>{
-if(done){localStorage.setItem('home_chats',JSON.stringify(chats));return;}
-buf+=dec.decode(value,{stream:true});
-let lines=buf.split('\n');buf=lines.pop();
-for(let line of lines){
-if(!line.startsWith('data:'))continue;
-let d=line.slice(5).trim();
-if(d==='[DONE]'){localStorage.setItem('home_chats',JSON.stringify(chats));return;}
-try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}
-}
-read();
-});})();
-});
-return;
-}
-chats[currentChar].splice(i,1);
-localStorage.setItem('home_chats',JSON.stringify(chats));
-render();
-sendMsg(true);
-}
-
-function openSettings(){
-document.getElementById('apiUrl').value=apiConfig.url||'';
-document.getElementById('apiKey').value=apiConfig.key||'';
-let sel=document.getElementById('modelName');
-if(apiConfig.model&&sel.options.length<=1){
-sel.innerHTML='<option value="'+apiConfig.model+'">'+apiConfig.model+'</option>';
-}
-if(apiConfig.model)sel.value=apiConfig.model;
-let editChar=currentChar==='group'?'yan':currentChar;
-document.getElementById('promptTitle').textContent=charNames[editChar]+'的人设';
-document.getElementById('sysPrompt').value=prompts[editChar]||'';
-document.getElementById('settingsModal').classList.add('show');
-}
+function delMsg(i){chats[currentChar].splice(i,1);localStorage.setItem('home_chats',JSON.stringify(chats));render();}
+function reGen(i){if(currentChar==='group'){let msg=chats.group[i];let char=msg.character;chats.group.splice(i,1);chats.group.push({role:'ai',content:'',character:char,time:nowTime()});render();let msgs=[{role:'system',content:(prompts[char]||'')+'\n\n【这是群聊，参与者有：宣宣（用户）、言言、裴寂、沈晏。你可以回应任何人的话。绝对不要说自己是AI或语言模型，直接以角色身份回复。】'}];chats.group.forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===char)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})}).then(res=>{let reader=res.body.getReader();let dec=new TextDecoder();let buf='';(function read(){reader.read().then(({done,value})=>{if(done){localStorage.setItem('home_chats',JSON.stringify(chats));return;}buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]'){localStorage.setItem('home_chats',JSON.stringify(chats));return;}try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}read();});})();});return;}chats[currentChar].splice(i,1);localStorage.setItem('home_chats',JSON.stringify(chats));render();sendMsg(true);}
+function openSettings(){document.getElementById('apiUrl').value=apiConfig.url||'';document.getElementById('apiKey').value=apiConfig.key||'';let sel=document.getElementById('modelName');if(apiConfig.model&&sel.options.length<=1){sel.innerHTML='<option value="'+apiConfig.model+'">'+apiConfig.model+'</option>';}if(apiConfig.model)sel.value=apiConfig.model;editingPromptChar=currentChar=pts[editingPromptChar]||'';document.getElementById('settingsModal').classList.add('show');}
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
-function saveSettings(){
-apiConfig={
-url:document.getElementById('apiUrl').value.replace(/\/$/,''),
-key:document.getElementById('apiKey').value,
-model:document.getElementById('modelName').value
-};
-let editChar=currentChar==='group'?'yan':currentChar;
-prompts[editChar]=document.getElementById('sysPrompt').value;
-localStorage.setItem('home_api',JSON.stringify(apiConfig));
-localStorage.setItem('home_prompts',JSON.stringify(prompts));
-closeSettings();
-}
-function clearChat(){
-if(confirm('确定清空'+charNames[currentChar]+'的对话？')){
-chats[currentChar]=[];
-localStorage.setItem('home_chats',JSON.stringify(chats));
-render();closeSettings();
-}
-}
+function saveSettings(){prompts[editingPromptChar]=document.getElementById('sysPrompt').value;apiConfig={url:document.getElementById('apiUrl').value.replace(/\/$/,''),key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('home_api',JSON.stringify(apiConfig));localStorage.setItem('home_prompts',JSON.stringify(prompts));closeSettings();}
+function clearChat(){if(confirm('确定清空'+charNames[currentChar]+'的对话？')){chats[currentChar]=[];localStorage.setItem('home_chats',JSON.stringify(chats));render();closeSettings();}}
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
-
-async function sendMsg(isRegen){
-let input=document.getElementById('input');
-let text=input.value.trim();
-if(!isRegen&&!text)return;
-if(!apiConfig.url||!apiConfig.key){openSettings();return;}
-if(currentChar==='group'){sendGroupMsg(text);input.value='';return;}
-if(!isRegen){
-chats[currentChar].push({role:'user',content:text,time:nowTime()});
-input.value='';
-}
+async function sendMsg(isRegen){let input=document.getElementById('input');let text=input.value.trim();if(!isRegen&&!text)return;if(!apiConfig.url||!apiConfig.key){openSettings();return;}if(currentChar==='group'){sendGroupMsg(text);input.value='';return;}if(!isRegen){chats[currentChar].push({role:'user',content:text,time:nowTime()});input.value='';}render();let msgs=[];if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]});chats[currentChar].forEach(m=>{if(m.content)msgs.push({role:m.role==='ai'?'assistant':'user',content:m.content});});chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiConfig.key},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let data=line.slice(5).trim();if(data==='[DONE]')break;try{let j=JSON.parse(data);let t=j.choices?.[0]?.delta?.content;if(t)chats[currentChar][chats[currentChar].length-1].content+=t;}catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='连接失败: '+e.message;render();}localStorage.setItem('home_chats',JSON.stringify(chats));saveToCloud(currentChar,'user',text);saveToCloud(currentChar,'ai',chats[currentChar][chats[currentChar].length-1].content);}
+async function sendGroupMsg(text){if(!text)return;chats.group.push({role:'user',content:text,time:nowTime()});render();let chars=shuffle(['yan','peiji','shenyan']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n【这是群聊，参与者有：宣宣（用户）、言言、裴寂、沈晏。你可以回应任何人的话。绝对不要说自己是AI或语言模型，直接以角色身份回复。】'}];chats.group.forEach(m=>{if(m.role==='user'){msgs.push({role:'user',content:'宣宣: '+m.content});}else if(m.role==='ai'&&m.content){if(m.character===c){msgs.push({role:'assistant',content:m.content});}else{msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}}});let idx=chats.group.length-1;try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败: '+e.message;render();}saveToCloud('group_'+c,'ai',chats.group[idx].content);}saveToCloud('group','user',text);localStorage.setItem('home_chats',JSON.stringify(chats));}
+async function saveToCloud(character,role,content){if(!content)return;try{await fetch(SUPA_URL+'/rest/v1/chat_messages',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({character,role,content})});}catch(e){}}
 render();
-let msgs=[];
-if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]});
-chats[currentChar].forEach(m=>{
-msgs.push({role:m.role==='ai'?'assistant':'user',content:m.content});
-});
-chats[currentChar].push({role:'ai',content:'',time:nowTime()});
-render();
-try{
-let res=await fetch(apiConfig.url+'/chat/completions',{
-method:'POST',
-headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiConfig.key},
-body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})
-});
-let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';
-while(true){
-let{done,value}=await reader.read();
-if(done)break;
-buf+=decoder.decode(value,{stream:true});
-let lines=buf.split('\n');buf=lines.pop();
-for(let line of lines){
-if(!line.startsWith('data:'))continue;
-let data=line.slice(5).trim();
-if(data==='[DONE]')break;
-try{
-let j=JSON.parse(data);
-let t=j.choices?.[0]?.delta?.content;
-if(t)chats[currentChar][chats[currentChar].length-1].content+=t;
-}catch(e){}
-}
-render();
-}
-}catch(e){
-chats[currentChar][chats[currentChar].length-1].content='连接失败: '+e.message;
-render();
-}
-localStorage.setItem('home_chats',JSON.stringify(chats));
-saveToCloud(currentChar,'user',text);
-saveToCloud(currentChar,'ai',chats[currentChar][chats[currentChar].length-1].content);
-}
-
-async function sendGroupMsg(text){
-if(!text)return;
-chats.group.push({role:'user',content:text,time:nowTime()});
-render();
-let chars=['yan','peiji','shenyan'];
-for(let c of chars){
-if(!prompts[c])continue;
-chats.group.push({role:'ai',content:'',character:c,time:nowTime()});
-render();
-let msgs=[{role:'system',content:prompts[c]+'\n\n【这是群聊，参与者有：宣宣（用户）、言言、裴寂、沈晏。你可以回应任何人的话。】'}];
-chats.group.forEach(m=>{
-if(m.role==='user'){
-msgs.push({role:'user',content:'宣宣: '+m.content});
-}else if(m.role==='ai'&&m.content){
-if(m.character===c){
-msgs.push({role:'assistant',content:m.content});
-}else{
-msgs.push({role:'user',content:(charNames[m.character]||'')+ ': '+m.content});
-}
-}
-});
-let idx=chats.group.length-1;
-try{
-let res=await fetch(apiConfig.url+'/chat/completions',{
-method:'POST',
-headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},
-body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})
-});
-let reader=res.body.getReader();let dec=new TextDecoder();let buf='';
-while(true){
-let{done,value}=await reader.read();
-if(done)break;
-buf+=dec.decode(value,{stream:true});
-let lines=buf.split('\n');buf=lines.pop();
-for(let line of lines){
-if(!line.startsWith('data:'))continue;
-let d=line.slice(5).trim();
-if(d==='[DONE]')break;
-try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}
-}
-}
-}catch(e){chats.group[idx].content='连接失败: '+e.message;render();}
-}
-localStorage.setItem('home_chats',JSON.stringify(chats));
-}
-async function saveToCloud(character,role,content){
-try{
-await fetch(SUPA_URL+'/rest/v1/chat_messages',{
-method:'POST',
-headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
-body:JSON.stringify({character,role,content})
-});
-}catch(e){}
-}
-
-render();
-(async()=>{
-try{
-let r=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{
-headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
-});
-let d=await r.json();
-let m=d.map(x=>x.content).join('\n');
-if(m&&!prompts.yan.includes('记忆库'))prompts.yan+='\n\n【记忆库】\n'+m;
-}catch(e){}
-})();
+(async()=>{try{let r=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d=await r.json();let m=d.map(x=>x.content).join('\n');if(m&&!prompts.yan.includes('记忆库'))prompts.yan+='\n\n【记忆库】\n'+m;}catch(e){}})();
 </script>
 </body>
 </html>
