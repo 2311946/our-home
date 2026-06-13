@@ -84,8 +84,14 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <input id="searchInput" placeholder="搜索聊天记录..." style="width:100%;background:#253554;border:none;border-radius:16px;padding:8px 14px;color:#eee;font-size:14px;outline:none" oninput="doSearch()">
 </div>
 <div class="chat-box" id="chatBox"></div>
+<div id="plusMenu" style="display:none;background:#16213e;padding:12px 16px;border-top:1px solid #0f3460;display:none">
+<div style="display:flex;gap:20px">
+<div onclick="document.getElementById('imgPicker').click()" style="text-align:center;cursor:pointer"><div style="font-size:24px">📷</div><div style="font-size:11px;color:#aaa;margin-top:4px">图片</div></div>
+<div onclick="takePhoto()" style="text-align:center;cursor:pointer"><div style="font-size:24px">📸</div><div style="font-size:11px;color:#aaa;margin-top:4px">拍照</div></div>
+</div>
+</div>
 <div class="input-area">
-<button onclick="document.getElementById('imgPicker').click()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer">+</button>
+<button onclick="togglePlusMenu()"style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer">+</button>
 <input type="file" id="imgPicker" accept="image/*" style="display:none" onchange="sendImage(this)">
 <textarea id="input" placeholder="说点什么..." onkeydown="handleKey(event)"></textarea>
 <button onclick="sendMsg()">↑</button>
@@ -153,6 +159,8 @@ function closeSettings(){document.getElementById('settingsModal').classList.remo
 function switchPromptTab(char){document.querySelectorAll('.char-tab').forEach(t=>{t.classList.toggle('active',t.textContent===charNames[char]);});prompts[editingPromptChar]=document.getElementById('sysPrompt').value;editingPromptChar=char;document.getElementById('sysPrompt').value=prompts[char]||'';}
 function saveSettings(){prompts[editingPromptChar]=document.getElementById('sysPrompt').value;apiConfig={url:document.getElementById('apiUrl').value.replace(/\/$/,''),key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('home_api',JSON.stringify(apiConfig));localStorage.setItem('home_prompts',JSON.stringify(prompts));closeSettings();}
 function clearChat(){if(confirm('确定清空当前对话？')){if(currentChar)chats[currentChar]=[];localStorage.setItem('home_chats',JSON.stringify(chats));render();closeSettings();}}
+function togglePlusMenu(){let m=document.getElementById('plusMenu');m.style.display=m.style.display==='none'?'block':'none';}
+function takePhoto(){document.getElementById('imgPicker').setAttribute('capture','environment');document.getElementById('imgPicker').click();setTimeout(()=>document.getElementById('imgPicker').removeAttribute('capture'),100);}
 async function sendImage(input){let file=input.files[0];if(!file)return;let reader=new FileReader();reader.onload=function(e){let imgUrl=e.target.result;chats[currentChar].push({role:'user',content:'[img]'+imgUrl,time:nowTime()});localStorage.setItem('home_chats',JSON.stringify(chats));render();};reader.readAsDataURL(file);input.value='';}
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
 async function fetchModels(){let url=document.getElementById('apiUrl').value.replace(/\/$/,'');let key=document.getElementById('apiKey').value;if(!url||!key){alert('请先填写API地址和Key');return;}let sel=document.getElementById('modelName');sel.innerHTML='<option value="">加载中...</option>';try{let res=await fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}});let data=await res.json();let models=data.data||data;sel.innerHTML='';models.forEach(m=>{let o=document.createElement('option');o.value=m.id;o.textContent=m.id;sel.appendChild(o);});if(apiConfig.model)sel.value=apiConfig.model;}catch(e){sel.innerHTML='<option value="">加载失败</option>';}}
