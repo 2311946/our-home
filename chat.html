@@ -106,7 +106,7 @@ let c=localStorage.getItem('home_chats');
 if(c)chats=JSON.parse(c);
 
 function nowTime(){
-return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
 async function fetchModels(){
@@ -327,10 +327,17 @@ for(let c of chars){
 if(!prompts[c])continue;
 chats.group.push({role:'ai',content:'',character:c,time:nowTime()});
 render();
-let msgs=[{role:'system',content:prompts[c]}];
+let msgs=[{role:'system',content:prompts[c]+'\n\n【这是群聊，参与者有：宣宣（用户）、言言、裴寂、沈晏。你可以回应任何人的话。】'}];
 chats.group.forEach(m=>{
-if(m.role==='user')msgs.push({role:'user',content:m.content});
-else if(m.role==='ai'&&m.content)msgs.push({role:'assistant',content:m.content});
+if(m.role==='user'){
+msgs.push({role:'user',content:'宣宣: '+m.content});
+}else if(m.role==='ai'&&m.content){
+if(m.character===c){
+msgs.push({role:'assistant',content:m.content});
+}else{
+msgs.push({role:'user',content:(charNames[m.character]||'')+ ': '+m.content});
+}
+}
 });
 let idx=chats.group.length-1;
 try{
@@ -356,7 +363,6 @@ try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||''
 }
 localStorage.setItem('home_chats',JSON.stringify(chats));
 }
-
 async function saveToCloud(character,role,content){
 try{
 await fetch(SUPA_URL+'/rest/v1/chat_messages',{
