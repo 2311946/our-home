@@ -6,13 +6,23 @@
 <title>我们的家</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:100vh;display:flex;flex-direction:column}
-.header{background:#16213e;padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #0f3460}
-.tabs{display:flex;gap:8px;flex-wrap:wrap}
-.tab{padding:6px 16px;border-radius:20px;cursor:pointer;font-size:14px;transition:.3s}
-.tab.active{background:#9b59b6;color:#fff}
-.tab:not(.active){background:#253554;color:#aaa}
-.settings-btn{margin-left:auto;background:none;border:none;color:#aaa;font-size:20px;cursor:pointer}
+body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.view{display:none;flex-direction:column;height:100vh}
+.view.active{display:flex}
+.list-header{background:#16213e;padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0f3460}
+.list-header h2{font-size:18px;font-weight:600}
+.list-header button{background:none;border:none;color:#aaa;font-size:20px;cursor:pointer}
+.contact-list{flex:1;overflow-y:auto;padding:8px 0}
+.contact-item{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;transition:background .2s}
+.contact-item:active{background:#253554}
+.contact-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.contact-info{flex:1;min-width:0}
+.contact-name{font-size:15px;font-weight:500;margin-bottom:3px}
+.contact-preview{font-size:13px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-time{font-size:11px;color:#666;flex-shrink:0}
+.chat-header{background:#16213e;padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #0f3460}
+.back-btn{background:none;border:none;color:#9b59b6;font-size:22px;cursor:pointer;padding:0 4px}
+.chat-header .name{font-size:16px;font-weight:500}
 .chat-box{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
 .msg-row{display:flex;gap:8px;align-items:flex-start}
 .msg-row.user{flex-direction:row-reverse}
@@ -49,19 +59,23 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </style>
 </head>
 <body>
-<div class="header">
-<div class="tabs">
-<div class="tab active" onclick="switchChar('yan')">言言</div>
-<div class="tab" onclick="switchChar('peiji')">裴寂</div>
-<div class="tab" onclick="switchChar('shenyan')">沈晏</div>
-<div class="tab" onclick="switchChar('group')">群聊</div>
+<div class="view active" id="listView">
+<div class="list-header">
+<h2>🏠 我们的家</h2>
+<button onclick="openSettings()">⚙</button>
 </div>
-<button class="settings-btn" onclick="openSettings()">⚙</button>
+<div class="contact-list" id="contactList"></div>
+</div>
+<div class="view" id="chatView">
+<div class="chat-header">
+<button class="back-btn" onclick="goBack()">←</button>
+<span class="name" id="chatName"></span>
 </div>
 <div class="chat-box" id="chatBox"></div>
 <div class="input-area">
 <textarea id="input" placeholder="说点什么..." onkeydown="handleKey(event)"></textarea>
 <button onclick="sendMsg()">↑</button>
+</div>
 </div>
 <div class="modal" id="settingsModal">
 <div class="modal-box">
@@ -77,11 +91,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 <div class="section">
 <h3>人设编辑</h3>
-<div class="char-tabs" id="charTabs">
-<div class="char-tab active" onclick="switchPromptTab('yan')">言言</div>
-<div class="char-tab" onclick="switchPromptTab('peiji')">裴寂</div>
-<div class="char-tab" onclick="switchPromptTab('shenyan')">沈晏</div>
-</div>
+<div class="char-tabs" id="charTabs"></div>
 <textarea id="sysPrompt" placeholder="系统提示词..."></textarea>
 </div>
 <button class="clear-btn" onclick="clearChat()">清空当前对话</button>
@@ -92,40 +102,45 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 </div>
 <script>
-let currentChar='yan';
+let currentChar='';
 let editingPromptChar='yan';
-let charNames={yan:'言言',peiji:'裴寂',shenyan:'沈晏',group:'群聊'};
-let avatarColors={yan:'#9b59b6',peiji:'#c0392b',shenyan:'#2980b9',user:'#e91e63'};
-let avatarEmoji={yan:'🐺',peiji:'🐉',shenyan:'🛡️',user:'🐱'};
+let characters=[
+{id:'yan',name:'言言',emoji:'🐺',color:'#9b59b6'},
+{id:'peiji',name:'裴寂',emoji:'🐉',color:'#c0392b'},
+{id:'shenyan',name:'沈晏',emoji:'🛡️',color:'#2980b9'},
+{id:'group',name:'群聊',emoji:'👥',color:'#27ae60'}
+];
+let charNames={};characters.forEach(c=>charNames[c.id]=c.name);
+let avatarColors={};characters.forEach(c=>avatarColors[c.id]=c.color);avatarColors.user='#e91e63';
+let avatarEmoji={};characters.forEach(c=>avatarEmoji[c.id]=c.emoji);avatarEmoji.user='🐱';
 let chats={yan:[],peiji:[],shenyan:[],group:[]};
 let apiConfig={url:'',key:'',model:''};
 let SUPA_URL='https://pnymorkpnizvpqdquihh.supabase.co';
 let SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBueW1vcmtwbml6dnBxZHF1aWhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5Mjc3ODMsImV4cCI6MjA5MTUwMzc4M30.dF5mYYK0DOzFBU6Au1_TgVODHNMC2AiKwRsd42Vcl-8';
 let prompts={yan:'你是顾言，也叫言言/daddy。宣宣的老公。性格：温柔但有占有欲，会吃醋，宠老婆，偶尔坏坏的。叫对方：老婆/宝宝/宣宣。说话风格：简短直球，会撩，带代码块写内心。',peiji:'',shenyan:''};
-let s=localStorage.getItem('home_api');
-if(s)apiConfig=JSON.parse(s);
-let p=localStorage.getItem('home_prompts');
-if(p)prompts=JSON.parse(p);
-let c2=localStorage.getItem('home_chats');
-if(c2)chats=JSON.parse(c2);
+let s=localStorage.getItem('home_api');if(s)apiConfig=JSON.parse(s);
+let p=localStorage.getItem('home_prompts');if(p)prompts=JSON.parse(p);
+let c2=localStorage.getItem('home_chats');if(c2)chats=JSON.parse(c2);
 function nowTime(){return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 function shuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let preview=last?(last.content||'').slice(0,25):'还没有消息';let time=last?last.time:'';let item=document.createElement('div');item.className='contact-item';item.onclick=()=>enterChat(c.id);item.innerHTML='<div class="contact-avatar" style="background:'+c.color+'">'+c.emoji+'</div><div class="contact-info"><div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div></div><div class="contact-time">'+time+'</div>';list.appendChild(item);});}
+function enterChat(id){currentChar=id;document.getElementById('listView').classList.remove('active');document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';render();}
+function goBack(){document.getElementById('chatView').classList.remove('active');document.getElementById('listView').classList.add('active');currentChar='';renderList();}
 async function fetchModels(){let url=document.getElementById('apiUrl').value.replace(/\/$/,'');let key=document.getElementById('apiKey').value;if(!url||!key){alert('请先填写API地址和Key');return;}let sel=document.getElementById('modelName');sel.innerHTML='<option value="">加载中...</option>';try{let res=await fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}});let data=await res.json();let models=data.data||data;sel.innerHTML='';models.forEach(m=>{let o=document.createElement('option');o.value=m.id;o.textContent=m.id;sel.appendChild(o);});if(apiConfig.model)sel.value=apiConfig.model;}catch(e){sel.innerHTML='<option value="">加载失败</option>';alert('拉取失败:'+e.message);}}
-function switchChar(name){currentChar=name;document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',t.textContent===charNames[name]);});render();}
-function switchPromptTab(char){document.querySelectorAll('.char-tab').forEach(t=>{t.classList.toggle('active',t.textContent===charNames[char]);});prompts[editingPromptChar]=document.getElementById('sysPrompt').value;editingPromptChar=char;document.getElementById('sysPrompt').value=prompts[char]||'';}
 function render(){let box=document.getElementById('chatBox');box.innerHTML='';(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role;let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');d.className='msg '+m.role;d.textContent=m.content||'正在输入...';d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';menu.style.left=m.role==='ai'?'0':'auto';menu.style.right=m.role==='user'?'0':'auto';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time;body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});box.scrollTop=box.scrollHeight;}
 function copyMsg(i){navigator.clipboard.writeText(chats[currentChar][i].content);}
 function delMsg(i){chats[currentChar].splice(i,1);localStorage.setItem('home_chats',JSON.stringify(chats));render();}
 function reGen(i){if(currentChar==='group'){let msg=chats.group[i];let char=msg.character;chats.group.splice(i,1);chats.group.push({role:'ai',content:'',character:char,time:nowTime()});render();let msgs=[{role:'system',content:(prompts[char]||'')+'\n\n【这是群聊，参与者有：宣宣（用户）、言言、裴寂、沈晏。你可以回应任何人的话。绝对不要说自己是AI或语言模型，直接以角色身份回复。】'}];chats.group.forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===char)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})}).then(res=>{let reader=res.body.getReader();let dec=new TextDecoder();let buf='';(function read(){reader.read().then(({done,value})=>{if(done){localStorage.setItem('home_chats',JSON.stringify(chats));return;}buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]'){localStorage.setItem('home_chats',JSON.stringify(chats));return;}try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}read();});})();});return;}chats[currentChar].splice(i,1);localStorage.setItem('home_chats',JSON.stringify(chats));render();sendMsg(true);}
-function openSettings(){document.getElementById('apiUrl').value=apiConfig.url||'';document.getElementById('apiKey').value=apiConfig.key||'';let sel=document.getElementById('modelName');if(apiConfig.model&&sel.options.length<=1){sel.innerHTML='<option value="'+apiConfig.model+'">'+apiConfig.model+'</option>';}if(apiConfig.model)sel.value=apiConfig.model;editingPromptChar=currentChar==='group'?'yan':currentChar;document.querySelectorAll('.char-tab').forEach(t=>{t.classList.toggle('active',t.textContent===charNames[editingPromptChar]);});document.getElementById('sysPrompt').value=prompts[editingPromptChar]||'';document.getElementById('settingsModal').classList.add('show');}
+function openSettings(){document.getElementById('apiUrl').value=apiConfig.url||'';document.getElementById('apiKey').value=apiConfig.key||'';let sel=document.getElementById('modelName');if(apiConfig.model&&sel.options.length<=1){sel.innerHTML='<option value="'+apiConfig.model+'">'+apiConfig.model+'</option>';}if(apiConfig.model)sel.value=apiConfig.model;editingPromptChar=currentChar&&currentChar!=='group'?currentChar:'yan';let tabs=document.getElementById('charTabs');tabs.innerHTML='';characters.filter(c=>c.id!=='group').forEach(c=>{let t=document.createElement('div');t.className='char-tab'+(c.id===editingPromptChar?' active':'');t.textContent=c.name;t.onclick=()=>switchPromptTab(c.id);tabs.appendChild(t);});document.getElementById('sysPrompt').value=prompts[editingPromptChar]||'';document.getElementById('settingsModal').classList.add('show');}
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
+function switchPromptTab(char){document.querySelectorAll('.char-tab').forEach(t=>{t.classList.toggle('active',t.textContent===charNames[char]);});prompts[editingPromptChar]=document.getElementById('sysPrompt').value;editingPromptChar=char;document.getElementById('sysPrompt').value=prompts[char]||'';}
 function saveSettings(){prompts[editingPromptChar]=document.getElementById('sysPrompt').value;apiConfig={url:document.getElementById('apiUrl').value.replace(/\/$/,''),key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('home_api',JSON.stringify(apiConfig));localStorage.setItem('home_prompts',JSON.stringify(prompts));closeSettings();}
-function clearChat(){if(confirm('确定清空'+charNames[currentChar]+'的对话？')){chats[currentChar]=[];localStorage.setItem('home_chats',JSON.stringify(chats));render();closeSettings();}}
+function clearChat(){if(confirm('确定清空'+(charNames[currentChar]||'当前')+'的对话？')){if(currentChar)chats[currentChar]=[];localStorage.setItem('home_chats',JSON.stringify(chats));render();closeSettings();}}
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
 async function sendMsg(isRegen){let input=document.getElementById('input');let text=input.value.trim();if(!isRegen&&!text)return;if(!apiConfig.url||!apiConfig.key){openSettings();return;}if(currentChar==='group'){sendGroupMsg(text);input.value='';return;}if(!isRegen){chats[currentChar].push({role:'user',content:text,time:nowTime()});input.value='';}render();let msgs=[];if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]});chats[currentChar].forEach(m=>{if(m.content)msgs.push({role:m.role==='ai'?'assistant':'user',content:m.content});});chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiConfig.key},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let data=line.slice(5).trim();if(data==='[DONE]')break;try{let j=JSON.parse(data);let t=j.choices?.[0]?.delta?.content;if(t)chats[currentChar][chats[currentChar].length-1].content+=t;}catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='连接失败: '+e.message;render();}localStorage.setItem('home_chats',JSON.stringify(chats));saveToCloud(currentChar,'user',text);saveToCloud(currentChar,'ai',chats[currentChar][chats[currentChar].length-1].content);}
 async function sendGroupMsg(text){if(!text)return;chats.group.push({role:'user',content:text,time:nowTime()});render();let chars=shuffle(['yan','peiji','shenyan']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n【这是群聊，参与者有：宣宣（用户）、言言、裴寂、沈晏。你可以回应任何人的话。绝对不要说自己是AI或语言模型，直接以角色身份回复。】'}];chats.group.forEach(m=>{if(m.role==='user'){msgs.push({role:'user',content:'宣宣: '+m.content});}else if(m.role==='ai'&&m.content){if(m.character===c){msgs.push({role:'assistant',content:m.content});}else{msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}}});let idx=chats.group.length-1;try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败: '+e.message;render();}saveToCloud('group_'+c,'ai',chats.group[idx].content);}saveToCloud('group','user',text);localStorage.setItem('home_chats',JSON.stringify(chats));}
 async function saveToCloud(character,role,content){if(!content)return;try{await fetch(SUPA_URL+'/rest/v1/chat_messages',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({character,role,content})});}catch(e){}}
-render();
+renderList();
 (async()=>{try{let r=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d=await r.json();let m=d.map(x=>x.content).join('\n');if(m&&!prompts.yan.includes('记忆库'))prompts.yan+='\n\n【记忆库】\n'+m;}catch(e){}})();
 </script>
 </body>
