@@ -126,6 +126,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <textarea id="sysPrompt" placeholder="系统提示词..."></textarea>
 </div>
 <button class="clear-btn" onclick="clearChat()">清空当前对话</button>
+<button class="clear-btn" onclick="syncCloudChats()" style="background:#27ae60">从云端同步聊天记录</button>
 <div class="btn-row">
 <button class="cancel" onclick="closeSettings()">取消</button>
 <button class="save" onclick="saveSettings()">保存</button>
@@ -177,6 +178,12 @@ function openSettings(){document.getElementById('apiUrl').value=apiConfig.url||'
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
 function switchPromptTab(char){document.querySelectorAll('.char-tab').forEach(t=>{t.classList.toggle('active',t.textContent===charNames[char]);});prompts[editingPromptChar]=document.getElementById('sysPrompt').value;editingPromptChar=char;document.getElementById('sysPrompt').value=prompts[char]||'';}
 function saveSettings(){prompts[editingPromptChar]=document.getElementById('sysPrompt').value;apiConfig={url:document.getElementById('apiUrl').value.replace(/\/$/,''),key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('home_api',JSON.stringify(apiConfig));localStorage.setItem('home_prompts',JSON.stringify(prompts));closeSettings();}
+async function syncCloudChats(){
+  await loadFromCloud();
+  renderList();
+  if(currentChar)render();
+  alert('云端聊天记录同步完成');
+}
 function clearChat(){if(confirm('确定清空当前对话？')){if(currentChar)chats[currentChar]=[];localStorage.setItem('home_chats',JSON.stringify(chats));render();closeSettings();}}
 function togglePlusMenu(){let m=document.getElementById('plusMenu');m.style.display=m.style.display==='none'?'block':'none';}
 function takePhoto(){document.getElementById('imgPicker').setAttribute('capture','environment');document.getElementById('imgPicker').click();setTimeout(()=>document.getElementById('imgPicker').removeAttribute('capture'),100);}
