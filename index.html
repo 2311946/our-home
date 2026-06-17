@@ -178,7 +178,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 <div class="view" id="memView">
 <div class="chat-header">
-  
+<button class="back-btn" onclick="goBackFromMem()">←</button>
 <span class="name" style="flex:1">🧠 记忆宫殿</span>
 <button onclick="loadMem()" style="background:none;border:none;color:#aaa;font-size:16px;cursor:pointer">刷新</button>
 </div>
@@ -245,7 +245,7 @@ function withMsgTime(m, speaker){
   return '[' + time + '] ' + name + (m.content || '');
 }
 function shuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let preview=last?(last.content||'').slice(0,25):'还没有消息';let time=last?last.time:'';let item=document.createElement('div');item.className='contact-item';item.onclick=()=>enterChat(c.id);item.innerHTML='<div class="contact-avatar" style="background:'+c.color+'">'+c.emoji+'</div><div class="contact-info"><div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div></div><div class="contact-time">'+time+'</div>';list.appendChild(item);});
+function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let preview=last?(last.content||'').slice(0,25):'还没有消息';let time=last?last.time:'';let item=document.createElement('div');item.className='contact-item';item.onclick=()=>enterChat(c.id);item.innerHTML='<div class="contact-avatar" style="background:'+c.color+'">'+c.emoji+'</div><div class="contact-info"><div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div></div><div class="contact-time">'+time+'</div>';list.appendChild(item);});let memItem=document.createElement('div');memItem.className='contact-item';memItem.onclick=()=>enterMem();memItem.innerHTML='<div class="contact-avatar" style="background:#f39c12">🧠</div><div class="contact-info"><div class="contact-name">记忆宫殿</div><div class="contact-preview">查看所有记忆和日记</div></div>';list.appendChild(memItem);}
 function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';render();}
 function goBack(){document.getElementById('tabBar').style.display='flex';currentChar='';switchTab('list');}
 function toggleSearch(){let bar=document.getElementById('searchBar');bar.style.display=bar.style.display==='none'?'block':'none';if(bar.style.display==='none'){document.getElementById('searchInput').value='';render();}}
