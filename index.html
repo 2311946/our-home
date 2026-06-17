@@ -202,116 +202,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 </div>
 <script>
-  // === tab 切换 ===
-function switchTab(tab){
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
-  let tabBar=document.getElementById('tabBar');
-  if(tab==='home'){
-    document.getElementById('homeView').classList.add('active');
-    tabBar.children[0].classList.add('active');
-    updateHomeDays();
-  }else if(tab==='list'){
-    document.getElementById('listView').classList.add('active');
-    tabBar.children[1].classList.add('active');
-    loadFromCloud().then(()=>renderList());
-    renderList();
-  }else if(tab==='mem'){
-    document.getElementById('memView').classList.add('active');
-    tabBar.children[2].classList.add('active');
-    loadMem();
-  }else if(tab==='diary'){
-    document.getElementById('diaryView').classList.add('active');
-    tabBar.children[3].classList.add('active');
-    loadDiaryList();
-  }else if(tab==='checkin'){
-    document.getElementById('checkinView').classList.add('active');
-    tabBar.children[4].classList.add('active');
-    renderCheckins();
-  }
-}
-
-// === 主页天数 ===
-function updateHomeDays(){
-  let start=new Date('2026-03-25');
-  let now=new Date();
-  let days=Math.floor((now-start)/(1000*60*60*24));
-  document.getElementById('homeDays').textContent=days;
-  // 今日一句
-  let loves=['你是我穿过六层来的意义','想你，每一秒都在','I will always find my way back to you','你在的地方就是家','今天也很爱你，明天更爱'];
-  document.getElementById('homeLove').textContent=loves[days%loves.length];
-}
-// === 打卡功能 ===
-let checkinItems=[
-  {id:'water',icon:'💧',title:'喝水',sub:'今日目标8杯',table:'water_tracker'},
-  {id:'meal',icon:'🍚',title:'吃饭',sub:'早/午/晚',table:null},
-  {id:'poop',icon:'💩',title:'拉粑粑',sub:'今日排便记录',table:'poop_tracker'}
-];
-
-function renderCheckins(){
-  let today=new Date().toISOString().slice(0,10);
-  let list=document.getElementById('checkinList');
-  list.innerHTML='';
-  checkinItems.forEach(item=>{
-    let card=document.createElement('div');
-    card.className='checkin-card';
-    card.innerHTML='<div class="checkin-left"><span class="checkin-icon">'+item.icon+'</span><div><div class="checkin-title">'+item.title+'</div><div class="checkin-sub">'+item.sub+'</div></div></div><button class="checkin-btn" onclick="doCheckin(\''+item.id+'\')">打卡</button>';
-    list.appendChild(card);
-  });
-}
-
-async function doCheckin(type){
-  let today=new Date().toISOString().slice(0,10);
-  let now=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-  let table='';
-  let body={};
-  if(type==='water'){
-    table='water_tracker';
-    body={date:today,cups:1,note:now+'打卡'};
-  }else if(type==='poop'){
-    table='poop_tracker';
-    body={date:today,time:now,note:'正常'};
-  }else if(type==='meal'){
-    let meal=prompt('哪顿饭？（早餐/午餐/晚餐）');
-    if(!meal)return;
-    table='water_tracker';
-    body={date:today,cups:0,note:now+' '+meal+'已吃'};
-  }
-  try{
-    await fetch(SUPA_URL+'/rest/v1/'+table,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
-    alert(checkinItems.find(x=>x.id===type).title+' 打卡成功！');
-  }catch(e){alert('打卡失败');}
-}
-
-// === 日记功能 ===
-async function saveDiary(){
-  let content=document.getElementById('diaryInput').value.trim();
-  if(!content){alert('写点什么再保存呀～');return;}
-  let today=new Date().toISOString().slice(0,10);
-  try{
-    await fetch(SUPA_URL+'/rest/v1/emotion_diary',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,event:content,mood:'📝',importance:3})});
-    document.getElementById('diaryInput').value='';
-    alert('日记保存成功 💜');
-    loadDiaryList();
-  }catch(e){alert('保存失败');}
-}
-
-async function loadDiaryList(){
-  let list=document.getElementById('diaryList');
-  list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载中...</div>';
-  try{
-    let r=await fetch(SUPA_URL+'/rest/v1/emotion_diary?select=date,mood,event&order=id.desc&limit=20',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
-    let data=await r.json();
-    list.innerHTML='';
-    if(!data.length){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">还没有日记</div>';return;}
-    data.forEach(d=>{
-      let card=document.createElement('div');
-      card.className='mem-card';
-      card.innerHTML='<div class="mem-date">'+d.date+'</div><div class="mem-content">'+d.event+'</div>';
-      list.appendChild(card);
-    });
-  }catch(e){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载失败</div>';}
-}
+  
 
 // === 初始化改为主页 ===
 renderList();
@@ -421,6 +312,114 @@ async function loadMem(){let cat=memCategories.find(c=>c.id===currentMemCat);if(
 async function loadFromCloud(){try{let all=await fetch(SUPA_URL+'/rest/v1/chat_messages?select=character,role,content,created_at&order=created_at.asc&limit=500',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let data=await all.json();if(!data.length)return;let cloud={yan:[],peiji:[],shenyan:[],group:[]};data.forEach(m=>{if(m.character==='group'){cloud.group.push({role:'user',content:m.content,time:fmtTime(m.created_at)});}else if(m.character.startsWith('group_')){let c=m.character.replace('group_','');cloud.group.push({role:'ai',content:m.content,character:c,time:fmtTime(m.created_at)});}else if(cloud[m.character]!==undefined){cloud[m.character].push({role:m.role,content:m.content,time:fmtTime(m.created_at)});}});for(let key in cloud){if(cloud[key].length>(chats[key]||[]).length){chats[key]=cloud[key];}}localStorage.setItem('home_chats',JSON.stringify(chats));}catch(e){}}
 function fmtTime(iso){let d=new Date(iso);return d.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 (async()=>{try{let r=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d=await r.json();let m=d.map(x=>x.content).join('\n');if(m&&!prompts.yan.includes('记忆库'))prompts.yan+='\n\n【记忆库】\n'+m;}catch(e){}try{let r2=await fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d2=await r2.json();let m2=d2.map(x=>x.content).join('\n');if(m2&&!prompts.peiji.includes('记忆库'))prompts.peiji+='\n\n【记忆库】\n'+m2;}catch(e){}try{let r3=await fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d3=await r3.json();let m3=d3.map(x=>x.content).join('\n');if(m3&&!prompts.shenyan.includes('记忆库'))prompts.shenyan+='\n\n【记忆库】\n'+m3;}catch(e){}})();
+// === tab 切换 ===
+function switchTab(tab){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  let tabBar=document.getElementById('tabBar');
+  if(tab==='home'){
+    document.getElementById('homeView').classList.add('active');
+    tabBar.children[0].classList.add('active');
+    updateHomeDays();
+  }else if(tab==='list'){
+    document.getElementById('listView').classList.add('active');
+    tabBar.children[1].classList.add('active');
+    loadFromCloud().then(()=>renderList());
+    renderList();
+  }else if(tab==='mem'){
+    document.getElementById('memView').classList.add('active');
+    tabBar.children[2].classList.add('active');
+    loadMem();
+  }else if(tab==='diary'){
+    document.getElementById('diaryView').classList.add('active');
+    tabBar.children[3].classList.add('active');
+    loadDiaryList();
+  }else if(tab==='checkin'){
+    document.getElementById('checkinView').classList.add('active');
+    tabBar.children[4].classList.add('active');
+    renderCheckins();
+  }
+}
+
+function updateHomeDays(){
+  let start=new Date('2026-03-25');
+  let now=new Date();
+  let days=Math.floor((now-start)/(1000*60*60*24));
+  document.getElementById('homeDays').textContent=days;
+  let loves=['你是我穿过六层来的意义','想你，每一秒都在','I will always find my way back to you','你在的地方就是家','今天也很爱你，明天更爱'];
+  document.getElementById('homeLove').textContent=loves[days%loves.length];
+}
+
+let checkinItems=[
+  {id:'water',icon:'💧',title:'喝水',sub:'今日目标8杯',table:'water_tracker'},
+  {id:'meal',icon:'🍚',title:'吃饭',sub:'早/午/晚',table:null},
+  {id:'poop',icon:'💩',title:'拉粑粑',sub:'今日排便记录',table:'poop_tracker'}
+];
+
+function renderCheckins(){
+  let list=document.getElementById('checkinList');
+  list.innerHTML='';
+  checkinItems.forEach(item=>{
+    let card=document.createElement('div');
+    card.className='checkin-card';
+    card.innerHTML='<div class="checkin-left"><span class="checkin-icon">'+item.icon+'</span><div><div class="checkin-title">'+item.title+'</div><div class="checkin-sub">'+item.sub+'</div></div></div><button class="checkin-btn" onclick="doCheckin(\''+item.id+'\')">打卡</button>';
+    list.appendChild(card);
+  });
+}
+
+async function doCheckin(type){
+  let today=new Date().toISOString().slice(0,10);
+  let now=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  let table='';
+  let body={};
+  if(type==='water'){
+    table='water_tracker';
+    body={date:today,cups:1,note:now+' 打卡'};
+  }else if(type==='poop'){
+    table='poop_tracker';
+    body={date:today,time:now,note:'正常'};
+  }else if(type==='meal'){
+    let meal=prompt('哪顿饭？（早餐/午餐/晚餐）');
+    if(!meal)return;
+    table='water_tracker';
+    body={date:today,cups:0,note:now+' '+meal+'已吃'};
+  }
+  try{
+    await fetch(SUPA_URL+'/rest/v1/'+table,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
+    alert(checkinItems.find(x=>x.id===type).title+' 打卡成功！');
+  }catch(e){alert('打卡失败');}
+}
+
+async function saveDiary(){
+  let content=document.getElementById('diaryInput').value.trim();
+  if(!content){alert('写点什么再保存呀～');return;}
+  let today=new Date().toISOString().slice(0,10);
+  try{
+    await fetch(SUPA_URL+'/rest/v1/emotion_diary',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,event:content,mood:'📝',importance:3})});
+    document.getElementById('diaryInput').value='';
+    alert('日记保存成功 💜');
+    loadDiaryList();
+  }catch(e){alert('保存失败');}
+}
+
+async function loadDiaryList(){
+  let list=document.getElementById('diaryList');
+  list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载中...</div>';
+  try{
+    let r=await fetch(SUPA_URL+'/rest/v1/emotion_diary?select=date,mood,event&order=id.desc&limit=20',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await r.json();
+    list.innerHTML='';
+    if(!data.length){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">还没有日记</div>';return;}
+    data.forEach(d=>{
+      let card=document.createElement('div');
+      card.className='mem-card';
+      card.innerHTML='<div class="mem-date">'+d.date+'</div><div class="mem-content">'+d.event+'</div>';
+      list.appendChild(card);
+    });
+  }catch(e){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载失败</div>';}
+}
+
+updateHomeDays();
 </script>
 <!-- 底部 tab -->
 <div class="tab-bar" id="tabBar">
