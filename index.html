@@ -304,7 +304,24 @@ async function sendGroupMsg(text){
   saveToCloud('group','user',text);
   render();
 
-  let chars=shuffle(['yan','peiji','shenyan']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏。你回应任何人的话。不要说自己是AI，直接以角色身份回复。】'}];chats.group.forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'['+(m.time||nowTime())+'] 宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:'['+(m.time||nowTime())+'] '+m.content});else msgs.push({role:'user',content:'['+(m.time||nowTime())+'] '+(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败';render();}saveToCloud('group_'+c,'ai',chats.group[idx].content);
+  let chars=shuffle(['yan','peiji','shenyan']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏。你回应任何人的话。不要说自己是AI，直接以角色身份回复。\n\n重要格式要求：用|||分隔多条消息，模拟真实聊天节奏。每条消息简短自然（5-30字），最多3条。例如：你好啊|||今天怎么样|||想你了\n如果只想说一句话就不用分隔符,回复代码或长段解释时不要分条，正常完整回复。】'}];chats.group.forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'['+(m.time||nowTime())+'] 宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:'['+(m.time||nowTime())+'] '+m.content});else msgs.push({role:'user',content:'['+(m.time||nowTime())+'] '+(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败';render();}// 分条处理
+let fullContent=chats.group[idx].content;
+if(fullContent.includes('|||')){
+  let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
+  chats.group.splice(idx,1);
+  parts.forEach((part,pi)=>{
+    chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime()});
+  });
+  render();
+  for(let part of parts){
+    await new Promise(r=>setTimeout(r,300));
+  }
+}if(fullContent.includes('|||')){
+  let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
+  for(let part of parts){saveToCloud('group_'+c,'ai',part);}
+}else{
+  saveToCloud('group_'+c,'ai',chats.group[idx].content);
+}
 }
 
 localStorage.setItem('home_chats',JSON.stringify(chats));
