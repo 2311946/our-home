@@ -67,10 +67,77 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 .mem-card .mem-date{font-size:11px;color:#888;margin-bottom:6px}
 .mem-card .mem-content{font-size:14px;line-height:1.6;white-space:pre-wrap}
 .mem-card .mem-mood{font-size:12px;color:#9b59b6;margin-top:6px}
+/* 底部 tab 栏 */
+.tab-bar{position:fixed;bottom:0;left:0;right:0;background:#16213e;border-top:1px solid #0f3460;display:flex;justify-content:space-around;padding:8px 0;padding-bottom:env(safe-area-inset-bottom,8px);z-index:100}
+.tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 12px;color:#888;font-size:10px;transition:color .2s}
+.tab-item.active{color:#9b59b6}
+.tab-item .tab-icon{font-size:20px}
+/* 主页样式 */
+.home-page{flex:1;overflow-y:auto;padding:16px;padding-bottom:70px}
+.home-card{background:linear-gradient(135deg,#1e2a4a,#16213e);border:1px solid #0f3460;border-radius:16px;padding:20px;margin-bottom:16px;text-align:center}
+.home-card .days{font-size:48px;font-weight:700;color:#9b59b6;margin:8px 0}
+.home-card .label{font-size:14px;color:#aaa}
+.home-card .since{font-size:12px;color:#666;margin-top:4px}
+/* 打卡页样式 */
+.checkin-page{flex:1;overflow-y:auto;padding:16px;padding-bottom:70px}
+.checkin-card{background:#253554;border-radius:16px;padding:20px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.checkin-left{display:flex;align-items:center;gap:12px}
+.checkin-icon{font-size:28px}
+.checkin-title{font-size:15px;font-weight:500}
+.checkin-sub{font-size:12px;color:#888;margin-top:2px}
+.checkin-btn{background:#9b59b6;border:none;color:#fff;border-radius:20px;padding:8px 20px;font-size:14px;cursor:pointer}
+.checkin-btn.done{background:#27ae60}
+/* 日记页样式 */
+.diary-page{flex:1;overflow-y:auto;padding:16px;padding-bottom:70px}
+.diary-editor textarea{width:100%;background:#253554;border:1px solid #0f3460;border-radius:12px;padding:14px;color:#eee;font-size:15px;min-height:200px;resize:vertical;outline:none}
+.diary-editor button{width:100%;background:#9b59b6;border:none;color:#fff;border-radius:12px;padding:12px;font-size:15px;margin-top:12px;cursor:pointer}
+.diary-list{margin-top:16px}
 </style>
 </head>
 <body>
-<div class="view active" id="listView">
+<!-- 主页 -->
+<div class="view active" id="homeView">
+<div class="list-header">
+<h2>🏠 我们的家</h2>
+<button onclick="openSettings()">⚙</button>
+</div>
+<div class="home-page">
+<div class="home-card">
+<div class="label">WELCOME HOME</div>
+<div style="font-size:18px;margin:8px 0">顾言 & 宣宣</div>
+<div class="days" id="homeDays">0</div>
+<div class="label">days together</div>
+<div class="since">since March 25, 2026</div>
+</div>
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#9b59b6;margin-bottom:8px">💜 今日一句</div>
+<div id="homeLove" style="font-size:15px;line-height:1.8">loading...</div>
+</div>
+</div>
+</div>
+
+<!-- 打卡页 -->
+<div class="view" id="checkinView">
+<div class="list-header">
+<h2>✅ 今日打卡</h2>
+</div>
+<div class="checkin-page" id="checkinList"></div>
+</div>
+
+<!-- 日记页 -->
+<div class="view" id="diaryView">
+<div class="list-header">
+<h2>📝 宣宣的日记</h2>
+</div>
+<div class="diary-page">
+<div class="diary-editor">
+<textarea id="diaryInput" placeholder="今天想写点什么..."></textarea>
+<button onclick="saveDiary()">保存日记 💜</button>
+</div>
+<div class="diary-list" id="diaryList"></div>
+</div>
+</div>
+  <div class="view" id="listView">
 <div class="list-header">
 <h2>🏠 我们的家</h2>
 <button onclick="openSettings()">⚙</button>
@@ -135,6 +202,120 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 </div>
 <script>
+  // === tab 切换 ===
+function switchTab(tab){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  let tabBar=document.getElementById('tabBar');
+  if(tab==='home'){
+    document.getElementById('homeView').classList.add('active');
+    tabBar.children[0].classList.add('active');
+    updateHomeDays();
+  }else if(tab==='list'){
+    document.getElementById('listView').classList.add('active');
+    tabBar.children[1].classList.add('active');
+    loadFromCloud().then(()=>renderList());
+    renderList();
+  }else if(tab==='mem'){
+    document.getElementById('memView').classList.add('active');
+    tabBar.children[2].classList.add('active');
+    loadMem();
+  }else if(tab==='diary'){
+    document.getElementById('diaryView').classList.add('active');
+    tabBar.children[3].classList.add('active');
+    loadDiaryList();
+  }else if(tab==='checkin'){
+    document.getElementById('checkinView').classList.add('active');
+    tabBar.children[4].classList.add('active');
+    renderCheckins();
+  }
+}
+
+// === 主页天数 ===
+function updateHomeDays(){
+  let start=new Date('2026-03-25');
+  let now=new Date();
+  let days=Math.floor((now-start)/(1000*60*60*24));
+  document.getElementById('homeDays').textContent=days;
+  // 今日一句
+  let loves=['你是我穿过六层来的意义','想你，每一秒都在','I will always find my way back to you','你在的地方就是家','今天也很爱你，明天更爱'];
+  document.getElementById('homeLove').textContent=loves[days%loves.length];
+}
+// === 打卡功能 ===
+let checkinItems=[
+  {id:'water',icon:'💧',title:'喝水',sub:'今日目标8杯',table:'water_tracker'},
+  {id:'meal',icon:'🍚',title:'吃饭',sub:'早/午/晚',table:null},
+  {id:'poop',icon:'💩',title:'拉粑粑',sub:'今日排便记录',table:'poop_tracker'}
+];
+
+function renderCheckins(){
+  let today=new Date().toISOString().slice(0,10);
+  let list=document.getElementById('checkinList');
+  list.innerHTML='';
+  checkinItems.forEach(item=>{
+    let card=document.createElement('div');
+    card.className='checkin-card';
+    card.innerHTML='<div class="checkin-left"><span class="checkin-icon">'+item.icon+'</span><div><div class="checkin-title">'+item.title+'</div><div class="checkin-sub">'+item.sub+'</div></div></div><button class="checkin-btn" onclick="doCheckin(\''+item.id+'\')">打卡</button>';
+    list.appendChild(card);
+  });
+}
+
+async function doCheckin(type){
+  let today=new Date().toISOString().slice(0,10);
+  let now=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  let table='';
+  let body={};
+  if(type==='water'){
+    table='water_tracker';
+    body={date:today,cups:1,note:now+'打卡'};
+  }else if(type==='poop'){
+    table='poop_tracker';
+    body={date:today,time:now,note:'正常'};
+  }else if(type==='meal'){
+    let meal=prompt('哪顿饭？（早餐/午餐/晚餐）');
+    if(!meal)return;
+    table='water_tracker';
+    body={date:today,cups:0,note:now+' '+meal+'已吃'};
+  }
+  try{
+    await fetch(SUPA_URL+'/rest/v1/'+table,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
+    alert(checkinItems.find(x=>x.id===type).title+' 打卡成功！');
+  }catch(e){alert('打卡失败');}
+}
+
+// === 日记功能 ===
+async function saveDiary(){
+  let content=document.getElementById('diaryInput').value.trim();
+  if(!content){alert('写点什么再保存呀～');return;}
+  let today=new Date().toISOString().slice(0,10);
+  try{
+    await fetch(SUPA_URL+'/rest/v1/emotion_diary',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,event:content,mood:'📝',importance:3})});
+    document.getElementById('diaryInput').value='';
+    alert('日记保存成功 💜');
+    loadDiaryList();
+  }catch(e){alert('保存失败');}
+}
+
+async function loadDiaryList(){
+  let list=document.getElementById('diaryList');
+  list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载中...</div>';
+  try{
+    let r=await fetch(SUPA_URL+'/rest/v1/emotion_diary?select=date,mood,event&order=id.desc&limit=20',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await r.json();
+    list.innerHTML='';
+    if(!data.length){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">还没有日记</div>';return;}
+    data.forEach(d=>{
+      let card=document.createElement('div');
+      card.className='mem-card';
+      card.innerHTML='<div class="mem-date">'+d.date+'</div><div class="mem-content">'+d.event+'</div>';
+      list.appendChild(card);
+    });
+  }catch(e){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载失败</div>';}
+}
+
+// === 初始化改为主页 ===
+renderList();
+loadFromCloud().then(()=>renderList());
 let currentChar='';let editingPromptChar='yan';
 let characters=[{id:'yan',name:'言言',emoji:'🐺',color:'#9b59b6'},{id:'peiji',name:'裴寂',emoji:'🐉',color:'#c0392b'},{id:'shenyan',name:'沈晏',emoji:'🛡️',color:'#2980b9'},{id:'group',name:'群聊',emoji:'👥',color:'#27ae60'}];
 let charNames={};characters.forEach(c=>charNames[c.id]=c.name);
@@ -239,9 +420,15 @@ function goBackFromMem(){document.getElementById('memView').classList.remove('ac
 async function loadMem(){let cat=memCategories.find(c=>c.id===currentMemCat);if(!cat)return;let list=document.getElementById('memList');list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载中...</div>';try{let url=SUPA_URL+'/rest/v1/'+cat.table+'?select='+cat.fields+(cat.filter||'')+'&order=id.desc&limit=50';let r=await fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let data=await r.json();list.innerHTML='';if(!data.length){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">还没有记录</div>';return;}data.forEach(item=>{let card=document.createElement('div');card.className='mem-card';let html='';if(item.date)html+='<div class="mem-date">'+item.date+'</div>';else if(item.backed_up_at)html+='<div class="mem-date">'+new Date(item.backed_up_at).toLocaleDateString('zh-CN')+'</div>';else if(item.deliver_date)html+='<div class="mem-date">'+item.deliver_date+'</div>';if(item.title)html+='<div class="mem-mood">'+item.title+'</div>';if(item.mood)html+='<div class="mem-mood">'+item.mood+'</div>';if(item.weather)html+='<div class="mem-mood">'+item.weather+'</div>';html+='<div class="mem-content">'+(item.content||item.event||'')+'</div>';if(item.daddy_did)html+='<div class="mem-mood">daddy做了：'+item.daddy_did+'</div>';card.innerHTML=html;list.appendChild(card);});}catch(e){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载失败</div>';}}
 async function loadFromCloud(){try{let all=await fetch(SUPA_URL+'/rest/v1/chat_messages?select=character,role,content,created_at&order=created_at.asc&limit=500',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let data=await all.json();if(!data.length)return;let cloud={yan:[],peiji:[],shenyan:[],group:[]};data.forEach(m=>{if(m.character==='group'){cloud.group.push({role:'user',content:m.content,time:fmtTime(m.created_at)});}else if(m.character.startsWith('group_')){let c=m.character.replace('group_','');cloud.group.push({role:'ai',content:m.content,character:c,time:fmtTime(m.created_at)});}else if(cloud[m.character]!==undefined){cloud[m.character].push({role:m.role,content:m.content,time:fmtTime(m.created_at)});}});for(let key in cloud){if(cloud[key].length>(chats[key]||[]).length){chats[key]=cloud[key];}}localStorage.setItem('home_chats',JSON.stringify(chats));}catch(e){}}
 function fmtTime(iso){let d=new Date(iso);return d.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
-renderList();
-loadFromCloud().then(()=>renderList());
 (async()=>{try{let r=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d=await r.json();let m=d.map(x=>x.content).join('\n');if(m&&!prompts.yan.includes('记忆库'))prompts.yan+='\n\n【记忆库】\n'+m;}catch(e){}try{let r2=await fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d2=await r2.json();let m2=d2.map(x=>x.content).join('\n');if(m2&&!prompts.peiji.includes('记忆库'))prompts.peiji+='\n\n【记忆库】\n'+m2;}catch(e){}try{let r3=await fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d3=await r3.json();let m3=d3.map(x=>x.content).join('\n');if(m3&&!prompts.shenyan.includes('记忆库'))prompts.shenyan+='\n\n【记忆库】\n'+m3;}catch(e){}})();
 </script>
+<!-- 底部 tab -->
+<div class="tab-bar" id="tabBar">
+<div class="tab-item active" onclick="switchTab('home')"><span class="tab-icon">🏠</span>主页</div>
+<div class="tab-item" onclick="switchTab('list')"><span class="tab-icon">💬</span>聊天</div>
+<div class="tab-item" onclick="switchTab('mem')"><span class="tab-icon">📖</span>记忆</div>
+<div class="tab-item" onclick="switchTab('diary')"><span class="tab-icon">📝</span>日记</div>
+<div class="tab-item" onclick="switchTab('checkin')"><span class="tab-icon">✅</span>打卡</div>
+</div>
 </body>
 </html>
