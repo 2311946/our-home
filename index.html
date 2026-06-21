@@ -204,12 +204,31 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 </div>
 </div>
-  <div class="view" id="listView">
+<div class="view" id="listView">
 <div class="list-header">
 <h2>🏠 我们的家</h2>
 <button onclick="openSettings()">⚙</button>
 </div>
+<div style="display:flex;gap:20px;padding:14px 20px;justify-content:center;background:linear-gradient(180deg,#16213e,#1a1a2e);border-bottom:1px solid #0f3460">
+<div onclick="enterChat('yan')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#9b59b6,#8e44ad);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(155,89,182,0.3)">🐺</div>
+<span style="font-size:11px;color:#9b59b6;font-weight:500">言言</span>
+</div>
+<div onclick="enterChat('peiji')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#c0392b,#96281b);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(192,57,43,0.3)">🐉</div>
+<span style="font-size:11px;color:#c0392b;font-weight:500">裴寂</span>
+</div>
+<div onclick="enterChat('shenyan')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#2980b9,#1a5276);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(41,128,185,0.3)">🛡️</div>
+<span style="font-size:11px;color:#2980b9;font-weight:500">沈晏</span>
+</div>
+<div onclick="enterChat('group')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#27ae60,#1e8449);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(39,174,96,0.3)">👥</div>
+<span style="font-size:11px;color:#27ae60;font-weight:500">群聊</span>
+</div>
+</div>
 <div class="contact-list" id="contactList"></div>
+</div>
 </div>
 <div class="view" id="chatView">
 <div class="chat-header">
