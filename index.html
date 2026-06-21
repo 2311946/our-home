@@ -134,6 +134,10 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <div class="label">⏱️ 在一起</div>
 <div id="homeTimer" style="font-size:16px;color:#9b59b6;margin-top:8px;font-weight:500">计算中...</div>
 </div>
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#3498db;margin-bottom:8px">💧 今日喝水</div>
+<div id="homeWater" style="font-size:14px;color:#aaa">加载中...</div>
+</div>
 </div>
 </div>
 
@@ -885,6 +889,16 @@ function loadHomeWeather(){
     }
   }).catch(()=>{el.textContent='加载失败';});
 }
+function loadHomeWater(){
+  let el=document.getElementById('homeWater');
+  if(!el||!SUPA_URL||!SUPA_KEY)return;
+  let today=new Date().toISOString().slice(0,10);
+  fetch(SUPA_URL+'/rest/v1/water_tracker?select=*&date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+    let cups=data?data.length:0;
+    let bar='💧'.repeat(Math.min(cups,8))+'○'.repeat(Math.max(0,8-cups));
+    el.innerHTML=bar+' <b style="color:#fff">'+cups+'/8</b>';
+  }).catch(()=>{el.textContent='加载失败';});
+}
 
 // === 健康管理 ===
 function loadCheckins(){
@@ -1101,6 +1115,7 @@ updateHomeDays();
 createHearts();
 updateTimer();
 loadHomeWeather();
+loadHomeWater();
 </script>
 <!-- 底部 tab -->
 <div class="tab-bar" id="tabBar">
