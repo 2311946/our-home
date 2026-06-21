@@ -138,9 +138,48 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <!-- 打卡页 -->
 <div class="view" id="checkinView">
 <div class="list-header">
-<h2>✅ 今日打卡</h2>
+<h2>✅ 健康管理</h2>
 </div>
-<div class="checkin-page" id="checkinList"></div>
+<div class="checkin-page" id="checkinPage">
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#9b59b6;margin-bottom:8px">⚖️ 体重记录</div>
+<div id="weightDisplay" style="font-size:14px;color:#aaa">加载中...</div>
+<div style="display:flex;gap:8px;margin-top:10px">
+<input id="weightInput" type="number" step="0.1" placeholder="今日体重(kg)" style="flex:1;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px;color:#eee;font-size:14px;outline:none">
+<button onclick="saveWeight()" style="background:#9b59b6;border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer">记录</button>
+</div>
+</div>
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#e74c3c;margin-bottom:8px">🩸 姨妈记录</div>
+<div id="periodDisplay" style="font-size:14px;color:#aaa">加载中...</div>
+<div style="display:flex;gap:8px;margin-top:10px">
+<button onclick="markPeriodStart()" style="flex:1;background:#e74c3c;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">姨妈来了</button>
+<button onclick="markPeriodEnd()" style="flex:1;background:#27ae60;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">姨妈走了</button>
+</div>
+</div>
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#3498db;margin-bottom:8px">💧 今日喝水</div>
+<div id="waterDisplay" style="font-size:14px;color:#aaa">加载中...</div>
+<div style="margin-top:10px">
+<button onclick="addWater()" style="width:100%;background:#3498db;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">喝了一杯 +1 💧</button>
+</div>
+</div>
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#27ae60;margin-bottom:8px">🚶‍♀️ 运动/散步</div>
+<div id="exerciseDisplay" style="font-size:14px;color:#aaa">今天还没运动</div>
+<div style="display:flex;gap:8px;margin-top:10px">
+<button onclick="markExercise('散步30分钟')" style="flex:1;background:#27ae60;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">散步 🚶‍♀️</button>
+<button onclick="markExercise('逛街')" style="flex:1;background:#27ae60;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">逛街 🛍️</button>
+</div>
+</div>
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#f39c12;margin-bottom:8px">💩 拉粑粑</div>
+<div id="poopDisplay" style="font-size:14px;color:#aaa">今天还没拉</div>
+<div style="margin-top:10px">
+<button onclick="markPoop()" style="width:100%;background:#f39c12;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">拉了！💩</button>
+</div>
+</div>
+</div>
 </div>
 
 <!-- 日记页 -->
@@ -707,7 +746,7 @@ function switchTab(tab){
   }else if(tab==='checkin'){
     document.getElementById('checkinView').classList.add('active');
     tabBar.children[4].classList.add('active');
-    renderCheckins();
+    loadCheckins();
   }
 }
 
@@ -749,44 +788,160 @@ function loadHomeWeather(){
   }).catch(()=>{el.textContent='加载失败';});
 }
 
-let checkinItems=[
-  {id:'water',icon:'💧',title:'喝水',sub:'今日目标8杯',table:'water_tracker'},
-  {id:'meal',icon:'🍚',title:'吃饭',sub:'早/午/晚',table:null},
-  {id:'poop',icon:'💩',title:'拉粑粑',sub:'今日排便记录',table:'poop_tracker'}
-];
-
-function renderCheckins(){
-  let list=document.getElementById('checkinList');
-  list.innerHTML='';
-  checkinItems.forEach(item=>{
-    let card=document.createElement('div');
-    card.className='checkin-card';
-    card.innerHTML='<div class="checkin-left"><span class="checkin-icon">'+item.icon+'</span><div><div class="checkin-title">'+item.title+'</div><div class="checkin-sub">'+item.sub+'</div></div></div><button class="checkin-btn" onclick="doCheckin(\''+item.id+'\')">打卡</button>';
-    list.appendChild(card);
-  });
+// === 健康管理 ===
+function loadCheckins(){
+  loadWeight();
+  loadPeriod();
+  loadWater();
+  loadPoop();
 }
 
-async function doCheckin(type){
+async function loadWeight(){
+  let el=document.getElementById('weightDisplay');
+  if(!el||!SUPA_URL||!SUPA_KEY)return;
+  try{
+    let res=await fetch(SUPA_URL+'/rest/v1/weight_tracker?select=*&order=date.desc&limit=5',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await res.json();
+    if(data&&data.length){
+      let latest=data[0];
+      let trend=data.length>1?(latest.weight>data[1].weight?'📈 +':'📉 '):'';
+      let diff=data.length>1?Math.abs(latest.weight-data[1].weight).toFixed(1)+'kg':'';
+      el.innerHTML='最近：<b style="color:#fff;font-size:18px">'+latest.weight+'kg</b> ('+latest.date+') '+trend+diff;
+    }else{
+      el.textContent='还没有记录，开始记录吧！';
+    }
+  }catch(e){el.textContent='加载失败';}
+}
+
+async function saveWeight(){
+  let input=document.getElementById('weightInput');
+  let w=parseFloat(input.value);
+  if(!w||w<30||w>200){alert('请输入正确的体重(30-200kg)');return;}
+  let today=new Date().toISOString().slice(0,10);
+  try{
+    await fetch(SUPA_URL+'/rest/v1/weight_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,weight:w})});
+    input.value='';
+    loadWeight();
+    alert('记录成功！'+w+'kg');
+  }catch(e){alert('记录失败');}
+}
+
+async function loadPeriod(){
+  let el=document.getElementById('periodDisplay');
+  if(!el||!SUPA_URL||!SUPA_KEY)return;
+  try{
+    let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await res.json();
+    if(data&&data.length){
+      let p=data[0];
+      let lastEnd=p.end_date||p.start_date;
+      let daysSince=Math.floor((new Date()-new Date(lastEnd))/(1000*60*60*24));
+      let nextEstimate=p.cycle_days||29;
+      let daysUntil=nextEstimate-daysSince;
+      let status='';
+      if(!p.end_date){
+        let daysOn=Math.floor((new Date()-new Date(p.start_date))/(1000*60*60*24))+1;
+        status='🔴 进行中（第'+daysOn+'天）开始日期：'+p.start_date;
+      }else if(daysUntil<=3&&daysUntil>0){
+        status='⚠️ 预计'+daysUntil+'天后来 | 上次：'+p.start_date+'~'+p.end_date+'（'+p.duration_days+'天）';
+      }else if(daysUntil<=0){
+        status='⚠️ 可能已经到了 | 上次：'+p.start_date+'~'+p.end_date+'（'+p.duration_days+'天）';
+      }else{
+        status='下次预计'+daysUntil+'天后 | 上次：'+p.start_date+'~'+p.end_date+'（'+p.duration_days+'天，周期'+p.cycle_days+'天）';
+      }
+      el.innerHTML=status;
+    }else{
+      el.textContent='还没有记录';
+    }
+  }catch(e){el.textContent='加载失败';}
+}
+
+async function markPeriodStart(){
+  let today=new Date().toISOString().slice(0,10);
+  if(!confirm('确认今天('+today+')姨妈来了？'))return;
+  try{
+    let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await res.json();
+    let cycleDays=29;
+    if(data&&data.length&&data[0].end_date){
+      cycleDays=Math.floor((new Date(today)-new Date(data[0].start_date))/(1000*60*60*24));
+    }
+    await fetch(SUPA_URL+'/rest/v1/period_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({start_date:today,cycle_days:cycleDays})});
+    loadPeriod();
+    alert('已记录！注意保暖 ❤️');
+  }catch(e){alert('记录失败');}
+}
+
+async function markPeriodEnd(){
+  let today=new Date().toISOString().slice(0,10);
+  if(!confirm('确认今天('+today+')姨妈走了？'))return;
+  try{
+    let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await res.json();
+    if(data&&data.length&&!data[0].end_date){
+      let dur=Math.floor((new Date(today)-new Date(data[0].start_date))/(1000*60*60*24))+1;
+      await fetch(SUPA_URL+'/rest/v1/period_tracker?id=eq.'+data[0].id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({end_date:today,duration_days:dur})});
+      loadPeriod();
+      alert('姨妈走了！持续'+dur+'天');
+    }else{
+      alert('没有进行中的姨妈记录');
+    }
+  }catch(e){alert('记录失败');}
+}
+
+async function loadWater(){
+  let el=document.getElementById('waterDisplay');
+  if(!el||!SUPA_URL||!SUPA_KEY)return;
+  let today=new Date().toISOString().slice(0,10);
+  try{
+    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?select=*&date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await res.json();
+    let cups=data?data.length:0;
+    let bar='💧'.repeat(Math.min(cups,8))+'○'.repeat(Math.max(0,8-cups));
+    el.innerHTML=bar+' <b style="color:#fff">'+cups+'/8</b> 杯';
+  }catch(e){el.textContent='加载失败';}
+}
+
+async function addWater(){
   let today=new Date().toISOString().slice(0,10);
   let now=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-  let table='';
-  let body={};
-  if(type==='water'){
-    table='water_tracker';
-    body={date:today,cups:1,note:now+' 打卡'};
-  }else if(type==='poop'){
-    table='poop_tracker';
-    body={date:today,time:now,note:'正常'};
-  }else if(type==='meal'){
-    let meal=prompt('哪顿饭？（早餐/午餐/晚餐）');
-    if(!meal)return;
-    table='water_tracker';
-    body={date:today,cups:0,note:now+' '+meal+'已吃'};
-  }
   try{
-    await fetch(SUPA_URL+'/rest/v1/'+table,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
-    alert(checkinItems.find(x=>x.id===type).title+' 打卡成功！');
-  }catch(e){alert('打卡失败');}
+    await fetch(SUPA_URL+'/rest/v1/water_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,cups:1,note:now})});
+    loadWater();
+  }catch(e){alert('记录失败');}
+}
+
+async function loadPoop(){
+  let el=document.getElementById('poopDisplay');
+  if(!el||!SUPA_URL||!SUPA_KEY)return;
+  let today=new Date().toISOString().slice(0,10);
+  try{
+    let res=await fetch(SUPA_URL+'/rest/v1/poop_tracker?select=*&date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await res.json();
+    if(data&&data.length){
+      el.innerHTML='✅ 今天拉了！('+data[0].time+') '+(data[0].note||'');
+    }else{
+      el.textContent='今天还没拉';
+    }
+  }catch(e){el.textContent='加载失败';}
+}
+
+async function markPoop(){
+  let today=new Date().toISOString().slice(0,10);
+  let now=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  let note=prompt('备注（正常/偏硬/偏软/不写直接确定）')||'正常';
+  try{
+    await fetch(SUPA_URL+'/rest/v1/poop_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,time:now,note:note})});
+    loadPoop();
+    alert('打卡成功！💩');
+  }catch(e){alert('记录失败');}
+}
+
+async function markExercise(type){
+  let el=document.getElementById('exerciseDisplay');
+  let now=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  el.innerHTML='✅ '+type+' ('+now+')';
+  alert(type+' 打卡成功！🎉');
 }
 
  function switchDiaryTab(tab){
