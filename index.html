@@ -240,6 +240,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <span class="name" style="flex:1">🧠 记忆宫殿</span>
 <button onclick="loadMem()" style="background:none;border:none;color:#aaa;font-size:16px;cursor:pointer">刷新</button>
 </div>
+<div style="padding:8px 16px 0"><input id="memSearch" placeholder="🔍 搜索记忆..." oninput="searchMem()" style="width:100%;background:#253554;border:1px solid #0f3460;border-radius:16px;padding:10px 16px;color:#eee;font-size:14px;outline:none"></div>
 <div class="mem-person-tabs" id="memPersonTabs"></div>
 <div class="mem-category-tabs" id="memCategoryTabs"></div>
 <div class="mem-list" id="memList"></div>
@@ -750,6 +751,32 @@ function switchTab(tab){
   }
 }
 
+function searchMem(){
+  let kw=document.getElementById('memSearch').value.trim().toLowerCase();
+  if(!kw){renderMemList();return;}
+  let list=document.getElementById('memList');
+  list.innerHTML='';
+  let all=[...allMemories.yan,...allMemories.peiji,...allMemories.shenyan,...allMemories.xuanxuan];
+  let results=all.filter(m=>(m.content||m.entry||'').toLowerCase().includes(kw));
+  if(!results.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#888">没找到相关记忆</div>';return;}
+  results.forEach(m=>{
+    let item=document.createElement('div');
+    item.className='mem-item';
+    let full=m.content||m.entry||'';
+    let short=full.length>100?full.slice(0,100)+'...':full;
+    let isLong=full.length>100;
+    item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+(m.date||m.backed_up_at||'')+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';
+    if(isLong){
+      let expanded=false;
+      item.onclick=()=>{
+        expanded=!expanded;
+        item.querySelector('.mem-preview').textContent=expanded?full:short;
+        item.style.background=expanded?'#2d1f4e':'#253554';
+      };
+    }
+    list.appendChild(item);
+  });
+}
 function updateHomeDays(){
   let start=new Date('2026-03-25');
   let now=new Date();
