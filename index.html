@@ -135,8 +135,15 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <div id="homeTimer" style="font-size:16px;color:#9b59b6;margin-top:8px;font-weight:500">计算中...</div>
 </div>
 <div class="home-card" style="text-align:left">
-<div style="font-size:14px;color:#3498db;margin-bottom:8px">💧 今日喝水</div>
-<div id="homeWater" style="font-size:14px;color:#aaa">加载中...</div>
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:14px;color:#3498db">💧 今日喝水</div>
+<button onclick="addWaterHome()" style="background:#3498db;border:none;color:#fff;border-radius:16px;padding:6px 14px;font-size:12px;cursor:pointer">+1杯</button>
+</div>
+<div id="homeWater" style="font-size:14px;color:#aaa;margin-top:8px">加载中...</div>
+</div>
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#e74c3c;margin-bottom:8px">🩸 姨妈</div>
+<div id="homePeriod" style="font-size:14px;color:#aaa">加载中...</div>
 </div>
 </div>
 </div>
@@ -889,12 +896,49 @@ function loadHomeWeather(){
     }
   }).catch(()=>{el.textContent='加载失败';});
 }
+function loadHomePeriod(){
+  let el=document.getElementById('homePeriod');
+  if(!el||!SUPA_URL||!SUPA_KEY)return;
+  fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+    if(data&&data.length){
+      let p=data[0];
+      let daysSince=Math.floor((new Date()-new Date(p.start_date))/(1000*60*60*24));
+      let nextEstimate=p.cycle_days||28;
+      let daysUntil=nextEstimate-daysSince;
+      if(!p.end_date){
+        let daysOn=Math.floor((new Date()-new Date(p.start_date))/(1000*60*60*24))+1;
+        el.innerHTML='🔴 进行中（第'+daysOn+'天）';
+      }else if(daysUntil<=3&&daysUntil>0){
+        el.innerHTML='⚠️ <b style="color:#e74c3c">预计'+daysUntil+'天后来</b>';
+      }else if(daysUntil<=0){
+        el.innerHTML='⚠️ <b style="color:#e74c3c">可能已经到了</b>';
+      }else{
+        el.innerHTML='下次约 <b style="color:#fff">'+daysUntil+'天后</b>（周期'+nextEstimate+'天）';
+      }
+    }else{el.textContent='暂无记录';}
+  }).catch(()=>{el.textContent='加载失败';});
+}
+async function addWaterHome(){
+  let today=new Date().toISOString().slice(0,10);
+  try{
+    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await res.json();
+    if(data&&data.length){
+      let newCups=data[0].cups+1;
+      await fetch(SUPA_URL+'/rest/v1/water_tracker?id=eq.'+data[0].id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({cups:newCups})});
+    }else{
+      await fetch(SUPA_URL+'/rest/v1/water_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,cups:1})});
+    }
+    loadHomeWater();
+  }catch(e){}
+}
+
 function loadHomeWater(){
   let el=document.getElementById('homeWater');
   if(!el||!SUPA_URL||!SUPA_KEY)return;
   let today=new Date().toISOString().slice(0,10);
   fetch(SUPA_URL+'/rest/v1/water_tracker?select=*&date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
-    let cups=data?data.length:0;
+    let cups=(data&&data.length)?data[0].cups:0;
     let bar='💧'.repeat(Math.min(cups,8))+'○'.repeat(Math.max(0,8-cups));
     el.innerHTML=bar+' <b style="color:#fff">'+cups+'/8</b>';
   }).catch(()=>{el.textContent='加载失败';});
@@ -946,8 +990,7 @@ async function loadPeriod(){
     let data=await res.json();
     if(data&&data.length){
       let p=data[0];
-      let lastEnd=p.end_date||p.start_date;
-      let daysSince=Math.floor((new Date()-new Date(lastEnd))/(1000*60*60*24));
+      let daysSince=Math.floor((new Date()-new Date(p.start_date))/(1000*60*60*24));
       let nextEstimate=p.cycle_days||29;
       let daysUntil=nextEstimate-daysSince;
       let status='';
@@ -1008,7 +1051,7 @@ async function loadWater(){
   try{
     let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?select=*&date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
     let data=await res.json();
-    let cups=data?data.length:0;
+    let cups=(data&&data.length)?data[0].cups:0;
     let bar='💧'.repeat(Math.min(cups,8))+'○'.repeat(Math.max(0,8-cups));
     el.innerHTML=bar+' <b style="color:#fff">'+cups+'/8</b> 杯';
   }catch(e){el.textContent='加载失败';}
@@ -1016,9 +1059,15 @@ async function loadWater(){
 
 async function addWater(){
   let today=new Date().toISOString().slice(0,10);
-  let now=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
   try{
-    await fetch(SUPA_URL+'/rest/v1/water_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,cups:1,note:now})});
+    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let data=await res.json();
+    if(data&&data.length){
+      let newCups=data[0].cups+1;
+      await fetch(SUPA_URL+'/rest/v1/water_tracker?id=eq.'+data[0].id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({cups:newCups})});
+    }else{
+      await fetch(SUPA_URL+'/rest/v1/water_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,cups:1})});
+    }
     loadWater();
   }catch(e){alert('记录失败');}
 }
@@ -1116,6 +1165,7 @@ createHearts();
 updateTimer();
 loadHomeWeather();
 loadHomeWater();
+loadHomePeriod();
 </script>
 <!-- 底部 tab -->
 <div class="tab-bar" id="tabBar">
