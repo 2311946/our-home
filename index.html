@@ -72,6 +72,8 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 .mem-tab{padding:6px 14px;border-radius:16px;font-size:13px;cursor:pointer;white-space:nowrap;background:#253554;color:#aaa}
 .mem-tab.active{background:#9b59b6;color:#fff}
 .mem-list{flex:1;overflow-y:auto;padding:12px 16px}
+.mem-item{background:#253554;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:background .2s}
+.mem-item:active{background:#2d1f4e}
 .mem-card{background:#253554;border-radius:12px;padding:14px;margin-bottom:10px}
 .mem-card .mem-date{font-size:11px;color:#888;margin-bottom:6px}
 .mem-card .mem-content{font-size:14px;line-height:1.6;white-space:pre-wrap}
@@ -553,7 +555,7 @@ localStorage.setItem('home_chats',JSON.stringify(chats));
 async function saveToCloud(character,role,content){if(!content)return;try{await fetch(SUPA_URL+'/rest/v1/chat_messages',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({character,role,content})});}catch(e){}}
 let memCategories=[{id:'memory',name:'💜 言言的记忆',table:'memory_backup',filter:'&character=eq.guyan',fields:'content,backed_up_at'},{id:'diary',name:'📖 言言的日记',table:'yan_diary',fields:'date,weather,content'},{id:'emotion',name:'💕 情绪日记',table:'emotion_diary',fields:'date,mood,event,daddy_did'},{id:'letters',name:'💌 信箱',table:'love_letters',fields:'title,content,deliver_date'},{id:'peiji',name:'🐉 裴寂的记忆',table:'peiji_memory_backup',fields:'content,backed_up_at'},{id:'shenyan',name:'🌙 沈晏的记忆',table:'shenyan_memory_backup',fields:'content,backed_up_at'}];
 let currentMemCat='memory';
-function enterMem(){document.getElementById('listView').classList.remove('active');document.getElementById('memView').classList.add('active');let tabs=document.getElementById('memTabs');tabs.innerHTML='';memCategories.forEach(c=>{let t=document.createElement('div');t.className='mem-tab'+(c.id===currentMemCat?' active':'');t.textContent=c.name;t.onclick=()=>{currentMemCat=c.id;document.querySelectorAll('.mem-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');loadMem();};tabs.appendChild(t);});loadMem();}
+
 function goBackFromMem(){document.getElementById('tabBar').style.display='flex';switchTab('mem');}
 let currentMemPerson='yan';
 let currentMemCategory='all';
@@ -625,6 +627,15 @@ if(personTabs){
 }
 
 function renderMemList(){
+  // 更新分类tab高亮
+let catTabs=document.getElementById('memCategoryTabs');
+if(catTabs){
+  Array.from(catTabs.children).forEach(tab=>{
+    let cats=['all','core','daily','intimate','health','diary','emotion'];
+    let idx=Array.from(catTabs.children).indexOf(tab);
+    tab.className='mem-category-tab'+(cats[idx]===currentMemCategory?' active':'');
+  });
+}
   let list=document.getElementById('memList');
   list.innerHTML='';
   
