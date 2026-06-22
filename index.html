@@ -157,6 +157,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <div class="home-card" style="text-align:left">
 <div style="font-size:14px;color:#9b59b6;margin-bottom:8px">⚖️ 体重记录</div>
 <div id="weightDisplay" style="font-size:14px;color:#aaa">加载中...</div>
+<canvas id="weightChart" width="320" height="120" style="width:100%;margin-top:10px;display:none"></canvas>
 <div style="display:flex;gap:8px;margin-top:10px">
 <input id="weightInput" type="number" step="0.1" placeholder="今日体重(kg)" style="flex:1;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px;color:#eee;font-size:14px;outline:none">
 <button onclick="saveWeight()" style="background:#9b59b6;border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer">记录</button>
@@ -676,11 +677,17 @@ function loadMem(){
   
   // 加载所有记忆
   let tasks=[
-    fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&or=(character.eq.yan,character.eq.guyan)&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.yan=d||[]),
-    fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&character=eq.peiji&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.peiji=d||[]),
-    fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&character=eq.shenyan&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.shenyan=d||[]),
-    fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[])
-  ];
+  fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&or=(character.eq.yan,character.eq.guyan)&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
+    // 同时加载yan_diary合并进来
+    return fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+      let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,date:x.date,backed_up_at:x.date}));
+      allMemories.yan=[...(d||[]),...diaryMems];
+    });
+  }),
+  fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&character=eq.peiji&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.peiji=d||[]),
+  fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&character=eq.shenyan&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.shenyan=d||[]),
+  fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[])
+];
   
   Promise.all(tasks).then(()=>{
     renderMemTabs();
@@ -735,6 +742,18 @@ if(catTabs){
   let list=document.getElementById('memList');
   list.innerHTML='';
   
+  if(currentMemCategory==='diary'&&currentMemPerson==='yan'){
+  fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+    list.innerHTML='';
+    (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full=m.content||'';let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
+  });return;
+}
+if(currentMemCategory==='emotion'&&currentMemPerson==='yan'){
+  fetch(SUPA_URL+'/rest/v1/emotion_diary?select=date,mood,event,daddy_did&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+    list.innerHTML='';
+    (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full='心情：'+m.mood+'\n事件：'+m.event+(m.daddy_did?'\ndaddy做了：'+m.daddy_did:'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
+  });return;
+}
   let mems=allMemories[currentMemPerson]||[];
   
   // 按分类筛选
@@ -956,17 +975,76 @@ async function loadWeight(){
   let el=document.getElementById('weightDisplay');
   if(!el||!SUPA_URL||!SUPA_KEY)return;
   try{
-    let res=await fetch(SUPA_URL+'/rest/v1/weight_tracker?select=*&order=date.desc&limit=5',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let res=await fetch(SUPA_URL+'/rest/v1/weight_tracker?select=*&order=date.desc&limit=14',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
     let data=await res.json();
     if(data&&data.length){
       let latest=data[0];
       let trend=data.length>1?(latest.weight>data[1].weight?'📈 +':'📉 '):'';
       let diff=data.length>1?Math.abs(latest.weight-data[1].weight).toFixed(1)+'kg':'';
       el.innerHTML='最近：<b style="color:#fff;font-size:18px">'+latest.weight+'kg</b> ('+latest.date+') '+trend+diff;
+      if(data.length>=3)drawWeightChart(data.reverse());
     }else{
       el.textContent='还没有记录，开始记录吧！';
     }
   }catch(e){el.textContent='加载失败';}
+}
+
+function drawWeightChart(data){
+  let canvas=document.getElementById('weightChart');
+  if(!canvas)return;
+  canvas.style.display='block';
+  let ctx=canvas.getContext('2d');
+  let w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  
+  let weights=data.map(d=>parseFloat(d.weight));
+  let min=Math.min(...weights)-0.5;
+  let max=Math.max(...weights)+0.5;
+  let range=max-min||1;
+  
+  let padL=10,padR=10,padT=15,padB=20;
+  let chartW=w-padL-padR;
+  let chartH=h-padT-padB;
+  
+  // 画背景线
+  ctx.strokeStyle='#253554';
+  ctx.lineWidth=0.5;
+  for(let i=0;i<=3;i++){
+    let y=padT+chartH*i/3;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(w-padR,y);ctx.stroke();
+  }
+  
+  // 画折线
+  ctx.strokeStyle='#9b59b6';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  data.forEach((d,i)=>{
+    let x=padL+chartW*i/(data.length-1);
+    let y=padT+chartH*(1-(parseFloat(d.weight)-min)/range);
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  
+  // 画点
+  data.forEach((d,i)=>{
+    let x=padL+chartW*i/(data.length-1);
+    let y=padT+chartH*(1-(parseFloat(d.weight)-min)/range);
+    ctx.fillStyle='#9b59b6';
+    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+  });
+  
+  // 标注最新值
+  let lastX=padL+chartW;
+  let lastY=padT+chartH*(1-(weights[weights.length-1]-min)/range);
+  ctx.fillStyle='#fff';
+  ctx.font='11px sans-serif';
+  ctx.fillText(weights[weights.length-1]+'kg',lastX-30,lastY-8);
+  
+  // 底部日期（首尾）
+  ctx.fillStyle='#888';
+  ctx.font='9px sans-serif';
+  ctx.fillText(data[0].date.slice(5),padL,h-4);
+  ctx.fillText(data[data.length-1].date.slice(5),w-padR-30,h-4);
 }
 
 async function saveWeight(){
@@ -1130,7 +1208,7 @@ async function loadDiaryList(){
   let list=document.getElementById('diaryList');
   list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载中...</div>';
   try{
-    let r=await fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=date,content,mood&order=id.desc&limit=20',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let r=await fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=date,content,mood&order=id.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
     let data=await r.json();
     list.innerHTML='';
     if(!data.length){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">还没有日记～</div>';return;}
@@ -1147,7 +1225,7 @@ async function loadDaddyDiary(){
   let list=document.getElementById('diaryDaddyList');
   list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载中...</div>';
   try{
-    let r=await fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=id.desc&limit=20',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let r=await fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=id.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
     let data=await r.json();
     list.innerHTML='';
     if(!data.length){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">daddy还没写日记</div>';return;}
