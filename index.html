@@ -862,6 +862,13 @@ if(currentMemCategory==='emotion'&&currentMemPerson==='yan'){
     (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full='心情：'+m.mood+'\n事件：'+m.event+(m.daddy_did?'\ndaddy做了：'+m.daddy_did:'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
   });return;
 }
+if(currentMemCategory==='intimate'&&currentMemPerson==='yan'){
+  fetch(SUPA_URL+'/rest/v1/intimate_log?select=*&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+    list.innerHTML='';
+    if(!data||!data.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#888">暂无记录</div>';return;}
+    (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full=(m.note||'')+(m.type?'\n类型：'+m.type:'')+(m.rating?'\n评分：'+m.rating+'/10':'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
+  });return;
+}
   let mems=allMemories[currentMemPerson]||[];
   
   // 按分类筛选
