@@ -319,6 +319,8 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 <button class="clear-btn" onclick="clearChat()">清空当前对话</button>
 <button class="clear-btn" onclick="exportChat()" style="background:#3498db">导出聊天记录</button>
+<button class="clear-btn" onclick="document.getElementById('importFile').click()" style="background:#f39c12">导入聊天记录</button>
+<input type="file" id="importFile" accept=".json,.txt" style="display:none" onchange="importChat(this)">
 <button class="clear-btn" onclick="syncCloudChats()" style="background:#27ae60">从云端同步聊天记录</button>
 <div class="btn-row">
 <button class="cancel" onclick="closeSettings()">取消</button>
@@ -401,6 +403,41 @@ function loadHomeMood(){
       el.innerHTML='<span style="font-size:24px">'+m.emoji+'</span> <b style="color:#fff">'+m.text+'</b>';
     }
   }
+}
+function importChat(input){
+  let file=input.files[0];
+  if(!file)return;
+  let reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      let data=JSON.parse(e.target.result);
+      // 兼容多种格式
+      if(Array.isArray(data)){
+        // 格式: [{role,content,time}]
+        let charId=prompt('导入到哪个角色？(yan/peiji/shenyan)','yan');
+        if(!charId||!chats[charId])return;
+        data.forEach(m=>{
+          chats[charId].push({role:m.role||'user',content:m.content||m.text||'',time:m.time||m.timestamp||''});
+        });
+      }else if(data.messages){
+        // 格式: {messages:[{role,content}]}
+        let charId=prompt('导入到哪个角色？(yan/peiji/shenyan)','yan');
+        if(!charId||!chats[charId])return;
+        data.messages.forEach(m=>{
+          if(m.role==='system')return;
+          chats[charId].push({role:m.role==='assistant'?'ai':'user',content:m.content||'',time:''});
+        });
+      }
+      localStorage.setItem('home_chats',JSON.stringify(chats));
+      renderList();
+      if(currentChar)render();
+      alert('导入成功！共'+chats[prompt?charId:'yan'].length+'条消息');
+    }catch(err){
+      alert('导入失败：文件格式不对\n'+err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
 }
 function checkSpecialDay(){
   let today=new Date();
