@@ -314,6 +314,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <textarea id="sysPrompt" placeholder="系统提示词..."></textarea>
 </div>
 <button class="clear-btn" onclick="clearChat()">清空当前对话</button>
+<button class="clear-btn" onclick="exportChat()" style="background:#3498db">导出聊天记录</button>
 <button class="clear-btn" onclick="syncCloudChats()" style="background:#27ae60">从云端同步聊天记录</button>
 <div class="btn-row">
 <button class="cancel" onclick="closeSettings()">取消</button>
@@ -460,6 +461,26 @@ function reGen(i){
   render();
 
   sendMsg(true);
+}
+function exportChat(){
+  let output='';
+  ['yan','peiji','shenyan','group'].forEach(charId=>{
+    let msgs=chats[charId]||[];
+    if(!msgs.length)return;
+    output+='\n\n========== '+(charNames[charId]||charId)+' ==========\n\n';
+    msgs.forEach(m=>{
+      let time=m.time||'';
+      let speaker=m.role==='user'?'宣宣':(m.character?charNames[m.character]:charNames[charId]);
+      output+='['+time+'] '+speaker+'：'+(m.content||'')+'\n\n';
+    });
+  });
+  if(!output){alert('没有聊天记录');return;}
+  let blob=new Blob([output],{type:'text/plain;charset=utf-8'});
+  let a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='our-home-chat-'+new Date().toISOString().slice(0,10)+'.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function reGenGroup(i){
