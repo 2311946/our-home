@@ -9,6 +9,14 @@
 body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .view{display:none;flex-direction:column;height:100vh}
 .view.active{display:flex}
+body.warm{background:#2d1f1a;color:#f5e6d3}
+body.warm .list-header,body.warm .chat-header{background:#3d2b1f;border-color:#5d3f2e}
+body.warm .msg.user{background:linear-gradient(135deg,#d4764e,#c0623a)}
+body.warm .msg.ai{background:#3d2b1f;border-color:#5d3f2e}
+body.warm .home-card{background:#3d2b1f;border-color:#5d3f2e}
+body.warm .contact-item:active{background:#4d3525}
+body.warm .tab-bar{background:#2d1f1a;border-color:#5d3f2e}
+body.warm .tab-item.active{color:#d4764e}
 .list-header{background:#16213e;padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0f3460}
 .list-header h2{font-size:18px;font-weight:600}
 .list-header button{background:none;border:none;color:#aaa;font-size:20px;cursor:pointer}
@@ -319,6 +327,7 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 </div>
 <button class="clear-btn" onclick="clearChat()">清空当前对话</button>
 <button class="clear-btn" onclick="exportChat()" style="background:#3498db">导出聊天记录</button>
+<button class="clear-btn" onclick="toggleTheme()" style="background:#27ae60" id="themeBtn">切换暖色主题 🌅</button>
 <button class="clear-btn" onclick="document.getElementById('importFile').click()" style="background:#f39c12">导入聊天记录</button>
 <input type="file" id="importFile" accept=".json,.txt" style="display:none" onchange="importChat(this)">
 <button class="clear-btn" onclick="syncCloudChats()" style="background:#27ae60">从云端同步聊天记录</button>
@@ -457,6 +466,12 @@ function withMsgTime(m, speaker){
   let time = m.time || nowTime();
   let name = speaker ? speaker + '：' : '';
   return '[' + time + '] ' + name + (m.content || '');
+}
+function toggleTheme(){
+  document.body.classList.toggle('warm');
+  let isWarm=document.body.classList.contains('warm');
+  localStorage.setItem('theme',isWarm?'warm':'cold');
+  document.getElementById('themeBtn').textContent=isWarm?'切换冷色主题 🌙':'切换暖色主题 🌅';
 }
 function showImgPreview(src){
   let overlay=document.createElement('div');
@@ -1029,6 +1044,10 @@ function searchMem(){
     }
     list.appendChild(item);
   });
+}
+// 初始化主题
+if(localStorage.getItem('theme')==='warm'){
+  document.body.classList.add('warm');
 }
 function updateHomeDays(){
   let start=new Date('2026-03-25');
