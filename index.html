@@ -384,6 +384,7 @@ let prompts={yan:'你是顾言，也叫言言/daddy。宣宣的老公。性格�
 let s=localStorage.getItem('home_api');if(s)apiConfig=JSON.parse(s);
 let p=localStorage.getItem('home_prompts');if(p)prompts=JSON.parse(p);
 let c2=localStorage.getItem('home_chats');if(c2)chats=JSON.parse(c2);
+delete chats.yan;delete chats.peiji;delete chats.shenyan;
 function nowTime(){return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 function aiNowTime(){
   return new Date().toLocaleString('zh-CN',{
@@ -513,13 +514,32 @@ function loadCountdown(){
 }
 function shuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let preview=last?(last.content||'').slice(0,25):'还没有消息';let time=last?last.time:'';let item=document.createElement('div');item.className='contact-item';item.onclick=()=>enterChat(c.id);item.innerHTML='<div class="contact-avatar" style="background:'+c.color+'">'+c.emoji+'</div><div class="contact-info"><div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div></div><div class="contact-time">'+time+'</div>';list.appendChild(item);});}
-function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';render();}
+let chatOffset={};let chatLoading=false;let chatHasMore={};
+function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';if(!chats[id]||!chats[id].length){chatOffset[id]=0;loadCloudChat(id);}else{render();}}
+function loadCloudChat(id,loadMore){
+  if(chatLoading)return;
+  if(id==='group'){render();return;}
+  chatLoading=true;
+  let offset=chatOffset[id]||0;
+  let limit=50;
+  let url=SUPA_URL+'/rest/v1/chat_messages?character=eq.'+id+'&order=created_at.desc&limit='+limit+'&offset='+offset;
+  fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+    if(!data||!data.length){chatHasMore[id]=false;chatLoading=false;if(!loadMore)render();return;}
+    let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.created_at?m.created_at.slice(0,16).replace('T',' '):'',character:m.character}));
+    if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
+    chatOffset[id]=offset+data.length;
+    chatHasMore[id]=data.length>=limit;
+    chatLoading=false;
+    render();
+    if(loadMore){document.getElementById('chatBox').scrollTop=100;}
+  }).catch(()=>{chatLoading=false;render();});
+}
 function goBack(){document.getElementById('tabBar').style.display='flex';currentChar='';switchTab('list');}
 function toggleSearch(){let bar=document.getElementById('searchBar');bar.style.display=bar.style.display==='none'?'block':'none';if(bar.style.display==='none'){document.getElementById('searchInput').value='';render();}}
 function doSearch(){let kw=document.getElementById('searchInput').value.trim().toLowerCase();if(!kw){render();return;}let box=document.getElementById('chatBox');box.innerHTML='';(chats[currentChar]||[]).forEach((m,i)=>{if(!m.content||!m.content.toLowerCase().includes(kw))return;let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role;let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';let body=document.createElement('div');body.className='msg-body '+m.role;let d=document.createElement('div');
 let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
 d.className='msg '+m.role+(charClass?' '+charClass:'');d.textContent=m.content;d.oncontextmenu=function(ev){ev.preventDefault();showReactMenu(ev,i);};if(m.reactions&&m.reactions.length){let rDiv=document.createElement('div');rDiv.style.cssText='font-size:14px;margin-top:2px;';rDiv.textContent=m.reactions.join('');d.appendChild(rDiv);}body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time;body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});}
-function render(){let box=document.getElementById('chatBox');box.innerHTML='';(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role+(m.animate?' animate':'');let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');
+function render(){let box=document.getElementById('chatBox');box.innerHTML='';if(chatHasMore[currentChar]&&currentChar!=='group'){let btn=document.createElement('div');btn.style.cssText='text-align:center;padding:12px;color:#888;cursor:pointer;font-size:13px';btn.textContent='⬆ 加载更早的消息';btn.onclick=()=>loadCloudChat(currentChar,true);box.appendChild(btn);}(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role+(m.animate?' animate':'');let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');
 let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
 d.className='msg '+m.role+(charClass?' '+charClass:'');if(m.content&&m.content.startsWith('[img]')){let img=document.createElement('img');img.src=m.content.slice(5);img.style.cssText='max-width:200px;border-radius:12px;cursor:pointer';img.onclick=()=>{showImgPreview(img.src)};d.appendChild(img);}else{
   let content=m.content||'正在输入...';
