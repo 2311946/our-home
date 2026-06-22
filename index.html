@@ -147,6 +147,18 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <div style="font-size:14px;color:#e74c3c;margin-bottom:8px">🩸 姨妈</div>
 <div id="homePeriod" style="font-size:14px;color:#aaa">加载中...</div>
 </div>
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#f39c12;margin-bottom:10px">🌈 今天心情</div>
+<div id="homeMood" style="font-size:14px;color:#aaa;margin-bottom:10px">还没选～</div>
+<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+<span onclick="setMood('😊','开心')" style="font-size:28px;cursor:pointer">😊</span>
+<span onclick="setMood('🥰','甜甜的')" style="font-size:28px;cursor:pointer">🥰</span>
+<span onclick="setMood('😴','困困')" style="font-size:28px;cursor:pointer">😴</span>
+<span onclick="setMood('😤','生气')" style="font-size:28px;cursor:pointer">😤</span>
+<span onclick="setMood('🥺','委屈')" style="font-size:28px;cursor:pointer">🥺</span>
+<span onclick="setMood('😌','平静')" style="font-size:28px;cursor:pointer">😌</span>
+</div>
+</div>
 </div>
 </div>
 
@@ -367,6 +379,23 @@ function aiNowTime(){
     minute:'2-digit',
     second:'2-digit'
   });
+}
+function setMood(emoji,text){
+  let el=document.getElementById('homeMood');
+  el.innerHTML='<span style="font-size:24px">'+emoji+'</span> <b style="color:#fff">'+text+'</b>';
+  localStorage.setItem('today_mood',JSON.stringify({emoji:emoji,text:text,date:new Date().toISOString().slice(0,10)}));
+  popConfetti();
+}
+function loadHomeMood(){
+  let el=document.getElementById('homeMood');
+  if(!el)return;
+  let saved=localStorage.getItem('today_mood');
+  if(saved){
+    let m=JSON.parse(saved);
+    if(m.date===new Date().toISOString().slice(0,10)){
+      el.innerHTML='<span style="font-size:24px">'+m.emoji+'</span> <b style="color:#fff">'+m.text+'</b>';
+    }
+  }
 }
 function withMsgTime(m, speaker){
   let time = m.time || nowTime();
@@ -1263,6 +1292,7 @@ updateTimer();
 loadHomeWeather();
 loadHomeWater();
 loadHomePeriod();
+loadHomeMood();
 </script>
 <!-- 底部 tab -->
 <div class="tab-bar" id="tabBar">
