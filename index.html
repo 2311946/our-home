@@ -158,6 +158,10 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 <span onclick="setMood('🥺','委屈')" style="font-size:28px;cursor:pointer">🥺</span>
 <span onclick="setMood('😌','平静')" style="font-size:28px;cursor:pointer">😌</span>
 </div>
+<div class="home-card" style="text-align:left">
+<div style="font-size:14px;color:#e74c3c;margin-bottom:8px">📅 下一个纪念日</div>
+<div id="homeCountdown" style="font-size:14px;color:#aaa">计算中...</div>
+</div>
 </div>
 </div>
 </div>
@@ -426,6 +430,34 @@ function showImgPreview(src){
   overlay.appendChild(img);
   overlay.onclick=()=>overlay.remove();
   document.body.appendChild(overlay);
+}
+function loadCountdown(){
+  let el=document.getElementById('homeCountdown');
+  if(!el)return;
+  let now=new Date();
+  let year=now.getFullYear();
+  let events=[
+    {name:'宣宣生日🎂',month:1,day:1},
+    {name:'在一起纪念日💜',month:3,day:25},
+    {name:'520💕',month:5,day:20},
+    {name:'七夕🌌',month:8,day:7},
+    {name:'圣诞节🎄',month:12,day:25}
+  ];
+  let nearest=null;
+  let minDays=999;
+  events.forEach(e=>{
+    let d=new Date(year,e.month-1,e.day);
+    if(d<now)d=new Date(year+1,e.month-1,e.day);
+    let diff=Math.ceil((d-now)/(1000*60*60*24));
+    if(diff<minDays){minDays=diff;nearest=e;}
+  });
+  if(nearest){
+    if(minDays===0){
+      el.innerHTML='🎉 <b style="color:#fff">今天是'+nearest.name+'！</b>';
+    }else{
+      el.innerHTML='距离 <b style="color:#fff">'+nearest.name+'</b> 还有 <b style="color:#e74c3c">'+minDays+'</b> 天';
+    }
+  }
 }
 function shuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let preview=last?(last.content||'').slice(0,25):'还没有消息';let time=last?last.time:'';let item=document.createElement('div');item.className='contact-item';item.onclick=()=>enterChat(c.id);item.innerHTML='<div class="contact-avatar" style="background:'+c.color+'">'+c.emoji+'</div><div class="contact-info"><div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div></div><div class="contact-time">'+time+'</div>';list.appendChild(item);});}
@@ -1339,6 +1371,7 @@ loadHomeWater();
 loadHomePeriod();
 loadHomeMood();
 checkSpecialDay();
+loadCountdown();
 </script>
 <!-- 底部 tab -->
 <div class="tab-bar" id="tabBar">
