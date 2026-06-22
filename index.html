@@ -74,6 +74,8 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 .mem-list{flex:1;overflow-y:auto;padding:12px 16px;padding-bottom:70px}
 .mem-item{background:#253554;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:background .2s}
 .mem-item:active{background:#2d1f4e}
+@keyframes confetti{0%{transform:translateY(0) scale(1) rotate(0);opacity:1}50%{transform:translateY(-40px) scale(1.5) rotate(180deg);opacity:1}100%{transform:translateY(-100px) scale(0.5) rotate(360deg);opacity:0}}
+.confetti-pop{position:fixed;top:50%;left:50%;pointer-events:none;z-index:9999;font-size:32px;animation:confetti 1.2s ease-out forwards}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .msg-row.animate{animation:fadeInUp .3s ease}
 .mem-card{background:#253554;border-radius:12px;padding:14px;margin-bottom:10px}
@@ -949,6 +951,7 @@ async function addWaterHome(){
       await fetch(SUPA_URL+'/rest/v1/water_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,cups:1})});
     }
     loadHomeWater();
+    popConfetti();
   }catch(e){}
 }
 
@@ -1135,6 +1138,19 @@ async function loadWater(){
   }catch(e){el.textContent='加载失败';}
 }
 
+function popConfetti(){
+  let emojis=['🎉','✨','💜','⭐','🎊'];
+  for(let i=0;i<6;i++){
+    let el=document.createElement('div');
+    el.className='confetti-pop';
+    el.textContent=emojis[i%emojis.length];
+    el.style.left=(40+Math.random()*20)+'%';
+    el.style.top=(40+Math.random()*20)+'%';
+    el.style.animationDelay=i*0.1+'s';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1000);
+  }
+}
 async function addWater(){
   let today=new Date().toISOString().slice(0,10);
   try{
@@ -1147,6 +1163,7 @@ async function addWater(){
       await fetch(SUPA_URL+'/rest/v1/water_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,cups:1})});
     }
     loadWater();
+    popConfetti()
   }catch(e){alert('记录失败');}
 }
 
@@ -1172,6 +1189,7 @@ async function markPoop(){
   try{
     await fetch(SUPA_URL+'/rest/v1/poop_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,time:now,note:note})});
     loadPoop();
+    popConfetti();
     alert('打卡成功！💩');
   }catch(e){alert('记录失败');}
 }
@@ -1180,6 +1198,7 @@ async function markExercise(type){
   let el=document.getElementById('exerciseDisplay');
   let now=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
   el.innerHTML='✅ '+type+' ('+now+')';
+  popConfetti();
   alert(type+' 打卡成功！🎉');
 }
 
