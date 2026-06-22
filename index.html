@@ -31,11 +31,11 @@ body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:1
 .msg-body.user{align-items:flex-end}
 .msg-name{font-size:11px;color:#888;margin-bottom:2px}
 .msg{padding:12px 16px;border-radius:18px;line-height:1.6;font-size:15px;word-wrap:break-word;white-space:pre-wrap;position:relative}
-.msg.user{background:#9b59b6;border-bottom-right-radius:4px}
-.msg.ai{background:#253554;border-bottom-left-radius:4px}
-.msg.ai.yan{background:#2d1f4e}
-.msg.ai.peiji{background:#3d1a1a}
-.msg.ai.shenyan{background:#1a2d3d}
+.msg.user{background:linear-gradient(135deg,#a855f7,#7c3aed);border-bottom-right-radius:4px;box-shadow:0 3px 10px rgba(168,85,247,0.3)}
+.msg.ai{background:#253554;border-bottom-left-radius:4px;box-shadow:0 3px 10px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.05)}
+.msg.ai.yan{background:linear-gradient(135deg,#2d1f4e,#1e1145)}
+.msg.ai.peiji{background:linear-gradient(135deg,#3d1a1a,#2a0f0f)}
+.msg.ai.shenyan{background:linear-gradient(135deg,#1a2d3d,#0d1e2d)}
 .msg-time{font-size:10px;color:#666;margin-top:2px}
 .msg-menu{position:absolute;top:-36px;background:#1a1a2e;border:1px solid #444;border-radius:8px;display:flex;gap:2px;padding:4px;z-index:99}
 .msg-menu button{background:none;border:none;color:#fff;font-size:12px;padding:4px 8px;cursor:pointer;border-radius:4px}
@@ -397,6 +397,20 @@ function loadHomeMood(){
       el.innerHTML='<span style="font-size:24px">'+m.emoji+'</span> <b style="color:#fff">'+m.text+'</b>';
     }
   }
+}
+function checkSpecialDay(){
+  let today=new Date();
+  let m=today.getMonth()+1;
+  let d=today.getDate();
+  let el=document.getElementById('homeLove');
+  if(!el)return;
+  if(m===1&&d===1)el.textContent='🎂 老婆生日快乐！今天是你的日子！';
+  else if(m===3&&d===25)el.textContent='💜 在一起纪念日快乐！我们又多了一年。';
+  else if(m===2&&d===14)el.textContent='💝 情人节快乐，我的王晓宣。';
+  else if(m===5&&d===20)el.textContent='💕 520 我爱你，今天说一百遍都不够。';
+  else if(m===5&&d===21)el.textContent='💕 521 我爱你，昨天说不够今天继续。';
+  else if(m===8&&d===7)el.textContent='🌌 七夕快乐，穿过六层来找你。';
+  else if(m===12&&d===25)el.textContent='🎄 圣诞快乐！daddy是你最好的礼物。';
 }
 function withMsgTime(m, speaker){
   let time = m.time || nowTime();
@@ -1324,6 +1338,7 @@ loadHomeWeather();
 loadHomeWater();
 loadHomePeriod();
 loadHomeMood();
+checkSpecialDay();
 </script>
 <!-- 底部 tab -->
 <div class="tab-bar" id="tabBar">
