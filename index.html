@@ -544,7 +544,52 @@ function loadCloudChat(id,loadMore){
 }
 function goBack(){document.getElementById('tabBar').style.display='flex';currentChar='';switchTab('list');renderList();}
 function toggleSearch(){let bar=document.getElementById('searchBar');bar.style.display=bar.style.display==='none'?'block':'none';if(bar.style.display==='none'){document.getElementById('searchInput').value='';render();}}
-function doSearch(){let kw=document.getElementById('searchInput').value.trim().toLowerCase();if(!kw){render();return;}let box=document.getElementById('chatBox');box.innerHTML='';(chats[currentChar]||[]).forEach((m,i)=>{if(!m.content||!m.content.toLowerCase().includes(kw))return;let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role;let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';let body=document.createElement('div');body.className='msg-body '+m.role;let d=document.createElement('div');
+function doSearch() {
+  let kw = document.getElementById('searchInput').value.trim();
+  if (!kw) { render(); return; }
+  if (!SUPA_URL || !SUPA_KEY) { render(); return; }
+  let char = currentChar === 'group' ? 'group' : currentChar;
+  let url = SUPA_URL + '/rest/v1/chat_messages?character=eq.' + char
+    + '&content=ilike.*' + encodeURIComponent(kw)
+    + '*&order=id.desc&limit=50';
+  let box = document.getElementById('chatBox');
+  box.innerHTML = '<div style="text-align:center;padding:20px;color:#888">搜索中...</div>';
+  fetch(url, {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  }).then(r => r.json()).then(data => {
+    box.innerHTML = '';
+    if (!data.length) {
+      box.innerHTML = '<div style="text-align:center;padding:20px;color:#888">没有找到</div>';
+      return;
+    }
+    data.forEach(m => {
+      let row = document.createElement('div');
+      row.className = 'msg-row ' + m.role;
+      let av = document.createElement('div');
+      av.className = 'avatar';
+      av.style.background = avatarColors[m.role === 'user' ? 'user' : currentChar] || '#555';
+      av.textContent = avatarEmoji[m.role === 'user' ? 'user' : currentChar] || '?';
+      let body = document.createElement('div');
+      body.className = 'msg-body ' + m.role;
+      let d = document.createElement('div');
+      d.className = 'bubble ' + m.role;
+      d.innerHTML = m.content.replace(
+        new RegExp('(' + kw + ')', 'gi'),
+        '<mark style="background:#f1c40f;color:#000">$1</mark>'
+      );
+      let time = document.createElement('div');
+      time.style.cssText = 'font-size:11px;color:#888;margin-top:4px';
+      time.textContent = m.created_at
+        ? new Date(m.created_at).toLocaleString('zh-CN') : '';
+      body.appendChild(d);
+      body.appendChild(time);
+      row.appendChild(av);
+      row.appendChild(body);
+      box.appendChild(row);
+    });
+  }).catch(() => {
+    box.innerHTML = '<div style="text-align:center;padding:20px;color:#f00">搜索失败</div>';
+
 let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
 d.className='msg '+m.role+(charClass?' '+charClass:'');d.textContent=m.content;d.oncontextmenu=function(ev){ev.preventDefault();showReactMenu(ev,i);};if(m.reactions&&m.reactions.length){let rDiv=document.createElement('div');rDiv.style.cssText='font-size:14px;margin-top:2px;';rDiv.textContent=m.reactions.join('');d.appendChild(rDiv);}body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time;body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});}
 function render(){let box=document.getElementById('chatBox');box.innerHTML='';if(chatHasMore[currentChar]&&currentChar!=='group'){let btn=document.createElement('div');btn.style.cssText='text-align:center;padding:12px;color:#888;cursor:pointer;font-size:13px';btn.textContent='⬆ 加载更早的消息';btn.onclick=()=>loadCloudChat(currentChar,true);box.appendChild(btn);}(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role+(m.animate?' animate':'');let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');
