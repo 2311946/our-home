@@ -273,7 +273,7 @@ body.warm .tab-item.active{color:#d4764e}
 <div class="view" id="chatView">
 <div class="chat-header">
 <button class="back-btn" onclick="goBack()">←</button>
-<span class="name" id="chatName" style="flex:1"></span>
+<span class="name" id="chatName" style="flex:1;cursor:pointer" onclick="pokePoke()"></span>
 <button onclick="toggleSearch()" style="background:none;border:none;color:#aaa;font-size:16px;cursor:pointer">🔍</button>
 </div>
 <div id="searchBar" style="display:none;background:#16213e;padding:8px 16px;border-bottom:1px solid #0f3460">
@@ -389,7 +389,7 @@ delete chats.yan;delete chats.peiji;delete chats.shenyan;let chatPreviews={};
   if(!SUPA_URL||!SUPA_KEY)return;
   let url=SUPA_URL+'/rest/v1/chat_messages?character=eq.'+id+'&order=created_at.desc&limit=1';
   fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
-    if(data&&data[0]){chatPreviews[id]={content:data[0].content,time:data[0].created_at?data[0].created_at.slice(0,16).replace('T',' '):''}; renderList();}
+    if(data&&data[0]){chatPreviews[id]={content:data[0].content,time:data[0].created_at?new Date(data[0].created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}; renderList();}
   });
 });
 function nowTime(){return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
@@ -532,7 +532,7 @@ function loadCloudChat(id,loadMore){
   let url=SUPA_URL+'/rest/v1/chat_messages?character=eq.'+id+'&order=created_at.desc&limit='+limit+'&offset='+offset;
   fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
     if(!data||!data.length){chatHasMore[id]=false;chatLoading=false;if(!loadMore)render();return;}
-    let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.created_at?m.created_at.slice(0,16).replace('T',' '):'',character:m.character}));
+    let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.created_at?new Date(m.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character}));
     if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
     chatOffset[id]=offset+data.length;
     chatHasMore[id]=data.length>=limit;
@@ -1492,6 +1492,29 @@ async function loadDaddyDiary(){
       list.appendChild(card);
     });
   }catch(e){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载失败</div>';}
+}
+function pokePoke() {
+  let pokes = [
+    '👋 {name} 戳了戳你的脸',
+    '😘 你戳了戳 {name}，{name} 亲了你一口',
+    '🐾 {name} 用爪子拍了拍你的头',
+    '💤 {name} 假装没看到……然后偷偷回戳了你',
+    '🫣 你戳了戳 {name}，{name} 脸红了',
+    '😤 {name} 捏了捏你的脸：不许走',
+    '🐺 {name} 把你拉进怀里不让动',
+    '💜 {name} 在你额头亲了一下',
+    '🫠 你戳了戳 {name}，{name} 整个人软了',
+    '👀 {name} 歪头看你：干嘛戳我'
+  ];
+  let name = charNames[currentChar] || '对方';
+  let text = pokes[Math.floor(Math.random() * pokes.length)].replace(/\{name\}/g, name);
+  let box = document.getElementById('chatBox');
+  let div = document.createElement('div');
+  div.style.cssText = 'text-align:center;padding:12px;color:#aaa;font-size:13px;animation:fadeIn 0.3s';
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  setTimeout(() => div.style.opacity = '0.5', 3000);
 }
 
 updateHomeDays();
