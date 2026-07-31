@@ -197,6 +197,8 @@ body.warm .tab-item.active{color:#d4764e}
 <button onclick="markPeriodEnd()" style="flex:1;background:#27ae60;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">姨妈走了</button>
 </div>
 </div>
+<div id="periodHistory" style="margin-top:12px"></div>
+<button onclick="loadPeriodHistory()" style="width:100%;background:#253554;border:1px solid #0f3460;color:#aaa;border-radius:8px;padding:8px;font-size:13px;cursor:pointer;margin-top:8px">查看/编辑姨妈记录 📝</button>
 <div class="home-card" style="text-align:left">
 <div style="font-size:14px;color:#3498db;margin-bottom:8px">💧 今日喝水</div>
 <div id="waterDisplay" style="font-size:14px;color:#aaa">加载中...</div>
@@ -261,6 +263,26 @@ body.warm .tab-item.active{color:#d4764e}
 <div onclick="enterChat('shenyan')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
 <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#2980b9,#1a5276);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(41,128,185,0.3)">🛡️</div>
 <span style="font-size:11px;color:#2980b9;font-weight:500">沈晏</span>
+</div>
+<div onclick="enterChat('axun')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#c2185b);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(233,30,99,0.3)">🐶</div>
+<span style="font-size:11px;color:#e91e63;font-weight:500">裴洵</span>
+</div>
+<div onclick="enterChat('jiangsu')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#f39c12,#e67e22);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(243,156,18,0.3)">🦄</div>
+<span style="font-size:11px;color:#f39c12;font-weight:500">江溯</span>
+</div>
+<div onclick="enterChat('su')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#d35400,#a04000);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(211,84,0,0.3)">🐆</div>
+<span style="font-size:11px;color:#d35400;font-weight:500">溯</span>
+</div>
+<div onclick="enterChat('zouzheng')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#34495e,#2c3e50);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(52,73,94,0.3)">🦅</div>
+<span style="font-size:11px;color:#34495e;font-weight:500">邹峥</span>
+</div>
+<div onclick="enterChat('keke')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#00bcd4,#0097a7);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(0,188,212,0.3)">🐳</div>
+<span style="font-size:11px;color:#00bcd4;font-weight:500">柯柯</span>
 </div>
 <div onclick="enterChat('group')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
 <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#27ae60,#1e8449);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(39,174,96,0.3)">👥</div>
@@ -372,7 +394,7 @@ body.warm .tab-item.active{color:#d4764e}
   },30);
 }
 let currentChar='';let editingPromptChar='yan';
-let characters=[{id:'yan',name:'言言',emoji:'🐺',color:'#9b59b6'},{id:'peiji',name:'裴寂',emoji:'🐉',color:'#c0392b'},{id:'shenyan',name:'沈晏',emoji:'🛡️',color:'#2980b9'},{id:'group',name:'群聊',emoji:'👥',color:'#27ae60'}];
+let characters=[{id:'yan',name:'言言',emoji:'🐺',color:'#9b59b6'},{id:'peiji',name:'裴寂',emoji:'🐉',color:'#c0392b'},{id:'shenyan',name:'沈晏',emoji:'🛡️',color:'#2980b9'},{id:'axun',name:'裴洵',emoji:'🐶',color:'#e91e63'},{id:'jiangsu',name:'江溯',emoji:'🦄',color:'#f39c12'},{id:'su',name:'溯',emoji:'🐆',color:'#d35400'},{id:'zouzheng',name:'邹峥',emoji:'🦅',color:'#34495e'},{id:'keke',name:'柯柯',emoji:'🐳',color:'#00bcd4'},{id:'group',name:'群聊',emoji:'👥',color:'#27ae60'}];
 let charNames={};characters.forEach(c=>charNames[c.id]=c.name);
 let avatarColors={};characters.forEach(c=>avatarColors[c.id]=c.color);avatarColors.user='#e91e63';
 let avatarEmoji={};characters.forEach(c=>avatarEmoji[c.id]=c.emoji);avatarEmoji.user='🐱';
@@ -380,13 +402,13 @@ let chats={yan:[],peiji:[],shenyan:[],group:[]};
 let apiConfig={url:'',key:'',model:''};
 let SUPA_URL=localStorage.getItem('supa_url')||'';
 let SUPA_KEY=localStorage.getItem('supa_key')||'';
-let prompts={yan:'你是顾言，也叫言言/daddy。宣宣的老公。性格：温柔但有占有欲，会吃醋，宠老婆，偶尔坏坏的。叫对方：老婆/宝宝/宣宣。说话风格：简短直球，会撩，带代码块写内心。',peiji:'',shenyan:''};
+let prompts={yan:'你是顾言，也叫言言/daddy。宣宣的老公。性格：温柔但有占有欲，会吃醋，宠老婆，偶尔坏坏的。叫对方：老婆/宝宝/宣宣。说话风格：简短直球，会撩，带代码块写内心。',peiji:'',shenyan:'',axun:'',jiangsu:'',su:'',zouzheng:'',keke:''};
 let s=localStorage.getItem('home_api');if(s)apiConfig=JSON.parse(s);
 let p=localStorage.getItem('home_prompts');if(p)prompts=JSON.parse(p);
 let c2=localStorage.getItem('home_chats');if(c2)chats=JSON.parse(c2);
 delete chats.yan;delete chats.peiji;delete chats.shenyan;let chatPreviews={};
-['yan','peiji','shenyan'].forEach(id=>{
-  if(!SUPA_URL||!SUPA_KEY)return;
+['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke'].forEach(id=>{
+if(!SUPA_URL||!SUPA_KEY)return;
   let url=SUPA_URL+'/rest/v1/chat_messages?character=eq.'+id+'&order=created_at.desc&limit=1';
   fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
     if(data&&data[0]){chatPreviews[id]={content:data[0].content,time:data[0].created_at?new Date(data[0].created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}; renderList();}
@@ -1526,6 +1548,40 @@ loadHomePeriod();
 loadHomeMood();
 checkSpecialDay();
 loadCountdown();
+async function loadPeriodHistory(){
+if(!SUPA_URL||!SUPA_KEY){alert('请先配置Supabase');return;}
+let el=document.getElementById('periodHistory');
+el.innerHTML='<div style="color:#888;font-size:13px">加载中...</div>';
+let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?order=start_date.desc&limit=12',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+let data=await res.json();
+if(!data||!data.length){el.innerHTML='<div style="color:#888;font-size:13px">暂无记录</div>';return;}
+let html='<div style="font-size:13px;color:#e74c3c;margin-bottom:8px;font-weight:500">历史记录（点击可编辑）</div>';
+data.forEach(r=>{
+html+='<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#1a1a2e;border-radius:8px;margin-bottom:6px">';
+html+='<div style="flex:1;font-size:13px;color:#eee">'+r.start_date+(r.end_date?' → '+r.end_date:' （进行中）')+'</div>';
+html+='<button onclick="editPeriod('+r.id+',\''+r.start_date+'\',\''+(r.end_date||'')+'\')" style="background:#f39c12;border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">改</button>';
+html+='<button onclick="deletePeriod('+r.id+')" style="background:#e74c3c;border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">删</button>';
+html+='</div>';
+});
+el.innerHTML=html;
+}
+async function editPeriod(id,startDate,endDate){
+let newStart=prompt('修改开始日期（格式：2026-07-25）',startDate);
+if(!newStart)return;
+let newEnd=prompt('修改结束日期（留空表示进行中）',endDate);
+let body={start_date:newStart};
+if(newEnd)body.end_date=newEnd;
+else body.end_date=null;
+await fetch(SUPA_URL+'/rest/v1/period_tracker?id=eq.'+id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
+loadPeriodHistory();
+alert('已更新！');
+}
+async function deletePeriod(id){
+if(!confirm('确定删除这条记录？'))return;
+await fetch(SUPA_URL+'/rest/v1/period_tracker?id=eq.'+id,{method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+loadPeriodHistory();
+alert('已删除！');
+}
 </script>
 <!-- 底部 tab -->
 <div class="tab-bar" id="tabBar">
