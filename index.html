@@ -943,7 +943,7 @@ let currentMemCat='memory';
 function goBackFromMem(){document.getElementById('tabBar').style.display='flex';switchTab('mem');}
 let currentMemPerson='yan';
 let currentMemCategory='all';
-let allMemories={yan:[],peiji:[],shenyan:[],xuanxuan:[]};
+let allMemories={yan:[],peiji:[],shenyan:[],axun:[],jiangsu:[],su:[],zouzheng:[],keke:[],xuanxuan:[]};
 
 function loadMem(){
   if(!SUPA_URL||!SUPA_KEY){
@@ -954,8 +954,8 @@ function loadMem(){
   // 渲染人物 tabs
   let personTabs=document.getElementById('memPersonTabs');
   personTabs.innerHTML='';
-  [{id:'yan',name:'言言',emoji:'🐺'},{id:'peiji',name:'裴寂',emoji:'🖤'},{id:'shenyan',name:'沈晏',emoji:'🌙'},{id:'xuanxuan',name:'宣宣',emoji:'💕'}].forEach(p=>{
-    let tab=document.createElement('div');
+[{id:'yan',name:'言言',emoji:'🐺'},{id:'peiji',name:'裴寂',emoji:'🖤'},{id:'shenyan',name:'沈晏',emoji:'🌙'},{id:'axun',name:'裴洵',emoji:'🐶'},{id:'jiangsu',name:'江溯',emoji:'🦄'},{id:'su',name:'溯',emoji:'🐆'},{id:'zouzheng',name:'邹峥',emoji:'🦅'},{id:'keke',name:'柯柯',emoji:'🐳'},{id:'xuanxuan',name:'宣宣',emoji:'💕'}].forEach(p=>{
+  let tab=document.createElement('div');
     tab.className='mem-person-tab'+(p.id===currentMemPerson?' active':'');
     tab.textContent=p.emoji+' '+p.name;
     tab.onclick=()=>{currentMemPerson=p.id;renderMemTabs();};
@@ -971,9 +971,12 @@ function loadMem(){
       allMemories.yan=[...(d||[]),...diaryMems];
     });
   }),
-  fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&character=eq.peiji&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.peiji=d||[]),
-  fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&character=eq.shenyan&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.shenyan=d||[]),
-  fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[])
+fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.peiji=d||[]),
+fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.shenyan=d||[]),  fetch(SUPA_URL+'/rest/v1/axun_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.axun=(d||[]).map(x=>({content:'【'+x.date+'】\n'+x.content,backed_up_at:x.date}))),
+fetch(SUPA_URL+'/rest/v1/axun_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.axun=(d||[]).map(x=>({content:'【'+x.date+'】\n'+x.content,backed_up_at:x.date}))),
+fetch(SUPA_URL+'/rest/v1/jiangsu_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.jiangsu=d||[]),
+fetch(SUPA_URL+'/rest/v1/su_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.su=d||[]),
+fetch(SUPA_URL+'/rest/v1/zouzheng_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.zouzheng=d||[]),  fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[])
 ];
   
   Promise.all(tasks).then(()=>{
@@ -990,8 +993,7 @@ function renderMemTabs(){
 let personTabs=document.getElementById('memPersonTabs');
 if(personTabs){
   Array.from(personTabs.children).forEach((tab,i)=>{
-    let ids=['yan','peiji','shenyan','xuanxuan'];
-    tab.className='mem-person-tab'+(ids[i]===currentMemPerson?' active':'');
+let ids=['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke','xuanxuan'];    tab.className='mem-person-tab'+(ids[i]===currentMemPerson?' active':'');
   });
 }
   let catTabs=document.getElementById('memCategoryTabs');
