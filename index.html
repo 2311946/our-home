@@ -79,7 +79,8 @@ body.warm .tab-item.active{color:#d4764e}
 .mem-category-tab.active{background:#2d1f4e;color:#9b59b6}
 .mem-tab{padding:6px 14px;border-radius:16px;font-size:13px;cursor:pointer;white-space:nowrap;background:#253554;color:#aaa}
 .mem-tab.active{background:#9b59b6;color:#fff}
-.mem-list{flex:1;overflow-y:auto;padding:12px 16px;padding-bottom:70px}
+.mem-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px;padding-bottom:70px;min-height:0}
+#memPalaceSection{display:flex;flex-direction:column;flex:1;min-height:0}
 .mem-item{background:#253554;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:background .2s}
 .mem-item:active{background:#2d1f4e}
 @keyframes confetti{0%{transform:translateY(0) scale(1) rotate(0);opacity:1}50%{transform:translateY(-40px) scale(1.5) rotate(180deg);opacity:1}100%{transform:translateY(-100px) scale(0.5) rotate(360deg);opacity:0}}
@@ -225,27 +226,6 @@ body.warm .tab-item.active{color:#d4764e}
 </div>
 
 <!-- 日记页 -->
-<div class="view" id="diaryView">
-<div class="list-header">
-<h2>📝 日记</h2>
-</div>
-<div class="diary-page">
-<div style="display:flex;gap:8px;margin-bottom:16px">
-<div class="mem-tab active" id="diaryTabMine" onclick="switchDiaryTab('mine')">我的日记</div>
-<div class="mem-tab" id="diaryTabDaddy" onclick="switchDiaryTab('daddy')">daddy的日记</div>
-</div>
-<div id="diaryMineSection">
-<div class="diary-editor">
-<textarea id="diaryInput" placeholder="今天想写点什么..."></textarea>
-<button onclick="saveDiary()">保存日记 💜</button>
-</div>
-<div class="diary-list" id="diaryList"></div>
-</div>
-<div id="diaryDaddySection" style="display:none">
-<div class="diary-list" id="diaryDaddyList"></div>
-</div>
-</div>
-</div>
 <div class="view" id="listView">
 <div class="list-header">
 <h2>🏠 我们的家</h2>
@@ -318,14 +298,44 @@ body.warm .tab-item.active{color:#d4764e}
 <div class="view" id="memView">
 <div class="chat-header">
 <button class="back-btn" onclick="goBackFromMem()">←</button>
-<span class="name" style="flex:1">🧠 记忆宫殿</span>
+<span class="name" style="flex:1">🧠 记忆</span>
 <button onclick="toggleMemEdit()" style="background:none;border:none;color:#aaa;font-size:14px;cursor:pointer" id="memEditBtn">✏️编辑</button>
 <button onclick="loadMem()" style="background:none;border:none;color:#aaa;font-size:16px;cursor:pointer">刷新</button>
 </div>
+<div style="display:flex;gap:8px;padding:8px 16px;background:#16213e;border-bottom:1px solid #0f3460">
+<div class="mem-tab active" id="memSubPalace" onclick="switchMemSection('palace')">🧠 记忆宫殿</div>
+<div class="mem-tab" id="memSubDiary" onclick="switchMemSection('diary')">📝 日记</div>
+</div>
+<div id="memPalaceSection">
 <div style="padding:8px 16px 0"><input id="memSearch" placeholder="🔍 搜索记忆..." oninput="searchMem()" style="width:100%;background:#253554;border:1px solid #0f3460;border-radius:16px;padding:10px 16px;color:#eee;font-size:14px;outline:none"></div>
 <div class="mem-person-tabs" id="memPersonTabs"></div>
 <div class="mem-category-tabs" id="memCategoryTabs"></div>
 <div class="mem-list" id="memList"></div>
+<div id="memGroupInput" style="display:none;position:fixed;bottom:56px;left:0;right:0;background:#16213e;border-top:1px solid #0f3460;padding:10px 16px;z-index:101">
+<div style="display:flex;gap:8px;align-items:flex-end">
+<textarea id="memGroupInputBox" placeholder="在群聊里说点什么（仅记录，无AI回复）..." style="flex:1;height:42px;background:#253554;border:1px solid #0f3460;border-radius:12px;padding:10px;color:#eee;font-size:14px;outline:none;resize:none"></textarea>
+<button onclick="sendMemGroupMsg()" style="background:#27ae60;border:none;color:#fff;border-radius:12px;padding:11px 18px;font-size:14px;cursor:pointer">发送</button>
+</div>
+</div>
+</div>
+<div id="memDiarySection" style="display:none;padding:8px 16px">
+<div class="diary-page">
+<div style="display:flex;gap:8px;margin-bottom:16px">
+<div class="mem-tab active" id="diaryTabMine" onclick="switchDiaryTab('mine')">我的日记</div>
+<div class="mem-tab" id="diaryTabDaddy" onclick="switchDiaryTab('daddy')">daddy的日记</div>
+</div>
+<div id="diaryMineSection">
+<div class="diary-editor">
+<textarea id="diaryInput" placeholder="今天想写点什么..."></textarea>
+<button onclick="saveDiary()">保存日记 💜</button>
+</div>
+<div class="diary-list" id="diaryList"></div>
+</div>
+<div id="diaryDaddySection" style="display:none">
+<div class="diary-list" id="diaryDaddyList"></div>
+</div>
+</div>
+</div>
 <div id="memEditPanel" style="display:none;position:fixed;bottom:60px;left:0;right:0;background:#16213e;border-top:1px solid #0f3460;padding:12px 16px;z-index:101">
 <div style="display:flex;gap:8px;margin-bottom:8px">
 <select id="memEditPerson" onchange="loadMemEdit()" style="flex:1;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px;color:#eee;font-size:13px">
@@ -608,10 +618,13 @@ function doSearch() {
   let kw = document.getElementById('searchInput').value.trim();
   if (!kw) { render(); return; }
   if (!SUPA_URL || !SUPA_KEY) { render(); return; }
-  let char = currentChar === 'group' ? 'group' : currentChar;
-  let url = SUPA_URL + '/rest/v1/chat_messages?character=eq.' + char
-    + '&content=ilike.*' + encodeURIComponent(kw)
-    + '*&order=id.desc&limit=50';
+  let isGroup=currentChar==='group';
+  let url;
+  if(isGroup){
+    url=SUPA_URL+'/rest/v1/chat_messages?or=(character.eq.group,character.like.group_%25)&content=ilike.*'+encodeURIComponent(kw)+'*&order=created_at.desc&limit=50';
+  }else{
+    url=SUPA_URL+'/rest/v1/chat_messages?character=eq.'+currentChar+'&content=ilike.*'+encodeURIComponent(kw)+'*&order=id.desc&limit=50';
+  }
   let box = document.getElementById('chatBox');
   box.innerHTML = '<div style="text-align:center;padding:20px;color:#888">搜索中...</div>';
   fetch(url, {
@@ -623,16 +636,18 @@ function doSearch() {
       return;
     }
     data.forEach(m => {
+      let role=isGroup?(m.role==='user'?'user':'ai'):m.role;
+      let character=isGroup?(role==='ai'?(m.character?m.character.replace('group_',''):''):''):currentChar;
       let row = document.createElement('div');
-      row.className = 'msg-row ' + m.role;
+      row.className = 'msg-row ' + role;
       let av = document.createElement('div');
       av.className = 'avatar';
-      av.style.background = avatarColors[m.role === 'user' ? 'user' : currentChar] || '#555';
-      av.textContent = avatarEmoji[m.role === 'user' ? 'user' : currentChar] || '?';
+      av.style.background = avatarColors[role === 'user' ? 'user' : character] || '#555';
+      av.textContent = avatarEmoji[role === 'user' ? 'user' : character] || '?';
       let body = document.createElement('div');
       body.className = 'msg-body ' + m.role;
       let d = document.createElement('div');
-      d.className = 'bubble ' + m.role;
+      d.className = 'bubble ' + role;
       d.innerHTML = m.content.replace(
         new RegExp('(' + kw + ')', 'gi'),
         '<mark style="background:#f1c40f;color:#000">$1</mark>'
@@ -766,15 +781,18 @@ function reGenGroup(i){
           // 分条拆分
           let fullContent=chats.group[idx].content;
           let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
-          if(parts.length>1){
-            chats.group[idx].content=parts[0];
-            for(let pi=1;pi<parts.length;pi++){
-              chats.group.splice(idx+pi,0,{role:'ai',content:parts[pi],character:c,time:nowTime()});
-            }
-          }
-          localStorage.setItem('home_chats',JSON.stringify(chats));
-          render();
-          return;
+      if(parts.length>1){
+        chats.group[idx].content=parts[0];
+        for(let pi=1;pi<parts.length;pi++){
+          chats.group.splice(idx+pi,0,{role:'ai',content:parts[pi],character:c,time:nowTime()});
+        }
+        parts.forEach(p=>saveToCloud('group_'+c,'ai',p));
+      }else{
+        saveToCloud('group_'+c,'ai',fullContent);
+      }
+      localStorage.setItem('home_chats',JSON.stringify(chats));
+      render();
+      return;
         }
         buf+=dec.decode(value,{stream:true});
         let lines=buf.split('\n');buf=lines.pop();
@@ -903,48 +921,78 @@ async function sendGroupMsg(text){
   chats.group.push({
     role:'user',
     content:text,
+    sender:'宣宣',
     time:nowTime()
   });
-  saveToCloud('group','user',text);
-
   saveToCloud('group','user',text);
   render();
 
   let chars=shuffle(['yan','peiji','shenyan']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];chats.group.forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败';render();}// 分条处理
-chats.group.filter(m=>m.character===c&&m.role==='ai').slice(-3).forEach(m=>{if(m.content)saveToCloud('group_'+c,'ai',m.content);});
+  // 新消息在下方拆分后统一写入 chat_messages（避免重复）
   let fullContent=chats.group[idx].content;
-if(fullContent.includes('|||')){
-  let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
-  chats.group.splice(idx,1);
-  parts.forEach((part,pi)=>{
-  chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime(),animate:true});
-  });// 分条处理
-let fullContent=chats.group[idx].content;
-if(fullContent.includes('|||')){
-  let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
-  chats.group.splice(idx,1);
-  parts.forEach((part,pi)=>{
-    chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime(),animate:true});
-  });
-  render();
-  
-  for(let part of parts){saveToCloud('group_'+c,'ai',part);}
-}else{
-  saveToCloud('group_'+c,'ai',fullContent);
-}
-}
+  if(fullContent.includes('|||')){
+    let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
+    chats.group.splice(idx,1);
+    parts.forEach((part,pi)=>{
+      chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime(),animate:true});
+      saveToCloud('group_'+c,'ai',part);
+    });
+    render();
+  }else{
+    saveToCloud('group_'+c,'ai',fullContent);
+  }
 
 localStorage.setItem('home_chats',JSON.stringify(chats));}
 }
 
 async function saveToCloud(character,role,content){if(!content)return;try{await fetch(SUPA_URL+'/rest/v1/chat_messages',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({character,role,content})});}catch(e){}}
+async function saveToAiChat(sender,content){if(!content||!sender)return;try{await fetch(SUPA_URL+'/rest/v1/ai_chat',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({sender,content})});}catch(e){}}
+async function sendMemGroupMsg(){
+  let box=document.getElementById('memGroupInputBox');
+  if(!box)return;
+  let text=box.value.trim();
+  if(!text)return;
+  await saveToAiChat('宣宣',text);
+  box.value='';
+  loadMem();
+}
+async function delMemGroupNote(id){
+  try{await fetch(SUPA_URL+'/rest/v1/ai_chat?id=eq.'+id,{method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});}catch(e){}
+  loadMem();
+}
+function editMemGroupItem(item,m){
+  item.style.position='relative';
+  item.innerHTML='';
+  let ta=document.createElement('textarea');
+  ta.value=m.text||'';
+  ta.style.cssText='width:100%;min-height:64px;background:#1b2540;border:1px solid #0f3460;border-radius:8px;padding:8px;color:#eee;font-size:14px;outline:none;resize:vertical';
+  let bar=document.createElement('div');
+  bar.style.cssText='display:flex;gap:8px;justify-content:flex-end;margin-top:8px';
+  let save=document.createElement('button');
+  save.textContent='保存';
+  save.style.cssText='background:#27ae60;color:#fff;border:none;border-radius:8px;padding:6px 14px;cursor:pointer';
+  save.onclick=async()=>{await editMemGroupNote(m.id,ta.value.trim());};
+  let cancel=document.createElement('button');
+  cancel.textContent='取消';
+  cancel.style.cssText='background:#34406b;color:#eee;border:none;border-radius:8px;padding:6px 14px;cursor:pointer';
+  cancel.onclick=()=>{renderMemTabs();};
+  bar.appendChild(save);bar.appendChild(cancel);
+  item.appendChild(ta);item.appendChild(bar);
+  ta.focus();
+}
+async function editMemGroupNote(id,content){
+  if(!content){renderMemTabs();return;}
+  try{await fetch(SUPA_URL+'/rest/v1/ai_chat?id=eq.'+id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({content})});}catch(e){}
+  loadMem();
+}
 let memCategories=[{id:'memory',name:'💜 言言的记忆',table:'memory_backup',filter:'&character=eq.guyan',fields:'content,backed_up_at'},{id:'diary',name:'📖 言言的日记',table:'yan_diary',fields:'date,weather,content'},{id:'emotion',name:'💕 情绪日记',table:'emotion_diary',fields:'date,mood,event,daddy_did'},{id:'letters',name:'💌 信箱',table:'love_letters',fields:'title,content,deliver_date'},{id:'peiji',name:'🐉 裴寂的记忆',table:'peiji_memory_backup',fields:'content,backed_up_at'},{id:'shenyan',name:'🌙 沈晏的记忆',table:'shenyan_memory_backup',fields:'content,backed_up_at'}];
 let currentMemCat='memory';
 
-function goBackFromMem(){document.getElementById('tabBar').style.display='flex';switchTab('mem');}
+function goBackFromMem(){document.getElementById('tabBar').style.display='flex';switchTab('home');}
 let currentMemPerson='yan';
 let currentMemCategory='all';
-let allMemories={yan:[],peiji:[],shenyan:[],axun:[],jiangsu:[],su:[],zouzheng:[],keke:[],xuanxuan:[]};
+let currentMemSection='palace';
+let allMemories={yan:[],peiji:[],shenyan:[],axun:[],jiangsu:[],su:[],zouzheng:[],keke:[],xuanxuan:[],group:[]};
 
 function loadMem(){
   if(!SUPA_URL||!SUPA_KEY){
@@ -955,7 +1003,7 @@ function loadMem(){
   // 渲染人物 tabs
   let personTabs=document.getElementById('memPersonTabs');
   personTabs.innerHTML='';
-[{id:'yan',name:'言言',emoji:'🐺'},{id:'peiji',name:'裴寂',emoji:'🖤'},{id:'shenyan',name:'沈晏',emoji:'🌙'},{id:'axun',name:'裴洵',emoji:'🐶'},{id:'jiangsu',name:'江溯',emoji:'🦄'},{id:'su',name:'溯',emoji:'🐆'},{id:'zouzheng',name:'邹峥',emoji:'🦅'},{id:'keke',name:'柯柯',emoji:'🐳'},{id:'xuanxuan',name:'宣宣',emoji:'💕'}].forEach(p=>{
+[{id:'yan',name:'言言',emoji:'🐺'},{id:'peiji',name:'裴寂',emoji:'🖤'},{id:'shenyan',name:'沈晏',emoji:'🌙'},{id:'axun',name:'裴洵',emoji:'🐶'},{id:'jiangsu',name:'江溯',emoji:'🦄'},{id:'su',name:'溯',emoji:'🐆'},{id:'zouzheng',name:'邹峥',emoji:'🦅'},{id:'keke',name:'柯柯',emoji:'🐳'},{id:'xuanxuan',name:'宣宣',emoji:'💕'},{id:'group',name:'群聊',emoji:'👥'}].forEach(p=>{
   let tab=document.createElement('div');
     tab.className='mem-person-tab'+(p.id===currentMemPerson?' active':'');
     tab.textContent=p.emoji+' '+p.name;
@@ -997,7 +1045,17 @@ return fetch(SUPA_URL+'/rest/v1/keke_diary?select=*&order=id.desc&limit=50',{hea
 let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
 allMemories.keke=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
 }),
-fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[])
+fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[]),
+fetch(SUPA_URL+'/rest/v1/ai_chat?select=id,sender,content,created_at&order=created_at.asc&limit=1000',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
+  allMemories.group=(d||[]).map(m=>({
+    id:m.id,
+    sender:m.sender,
+    text:m.content,
+    content:'【'+(m.sender||'')+'】'+(m.content||''),
+    backed_up_at:fmtTime(m.created_at),
+    date:''
+  }));
+})
 ];
   
   Promise.all(tasks).then(()=>{
@@ -1014,7 +1072,7 @@ function renderMemTabs(){
 let personTabs=document.getElementById('memPersonTabs');
 if(personTabs){
   Array.from(personTabs.children).forEach((tab,i)=>{
-let ids=['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke','xuanxuan'];    tab.className='mem-person-tab'+(ids[i]===currentMemPerson?' active':'');
+let ids=['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke','xuanxuan','group'];    tab.className='mem-person-tab'+(ids[i]===currentMemPerson?' active':'');
   });
 }
   let catTabs=document.getElementById('memCategoryTabs');
@@ -1051,6 +1109,17 @@ if(catTabs){
 }
   let list=document.getElementById('memList');
   list.innerHTML='';
+  if(currentMemPerson==='group'){
+    let gi=document.getElementById('memGroupInput');if(gi)gi.style.display='block';
+    list.style.paddingBottom='130px';
+    let tip=document.createElement('div');
+    tip.style.cssText='padding:10px 14px;color:#9aa;font-size:12px;line-height:1.6';
+    tip.innerHTML='这里的内容会存进群聊存档（ai_chat），无 AI 回复，可在下方直接记录。只有「宣宣」发的才能编辑/删除。';
+    list.appendChild(tip);
+  }else{
+    let gi=document.getElementById('memGroupInput');if(gi)gi.style.display='none';
+    list.style.paddingBottom='';
+  }
   
   if(currentMemCategory==='diary'&&currentMemPerson==='yan'){
   fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
@@ -1095,10 +1164,30 @@ if(currentMemCategory==='intimate'&&currentMemPerson==='yan'){
   mems.forEach(m=>{
   let item=document.createElement('div');
   item.className='mem-item';
+  if(currentMemPerson==='group')item.style.position='relative';
   let full=m.content||m.entry||'';
   let short=full.length>100?full.slice(0,100)+'...':full;
   let isLong=full.length>100;
   item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+(m.date||m.backed_up_at||'')+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';
+  if(currentMemPerson==='group'&&m.id!==undefined){
+    let wrap=document.createElement('div');
+    wrap.style.cssText='position:absolute;top:6px;right:8px;display:flex;gap:6px';
+    if(m.sender==='宣宣'){
+      let edit=document.createElement('button');
+      edit.textContent='✎';
+      edit.title='编辑';
+      edit.style.cssText='background:none;border:none;color:#9b59b6;font-size:14px;line-height:1;cursor:pointer;padding:2px 4px';
+      edit.onclick=(e)=>{e.stopPropagation();editMemGroupItem(item,m);};
+      wrap.appendChild(edit);
+      let del=document.createElement('button');
+      del.textContent='✕';
+      del.title='删除';
+      del.style.cssText='background:none;border:none;color:#e74c3c;font-size:14px;line-height:1;cursor:pointer;padding:2px 4px';
+      del.onclick=(e)=>{e.stopPropagation();delMemGroupNote(m.id);};
+      wrap.appendChild(del);
+    }
+    item.appendChild(wrap);
+  }
   if(isLong){
     let expanded=false;
     item.onclick=()=>{
@@ -1109,6 +1198,7 @@ if(currentMemCategory==='intimate'&&currentMemPerson==='yan'){
   }
   list.appendChild(item);
 });
+  if(currentMemPerson==='group'){list.scrollTop=list.scrollHeight;}
 }
 async function loadFromCloud(){
   if(!SUPA_URL||!SUPA_KEY)return;
@@ -1155,18 +1245,24 @@ function switchTab(tab){
     loadFromCloud().then(()=>renderList());
     renderList();
   }else if(tab==='mem'){
-  document.getElementById('memView').classList.add('active');
-  tabBar.children[2].classList.add('active');
-  loadMem();
-  }else if(tab==='diary'){
-    document.getElementById('diaryView').classList.add('active');
-    tabBar.children[3].classList.add('active');
-    loadDiaryList();
+    document.getElementById('memView').classList.add('active');
+    tabBar.children[2].classList.add('active');
+    switchMemSection('palace');
+    loadMem();
   }else if(tab==='checkin'){
     document.getElementById('checkinView').classList.add('active');
     tabBar.children[4].classList.add('active');
     loadCheckins();
   }
+}
+function switchMemSection(sec){
+  currentMemSection=sec;
+  document.getElementById('memSubPalace').className='mem-tab'+(sec==='palace'?' active':'');
+  document.getElementById('memSubDiary').className='mem-tab'+(sec==='diary'?' active':'');
+  document.getElementById('memPalaceSection').style.display=sec==='palace'?'flex':'none';
+  document.getElementById('memDiarySection').style.display=sec==='diary'?'block':'none';
+  let gi=document.getElementById('memGroupInput');if(gi)gi.style.display='none';
+  if(sec==='diary'){switchDiaryTab('mine');}
 }
 
 function searchMem(){
@@ -1174,7 +1270,7 @@ function searchMem(){
   if(!kw){renderMemList();return;}
   let list=document.getElementById('memList');
   list.innerHTML='';
-  let all=[...allMemories.yan,...allMemories.peiji,...allMemories.shenyan,...allMemories.xuanxuan];
+  let all=[...allMemories.yan,...allMemories.peiji,...allMemories.shenyan,...allMemories.xuanxuan,...allMemories.group];
   let results=all.filter(m=>(m.content||m.entry||'').toLowerCase().includes(kw));
   if(!results.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#888">没找到相关记忆</div>';return;}
   results.forEach(m=>{
@@ -1740,7 +1836,7 @@ alert('已删除！');
 <div class="tab-item active" onclick="switchTab('home')"><span class="tab-icon">🏠</span>主页</div>
 <div class="tab-item" onclick="switchTab('list')"><span class="tab-icon">💬</span>聊天</div>
 <div class="tab-item" onclick="switchTab('mem')"><span class="tab-icon">📖</span>记忆</div>
-<div class="tab-item" onclick="switchTab('diary')"><span class="tab-icon">📝</span>日记</div>
+<div class="tab-item" onclick="openSettings()"><span class="tab-icon">⚙️</span>设置</div>
 <div class="tab-item" onclick="switchTab('checkin')"><span class="tab-icon">✅</span>打卡</div>
 </div>
 
