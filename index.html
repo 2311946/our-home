@@ -336,6 +336,7 @@ body.warm .tab-item.active{color:#d4764e}
 <option value="jiangsu">江溯</option>
 <option value="su">溯</option>
 <option value="zouzheng">邹峥</option>
+<option value="keke">柯柯</option>
 </select>
 <button onclick="showAddMem()" style="background:#9b59b6;border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer">+新增</button>
 </div>
@@ -964,19 +965,39 @@ function loadMem(){
   
   // 加载所有记忆
   let tasks=[
-  fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&or=(character.eq.yan,character.eq.guyan)&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-    // 同时加载yan_diary合并进来
-    return fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
-      let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,date:x.date,backed_up_at:x.date}));
-      allMemories.yan=[...(d||[]),...diaryMems];
-    });
-  }),
-fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.peiji=d||[]),
-fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.shenyan=d||[]),  fetch(SUPA_URL+'/rest/v1/axun_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.axun=(d||[]).map(x=>({content:'【'+x.date+'】\n'+x.content,backed_up_at:x.date}))),
-fetch(SUPA_URL+'/rest/v1/axun_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.axun=(d||[]).map(x=>({content:'【'+x.date+'】\n'+x.content,backed_up_at:x.date}))),
-fetch(SUPA_URL+'/rest/v1/jiangsu_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.jiangsu=d||[]),
-fetch(SUPA_URL+'/rest/v1/su_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.su=d||[]),
-fetch(SUPA_URL+'/rest/v1/zouzheng_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.zouzheng=d||[]),  fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[])
+fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&or=(character.eq.yan,character.eq.guyan)&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
+allMemories.yan=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
+}),
+fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/peiji_diary?select=id,type,content,mood,created_at&order=created_at.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+let diaryMems=(diaries||[]).map(x=>({content:'【日记】\n'+x.content,backed_up_at:x.created_at}));
+allMemories.peiji=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
+}),
+fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.shenyan=(d||[]).sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0))),
+fetch(SUPA_URL+'/rest/v1/axun_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.axun=(d||[]).map(x=>({content:'【'+x.date+'】\n'+x.content,backed_up_at:x.date})).sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0))),
+fetch(SUPA_URL+'/rest/v1/jiangsu_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/jiangsu_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
+allMemories.jiangsu=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
+}),
+fetch(SUPA_URL+'/rest/v1/su_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/su_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+let diaryMems=(diaries||[]).map(x=>({content:'【日记】\n'+x.content,backed_up_at:x.created_at}));
+allMemories.su=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
+}),
+fetch(SUPA_URL+'/rest/v1/zouzheng_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/zouzheng_diary?select=*&order=date.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
+allMemories.zouzheng=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
+}),
+fetch(SUPA_URL+'/rest/v1/keke_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/keke_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
+allMemories.keke=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
+}),
+fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[])
 ];
   
   Promise.all(tasks).then(()=>{
@@ -1590,11 +1611,11 @@ loadCountdown();
 let memEditMode=false;
 let memTableMap={
 yan:'memory_backup',peiji:'peiji_memory_backup',shenyan:'shenyan_memory_backup',
-axun:'axun_diary',jiangsu:'jiangsu_memory',su:'su_memory',zouzheng:'zouzheng_memory'
+axun:'axun_diary',jiangsu:'jiangsu_memory',su:'su_memory',zouzheng:'zouzheng_memory',keke:'keke_memory'
 };
 let memEditFilterMap={
 yan:'&or=(character.eq.yan,character.eq.guyan)',peiji:'&character=eq.peiji',shenyan:'&character=eq.shenyan',
-axun:'',jiangsu:'',su:'',zouzheng:''
+axun:'',jiangsu:'',su:'',zouzheng:'',keke:''
 };
 function toggleMemEdit(){
 memEditMode=!memEditMode;
