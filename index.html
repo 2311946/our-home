@@ -10,7 +10,7 @@
 <!-- 主页 -->
 <div class="view active" id="homeView">
 <div class="list-header">
-<h2>🏠 我们的家</h2>
+<h2 style="flex:1;text-align:center">🏠 我们的家</h2>
 <button onclick="openSettings()">⚙</button>
 </div>
 <div class="home-page" id="homePage">
@@ -116,7 +116,7 @@
 <!-- 日记页 -->
 <div class="view" id="listView">
 <div class="list-header">
-<h2>🏠 我们的家</h2>
+<h2 style="flex:1;text-align:center">🏠 我们的家</h2>
 <button onclick="openSettings()">⚙</button>
 </div>
 <div style="display:flex;gap:20px;padding:14px 20px;justify-content:center;background:linear-gradient(180deg,#16213e,#1a1a2e);border-bottom:1px solid #0f3460">
@@ -297,8 +297,6 @@
 </div>
 <script src="js/config.js"></script>
 <script src="js/all.js"></script>
-cd ~/Desktop/our-home && sed -i '' '/<\/html>/i\
-</html>
 <div class="tab-bar" id="tabBar">
 <div class="tab-item active" onclick="switchTab('home')"><span class="tab-icon">🏠</span>主页</div>
 <div class="tab-item" onclick="switchTab('list')"><span class="tab-icon">💬</span>聊天</div>
