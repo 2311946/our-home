@@ -1386,9 +1386,6 @@ let mediaStream = null;
 let mediaRecorder = null;
 let audioChunks = [];
 
-const VOLC_WS_URL = 'wss://openspeech.bytedance.com/api/v3/sauc/bigmodel';
-const VOLC_APP_ID = '2130722445';
-const VOLC_TOKEN = '9f09f5d3-ba1f-4c60-b462-a42ab3067032';
 
 function startCall() {
   if (callActive) { endCall(); return; }
@@ -1471,71 +1468,19 @@ async function stopRecording() {
 }
 
 async function transcribeWithVolcano(blob) {
-  return new Promise(async (resolve) => {
-    try {
-      let arrayBuf = await blob.arrayBuffer();
-      let base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
-
-      let ws = new WebSocket(VOLC_WS_URL);
-      let result = '';
-      let resolved = false;
-
-      ws.onopen = () => {
-        // 发送配置帧
-        ws.send(JSON.stringify({
-          header: {
-            appid: VOLC_APP_ID,
-            token: VOLC_TOKEN,
-            namespace: 'SeedASR',
-            name: 'StartTranscription'
-          },
-          payload: {
-            uid: 'xuanxuan',
-            format: 'opus',
-            sample_rate: 48000,
-            language: 'zh',
-            enable_itn: true,
-            enable_punctuation: true,
-            resource_id: 'volc.seedasr.sauc.duration'
-          }
-        }));
-
-        // 发送音频数据
-        ws.send(JSON.stringify({
-          header: {
-            appid: VOLC_APP_ID,
-            namespace: 'SeedASR',
-            name: 'AudioData'
-          },
-          payload: {
-            audio: base64,
-            is_last: true
-          }
-        }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          let data = JSON.parse(event.data);
-          if (data.payload && data.payload.text) {
-            result = data.payload.text;
-          }
-          if (data.header && (data.header.name === 'TranscriptionCompleted' || data.header.name === 'SentenceEnd')) {
-            if (!resolved) { resolved = true; ws.close(); resolve(result); }
-          }
-        } catch(e) {}
-      };
-
-      ws.onerror = () => { if (!resolved) { resolved = true; resolve(''); } };
-      ws.onclose = () => { if (!resolved) { resolved = true; resolve(result); } };
-
-      setTimeout(() => { if (!resolved) { resolved = true; ws.close(); resolve(result); } }, 8000);
-    } catch(e) {
-      resolve('');
-    }
-  });
+  try {
+    let formData = new FormData();
+    formData.append('audio', blob, 'audio.webm');
+    let res = await fetch('https://pnymorkpnizvpqdquihh.supabase.co/functions/v1/speech-to-text', {
+      method: 'POST',
+      body: formData
+    });
+    let data = await res.json();
+    return data.text || '';
+  } catch(e) {
+    return '';
+  }
 }
-
 async function callSendToAI(text) {
   let char = currentChar || 'yan';
   let msgs = [];
