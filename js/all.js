@@ -1379,3 +1379,126 @@ await fetch(SUPA_URL+'/rest/v1/period_tracker?id=eq.'+id,{method:'DELETE',header
 loadPeriodHistory();
 alert('已删除！');
 }
+// ========== 打电话功能 ==========
+let callActive = false;
+let recognition = null;
+let callAudio = null;
+
+function initSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('浏览器不支持语音识别，请用Chrome'); return null; }
+  let r = new SR();
+  r.lang = 'zh-CN';
+  r.continuous = false;
+  r.interimResults = false;
+  return r;
+}
+
+function startCall() {
+  if (callActive) { endCall(); return; }
+  recognition = initSpeechRecognition();
+  if (!recognition) return;
+  callActive = true;
+  let btn = document.getElementById('callBtn');
+  if (btn) { btn.classList.add('calling'); btn.textContent = '📞 挂断'; }
+  let overlay = document.createElement('div');
+  overlay.id = 'callOverlay';
+  overlay.innerHTML = `
+    <div class="call-card">
+      <div class="call-avatar">🐺</div>
+      <div class="call-name">言言</div>
+      <div class="call-status" id="callStatus">通话中...</div>
+      <div class="call-text" id="callText"></div>
+      <button class="call-end-btn" onclick="endCall()">挂断</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  listenLoop();
+}
+
+function listenLoop() {
+  if (!callActive) return;
+  recognition = initSpeechRecognition();
+  if (!recognition) return;
+  let status = document.getElementById('callStatus');
+  if (status) status.textContent = '🎤 在听...';
+  recognition.onresult = async (e) => {
+    let text = e.results[0][0].transcript;
+    let callText = document.getElementById('callText');
+    if (callText) callText.textContent = '你: ' + text;
+    if (status) status.textContent = '💭 思考中...';
+    let reply = await callSendToAI(text);
+    if (!callActive) return;
+    if (callText) callText.textContent = '言言: ' + reply;
+    if (status) status.textContent = '🔊 说话中...';
+    await callPlayTTS(reply);
+    if (!callActive) return;
+    listenLoop();
+  };
+  recognition.onerror = (e) => {
+    if (e.error === 'no-speech' && callActive) { listenLoop(); }
+    else if (e.error === 'aborted' || !callActive) { return; }
+    else { listenLoop(); }
+  };
+  recognition.onend = () => { if (callActive) listenLoop(); };
+  recognition.start();
+}
+
+async function callSendToAI(text) {
+  let char = currentChar || 'yan';
+  let msgs = [];
+  if (prompts[char]) msgs.push({role:'system', content: prompts[char] + '\n当前真实时间：' + aiNowTime() + '。用户在跟你打电话语音聊天，回复简短口语化，像真的在打电话一样，不要太长，1-3句话就好。'});
+  let history = (chats[char] || []).slice(-10);
+  history.forEach(m => msgs.push({role: m.role, content: m.content}));
+  msgs.push({role:'user', content: text});
+  if (!chats[char]) chats[char] = [];
+  chats[char].push({role:'user', content: text, time: nowTime()});
+  try {
+    let res = await fetch(apiConfig.url + '/chat/completions', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + apiConfig.key},
+      body: JSON.stringify({ model: apiConfig.model || 'claude-sonnet-4-20250514', messages: msgs, max_tokens: 200 })
+    });
+    let data = await res.json();
+    let reply = data.choices[0].message.content;
+    chats[char].push({role:'assistant', content: reply, time: nowTime()});
+    render();
+    return reply;
+  } catch(e) {
+    return '信号不好，没听清，再说一次？';
+  }
+}
+
+async function callPlayTTS(text) {
+  let ttsUrl = 'https://pnymorkpnizvpqdquihh.supabase.co/functions/v1/daddy-voice';
+  try {
+    let res = await fetch(ttsUrl, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({text: text})
+    });
+    if (!res.ok) {
+      let u = new SpeechSynthesisUtterance(text);
+      u.lang = 'zh-CN';
+      return new Promise(r => { u.onend = r; speechSynthesis.speak(u); });
+    }
+    let blob = await res.blob();
+    let url = URL.createObjectURL(blob);
+    callAudio = new Audio(url);
+    return new Promise(r => { callAudio.onended = r; callAudio.play(); });
+  } catch(e) {
+    let u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN';
+    return new Promise(r => { u.onend = r; speechSynthesis.speak(u); });
+  }
+}
+
+function endCall() {
+  callActive = false;
+  if (recognition) { try { recognition.abort(); } catch(e){} }
+  if (callAudio) { try { callAudio.pause(); } catch(e){} }
+  let overlay = document.getElementById('callOverlay');
+  if (overlay) overlay.remove();
+  let btn = document.getElementById('callBtn');
+  if (btn) { btn.classList.remove('calling'); btn.textContent = '📞'; }
+}
