@@ -187,3 +187,21 @@ body.warm .tab-item.active{color:#d4764e}
   font-weight: bold;
   cursor: pointer;
 }
+.call-talk-btn {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: all 0.2s;
+}
+.call-talk-btn:active {
+  transform: scale(1.1);
+  background: #e74c3c;
+}

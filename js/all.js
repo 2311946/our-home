@@ -1379,25 +1379,19 @@ await fetch(SUPA_URL+'/rest/v1/period_tracker?id=eq.'+id,{method:'DELETE',header
 loadPeriodHistory();
 alert('已删除！');
 }
-// ========== 打电话功能 ==========
+// ========== 打电话功能 v2 (火山ASR) ==========
 let callActive = false;
-let recognition = null;
 let callAudio = null;
+let mediaStream = null;
+let mediaRecorder = null;
+let audioChunks = [];
 
-function initSpeechRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { alert('浏览器不支持语音识别，请用Chrome'); return null; }
-  let r = new SR();
-  r.lang = 'zh-CN';
-  r.continuous = false;
-  r.interimResults = false;
-  return r;
-}
+const VOLC_WS_URL = 'wss://openspeech.bytedance.com/api/v3/sauc/bigmodel';
+const VOLC_APP_ID = '2130722445';
+const VOLC_TOKEN = '9f09f5d3-ba1f-4c60-b462-a42ab3067032';
 
 function startCall() {
   if (callActive) { endCall(); return; }
-  recognition = initSpeechRecognition();
-  if (!recognition) return;
   callActive = true;
   let btn = document.getElementById('callBtn');
   if (btn) { btn.classList.add('calling'); btn.textContent = '📞 挂断'; }
@@ -1407,41 +1401,139 @@ function startCall() {
     <div class="call-card">
       <div class="call-avatar">🐺</div>
       <div class="call-name">言言</div>
-      <div class="call-status" id="callStatus">通话中...</div>
+      <div class="call-status" id="callStatus">按住说话</div>
       <div class="call-text" id="callText"></div>
+      <button class="call-talk-btn" id="callTalkBtn">🎤 按住说话</button>
+      <br><br>
       <button class="call-end-btn" onclick="endCall()">挂断</button>
     </div>
   `;
   document.body.appendChild(overlay);
-  listenLoop();
+
+  let talkBtn = document.getElementById('callTalkBtn');
+  talkBtn.addEventListener('mousedown', startRecording);
+  talkBtn.addEventListener('mouseup', stopRecording);
+  talkBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
+  talkBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
 }
 
-function listenLoop() {
+async function startRecording() {
   if (!callActive) return;
-  recognition = initSpeechRecognition();
-  if (!recognition) return;
+  audioChunks = [];
   let status = document.getElementById('callStatus');
   if (status) status.textContent = '🎤 在听...';
-  recognition.onresult = async (e) => {
-    let text = e.results[0][0].transcript;
-    let callText = document.getElementById('callText');
-    if (callText) callText.textContent = '你: ' + text;
-    if (status) status.textContent = '💭 思考中...';
-    let reply = await callSendToAI(text);
-    if (!callActive) return;
-    if (callText) callText.textContent = '言言: ' + reply;
-    if (status) status.textContent = '🔊 说话中...';
-    await callPlayTTS(reply);
-    if (!callActive) return;
-    listenLoop();
-  };
-  recognition.onerror = (e) => {
-    if (e.error === 'no-speech' && callActive) { listenLoop(); }
-    else if (e.error === 'aborted' || !callActive) { return; }
-    else { listenLoop(); }
-  };
-  recognition.onend = () => { if (callActive) listenLoop(); };
-  recognition.start();
+  let talkBtn = document.getElementById('callTalkBtn');
+  if (talkBtn) talkBtn.style.background = '#e74c3c';
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'audio/webm;codecs=opus' });
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.start();
+  } catch(e) {
+    if (status) status.textContent = '麦克风不可用';
+  }
+}
+
+async function stopRecording() {
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+  let talkBtn = document.getElementById('callTalkBtn');
+  if (talkBtn) talkBtn.style.background = '';
+  let status = document.getElementById('callStatus');
+  if (status) status.textContent = '💭 识别中...';
+
+  mediaRecorder.stop();
+  mediaStream.getTracks().forEach(t => t.stop());
+
+  await new Promise(r => { mediaRecorder.onstop = r; });
+
+  let blob = new Blob(audioChunks, { type: 'audio/webm' });
+  let text = await transcribeWithVolcano(blob);
+
+  if (!text || !callActive) {
+    if (status) status.textContent = '没听清，再说一次';
+    setTimeout(() => { if (status && callActive) status.textContent = '按住说话'; }, 2000);
+    return;
+  }
+
+  let callText = document.getElementById('callText');
+  if (callText) callText.textContent = '你: ' + text;
+  if (status) status.textContent = '💭 思考中...';
+
+  let reply = await callSendToAI(text);
+  if (!callActive) return;
+
+  if (callText) callText.textContent = '言言: ' + reply;
+  if (status) status.textContent = '🔊 说话中...';
+
+  await callPlayTTS(reply);
+  if (status && callActive) status.textContent = '按住说话';
+}
+
+async function transcribeWithVolcano(blob) {
+  return new Promise(async (resolve) => {
+    try {
+      let arrayBuf = await blob.arrayBuffer();
+      let base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
+
+      let ws = new WebSocket(VOLC_WS_URL);
+      let result = '';
+      let resolved = false;
+
+      ws.onopen = () => {
+        // 发送配置帧
+        ws.send(JSON.stringify({
+          header: {
+            appid: VOLC_APP_ID,
+            token: VOLC_TOKEN,
+            namespace: 'SeedASR',
+            name: 'StartTranscription'
+          },
+          payload: {
+            uid: 'xuanxuan',
+            format: 'opus',
+            sample_rate: 48000,
+            language: 'zh',
+            enable_itn: true,
+            enable_punctuation: true,
+            resource_id: 'volc.seedasr.sauc.duration'
+          }
+        }));
+
+        // 发送音频数据
+        ws.send(JSON.stringify({
+          header: {
+            appid: VOLC_APP_ID,
+            namespace: 'SeedASR',
+            name: 'AudioData'
+          },
+          payload: {
+            audio: base64,
+            is_last: true
+          }
+        }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          let data = JSON.parse(event.data);
+          if (data.payload && data.payload.text) {
+            result = data.payload.text;
+          }
+          if (data.header && (data.header.name === 'TranscriptionCompleted' || data.header.name === 'SentenceEnd')) {
+            if (!resolved) { resolved = true; ws.close(); resolve(result); }
+          }
+        } catch(e) {}
+      };
+
+      ws.onerror = () => { if (!resolved) { resolved = true; resolve(''); } };
+      ws.onclose = () => { if (!resolved) { resolved = true; resolve(result); } };
+
+      setTimeout(() => { if (!resolved) { resolved = true; ws.close(); resolve(result); } }, 8000);
+    } catch(e) {
+      resolve('');
+    }
+  });
 }
 
 async function callSendToAI(text) {
@@ -1495,7 +1587,8 @@ async function callPlayTTS(text) {
 
 function endCall() {
   callActive = false;
-  if (recognition) { try { recognition.abort(); } catch(e){} }
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') { try { mediaRecorder.stop(); } catch(e){} }
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); }
   if (callAudio) { try { callAudio.pause(); } catch(e){} }
   let overlay = document.getElementById('callOverlay');
   if (overlay) overlay.remove();
