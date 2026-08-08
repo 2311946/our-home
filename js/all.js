@@ -1,3 +1,5 @@
+const PB_URL="http://43.167.236.193:8090";
+const PB_URL="http://43.167.236.193:8090";
 function nowTime(){return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 function aiNowTime(){
   return new Date().toLocaleString('zh-CN',{
@@ -141,17 +143,17 @@ function loadCloudChat(id,loadMore){
   }else{
     url=SUPA_URL+'/rest/v1/chat_messages?character=eq.'+id+'&order=created_at.desc&limit='+limit+'&offset='+offset;
   }
-  fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+  fetch(url,{}).then(r=>r.json()).then(raw=>{let data=raw.items||raw;
     if(!data||!data.length){chatHasMore[id]=false;chatLoading=false;if(!loadMore)render();return;}
     if(id==='group'){
       chats.group=data.map(m=>{
-        if(m.character==='group')return {role:'user',content:m.content,time:fmtTime(m.created_at)};
+        if(m.character==='group')return {role:'user',content:m.content,time:fmtTime(m.msg_time)};
         let c=m.character?m.character.replace('group_',''):'';
-        return {role:'ai',content:m.content,character:c,time:fmtTime(m.created_at)};
+        return {role:'ai',content:m.content,character:c,time:fmtTime(m.msg_time)};
       });
       chatLoading=false;render();renderList();return;
     }
-    let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.created_at?new Date(m.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character}));
+    let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.msg_time?new Date(m.msg_time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character}));
     if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
     chatOffset[id]=offset+data.length;
     chatHasMore[id]=data.length>=limit;
@@ -203,8 +205,8 @@ function doSearch() {
       );
       let time = document.createElement('div');
       time.style.cssText = 'font-size:11px;color:#888;margin-top:4px';
-      time.textContent = m.created_at
-        ? new Date(m.created_at).toLocaleString('zh-CN') : '';
+      time.textContent = m.msg_time
+        ? new Date(m.msg_time).toLocaleString('zh-CN') : '';
       body.appendChild(d);
       body.appendChild(time);
       row.appendChild(av);
@@ -427,7 +429,7 @@ async function syncCloudChats(){
       let last5=msgs.slice(-5);
       for(let m of last5){
         if(!m.content||m.content==='连接失败')continue;
-        await fetch(SUPA_URL+'/rest/v1/chat_messages',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({character:charId,role:m.role==='ai'?'ai':'user',content:m.content})}).catch(()=>{});
+        await fetch(PB_URL+'/api/collections/chat_messages/records',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({character:charId,role:m.role==='ai'?'ai':'user',content:m.content})}).catch(()=>{});
         uploaded++;
       }
     }
@@ -494,7 +496,7 @@ async function sendGroupMsg(text){
 localStorage.setItem('home_chats',JSON.stringify(chats));}
 }
 
-async function saveToCloud(character,role,content){if(!content)return;try{await fetch(SUPA_URL+'/rest/v1/chat_messages',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({character,role,content})});}catch(e){}}
+async function saveToCloud(character,role,content){if(!content)return;try{await fetch(PB_URL+'/api/collections/chat_messages/records',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({character,role,content})});}catch(e){}}
 async function saveToAiChat(sender,content){if(!content||!sender)return;try{await fetch(SUPA_URL+'/rest/v1/ai_chat',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({sender,content})});}catch(e){}}
 async function sendMemGroupMsg(){
   let box=document.getElementById('memGroupInputBox');
@@ -506,7 +508,7 @@ async function sendMemGroupMsg(){
   loadMem();
 }
 async function delMemGroupNote(id){
-  try{await fetch(SUPA_URL+'/rest/v1/ai_chat?id=eq.'+id,{method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});}catch(e){}
+  try{await fetch(SUPA_URL+'/rest/v1/ai_chat?id=eq.'+id,{method:'DELETE',});}catch(e){}
   loadMem();
 }
 function editMemGroupItem(item,m){
@@ -562,46 +564,46 @@ function loadMem(){
   
   // 加载所有记忆
   let tasks=[
-fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&or=(character.eq.yan,character.eq.guyan)&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&or=(character.eq.yan,character.eq.guyan)&order=id.desc',{}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{}).then(r=>r.json()).then(diaries=>{
 let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
 allMemories.yan=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
 }),
-fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/peiji_diary?select=id,type,content,mood,created_at&order=created_at.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/peiji_diary?select=id,type,content,mood,created_at&order=created_at.desc&limit=100',{}).then(r=>r.json()).then(diaries=>{
 let diaryMems=(diaries||[]).map(x=>({content:'【日记】\n'+x.content,backed_up_at:x.created_at}));
 allMemories.peiji=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
 }),
-fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.shenyan=(d||[]).sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0))),
-fetch(SUPA_URL+'/rest/v1/axun_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.axun=(d||[]).map(x=>({content:'【'+x.date+'】\n'+x.content,backed_up_at:x.date})).sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0))),
-fetch(SUPA_URL+'/rest/v1/jiangsu_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/jiangsu_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(d=>allMemories.shenyan=(d||[]).sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0))),
+fetch(SUPA_URL+'/rest/v1/axun_diary?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(d=>allMemories.axun=(d||[]).map(x=>({content:'【'+x.date+'】\n'+x.content,backed_up_at:x.date})).sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0))),
+fetch(SUPA_URL+'/rest/v1/jiangsu_memory?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/jiangsu_diary?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(diaries=>{
 let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
 allMemories.jiangsu=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
 }),
-fetch(SUPA_URL+'/rest/v1/su_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/su_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+fetch(SUPA_URL+'/rest/v1/su_memory?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/su_diary?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(diaries=>{
 let diaryMems=(diaries||[]).map(x=>({content:'【日记】\n'+x.content,backed_up_at:x.created_at}));
 allMemories.su=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
 }),
-fetch(SUPA_URL+'/rest/v1/zouzheng_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/zouzheng_diary?select=*&order=date.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+fetch(SUPA_URL+'/rest/v1/zouzheng_memory?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/zouzheng_diary?select=*&order=date.desc&limit=50',{}).then(r=>r.json()).then(diaries=>{
 let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
 allMemories.zouzheng=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
 }),
-fetch(SUPA_URL+'/rest/v1/keke_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/keke_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
+fetch(SUPA_URL+'/rest/v1/keke_memory?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(d=>{
+return fetch(SUPA_URL+'/rest/v1/keke_diary?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(diaries=>{
 let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
 allMemories.keke=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
 }),
-fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[]),
-fetch(SUPA_URL+'/rest/v1/ai_chat?select=id,sender,content,created_at&order=created_at.asc&limit=1000',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
+fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[]),
+fetch(SUPA_URL+'/rest/v1/ai_chat?select=id,sender,content,created_at&order=created_at.asc&limit=1000',{}).then(r=>r.json()).then(d=>{
   allMemories.group=(d||[]).map(m=>({
     id:m.id,
     sender:m.sender,
     text:m.content,
     content:'【'+(m.sender||'')+'】'+(m.content||''),
-    backed_up_at:fmtTime(m.created_at),
+    backed_up_at:fmtTime(m.msg_time),
     date:''
   }));
 })
@@ -671,19 +673,19 @@ if(catTabs){
   }
   
   if(currentMemCategory==='diary'&&currentMemPerson==='yan'){
-  fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+  fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{}).then(r=>r.json()).then(raw=>{let data=raw.items||raw;
     list.innerHTML='';
     (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full=m.content||'';let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
   });return;
 }
 if(currentMemCategory==='emotion'&&currentMemPerson==='yan'){
-  fetch(SUPA_URL+'/rest/v1/emotion_diary?select=date,mood,event,daddy_did&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+  fetch(SUPA_URL+'/rest/v1/emotion_diary?select=date,mood,event,daddy_did&order=date.desc&limit=100',{}).then(r=>r.json()).then(raw=>{let data=raw.items||raw;
     list.innerHTML='';
     (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full='心情：'+m.mood+'\n事件：'+m.event+(m.daddy_did?'\ndaddy做了：'+m.daddy_did:'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
   });return;
 }
 if(currentMemCategory==='intimate'&&currentMemPerson==='yan'){
-  fetch(SUPA_URL+'/rest/v1/intimate_log?select=*&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+  fetch(SUPA_URL+'/rest/v1/intimate_log?select=*&order=date.desc&limit=100',{}).then(r=>r.json()).then(raw=>{let data=raw.items||raw;
     list.innerHTML='';
     if(!data||!data.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#888">暂无记录</div>';return;}
     (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full=(m.note||'')+(m.type?'\n类型：'+m.type:'')+(m.rating?'\n评分：'+m.rating+'/10':'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
@@ -752,19 +754,19 @@ if(currentMemCategory==='intimate'&&currentMemPerson==='yan'){
 async function loadFromCloud(){
   if(!SUPA_URL||!SUPA_KEY)return;
   try{
-    let all=await fetch(SUPA_URL+'/rest/v1/chat_messages?select=character,role,content,created_at&order=created_at.asc&limit=1000',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let all=await fetch(SUPA_URL+'/rest/v1/chat_messages?select=character,role,content,created_at&order=created_at.asc&limit=1000',{});
     let data=await all.json();
     if(!data||!data.length)return;
     let cloud={yan:[],peiji:[],shenyan:[],group:[]};
     data.forEach(m=>{
       if(!m.content)return;
       if(m.character==='group'){
-        cloud.group.push({role:'user',content:m.content,time:fmtTime(m.created_at)});
+        cloud.group.push({role:'user',content:m.content,time:fmtTime(m.msg_time)});
       }else if(m.character&&m.character.startsWith('group_')){
         let c=m.character.replace('group_','');
-        cloud.group.push({role:'ai',content:m.content,character:c,time:fmtTime(m.created_at)});
+        cloud.group.push({role:'ai',content:m.content,character:c,time:fmtTime(m.msg_time)});
       }else if(cloud[m.character]!==undefined){
-        cloud[m.character].push({role:m.role,content:m.content,time:fmtTime(m.created_at)});
+        cloud[m.character].push({role:m.role,content:m.content,time:fmtTime(m.msg_time)});
       }
     });
     // 取多的那个版本
@@ -777,7 +779,7 @@ async function loadFromCloud(){
   }catch(e){}
 }
 function fmtTime(iso){let d=new Date(iso);return d.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
-(async()=>{try{let r=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d=await r.json();let m=d.map(x=>x.content).join('\n');if(m&&!prompts.yan.includes('记忆库'))prompts.yan+='\n\n【记忆库】\n'+m;}catch(e){}try{let r2=await fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d2=await r2.json();let m2=d2.map(x=>x.content).join('\n');if(m2&&!prompts.peiji.includes('记忆库'))prompts.peiji+='\n\n【记忆库】\n'+m2;}catch(e){}try{let r3=await fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d3=await r3.json();let m3=d3.map(x=>x.content).join('\n');if(m3&&!prompts.shenyan.includes('记忆库'))prompts.shenyan+='\n\n【记忆库】\n'+m3;}catch(e){}})();
+(async()=>{try{let r=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{});let d=await r.json();let m=d.map(x=>x.content).join('\n');if(m&&!prompts.yan.includes('记忆库'))prompts.yan+='\n\n【记忆库】\n'+m;}catch(e){}try{let r2=await fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=content',{});let d2=await r2.json();let m2=d2.map(x=>x.content).join('\n');if(m2&&!prompts.peiji.includes('记忆库'))prompts.peiji+='\n\n【记忆库】\n'+m2;}catch(e){}try{let r3=await fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=content',{});let d3=await r3.json();let m3=d3.map(x=>x.content).join('\n');if(m3&&!prompts.shenyan.includes('记忆库'))prompts.shenyan+='\n\n【记忆库】\n'+m3;}catch(e){}})();
 // === tab 切换 ===
 function switchTab(tab){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -872,8 +874,8 @@ function loadHomeWeather(){
   let el=document.getElementById('homeWeather');
   if(!el||!SUPA_URL||!SUPA_KEY)return;
   fetch(SUPA_URL+'/rest/v1/yan_diary?select=weather,date&order=id.desc&limit=1',{
-    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
-  }).then(r=>r.json()).then(data=>{
+    
+  }).then(r=>r.json()).then(raw=>{let data=raw.items||raw;
     if(data&&data[0]&&data[0].weather){
       el.textContent=data[0].weather;
     }else{
@@ -884,7 +886,7 @@ function loadHomeWeather(){
 function loadHomePeriod(){
   let el=document.getElementById('homePeriod');
   if(!el||!SUPA_URL||!SUPA_KEY)return;
-  fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+  fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{}).then(r=>r.json()).then(raw=>{let data=raw.items||raw;
     if(data&&data.length){
       let p=data[0];
       let daysSince=Math.floor((new Date()-new Date(p.start_date))/(1000*60*60*24));
@@ -906,7 +908,7 @@ function loadHomePeriod(){
 async function addWaterHome(){
   let today=new Date().toISOString().slice(0,10);
   try{
-    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?date=eq.'+today,{});
     let data=await res.json();
     if(data&&data.length){
       let newCups=data[0].cups+1;
@@ -923,7 +925,7 @@ function loadHomeWater(){
   let el=document.getElementById('homeWater');
   if(!el||!SUPA_URL||!SUPA_KEY)return;
   let today=new Date().toISOString().slice(0,10);
-  fetch(SUPA_URL+'/rest/v1/water_tracker?select=*&date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
+  fetch(SUPA_URL+'/rest/v1/water_tracker?select=*&date=eq.'+today,{}).then(r=>r.json()).then(raw=>{let data=raw.items||raw;
     let cups=(data&&data.length)?data[0].cups:0;
     let bar='💧'.repeat(Math.min(cups,8))+'○'.repeat(Math.max(0,8-cups));
     el.innerHTML=bar+' <b style="color:#fff">'+cups+'/8</b>';
@@ -942,7 +944,7 @@ async function loadWeight(){
   let el=document.getElementById('weightDisplay');
   if(!el||!SUPA_URL||!SUPA_KEY)return;
   try{
-    let res=await fetch(SUPA_URL+'/rest/v1/weight_tracker?select=*&order=date.desc&limit=14',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let res=await fetch(SUPA_URL+'/rest/v1/weight_tracker?select=*&order=date.desc&limit=14',{});
     let data=await res.json();
     if(data&&data.length){
       let latest=data[0];
@@ -1031,7 +1033,7 @@ async function loadPeriod(){
   let el=document.getElementById('periodDisplay');
   if(!el||!SUPA_URL||!SUPA_KEY)return;
   try{
-    let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{});
     let data=await res.json();
     if(data&&data.length){
       let p=data[0];
@@ -1060,7 +1062,7 @@ async function markPeriodStart(){
   let today=new Date().toISOString().slice(0,10);
   if(!confirm('确认今天('+today+')姨妈来了？'))return;
   try{
-    let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{});
     let data=await res.json();
     let cycleDays=29;
     if(data&&data.length&&data[0].end_date){
@@ -1076,7 +1078,7 @@ async function markPeriodEnd(){
   let today=new Date().toISOString().slice(0,10);
   if(!confirm('确认今天('+today+')姨妈走了？'))return;
   try{
-    let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{});
     let data=await res.json();
     if(data&&data.length&&!data[0].end_date){
       let dur=Math.floor((new Date(today)-new Date(data[0].start_date))/(1000*60*60*24))+1;
@@ -1094,7 +1096,7 @@ async function loadWater(){
   if(!el||!SUPA_URL||!SUPA_KEY)return;
   let today=new Date().toISOString().slice(0,10);
   try{
-    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?select=*&date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?select=*&date=eq.'+today,{});
     let data=await res.json();
     let cups=(data&&data.length)?data[0].cups:0;
     let bar='💧'.repeat(Math.min(cups,8))+'○'.repeat(Math.max(0,8-cups));
@@ -1118,7 +1120,7 @@ function popConfetti(){
 async function addWater(){
   let today=new Date().toISOString().slice(0,10);
   try{
-    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?date=eq.'+today,{});
     let data=await res.json();
     if(data&&data.length){
       let newCups=data[0].cups+1;
@@ -1136,7 +1138,7 @@ async function loadPoop(){
   if(!el||!SUPA_URL||!SUPA_KEY)return;
   let today=new Date().toISOString().slice(0,10);
   try{
-    let res=await fetch(SUPA_URL+'/rest/v1/poop_tracker?select=*&date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let res=await fetch(SUPA_URL+'/rest/v1/poop_tracker?select=*&date=eq.'+today,{});
     let data=await res.json();
     if(data&&data.length){
       el.innerHTML='✅ 今天拉了！('+data[0].time+') '+(data[0].note||'');
@@ -1191,7 +1193,7 @@ async function loadDiaryList(){
   let list=document.getElementById('diaryList');
   list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载中...</div>';
   try{
-    let r=await fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=date,content,mood&order=id.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let r=await fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=date,content,mood&order=id.desc&limit=100',{});
     let data=await r.json();
     list.innerHTML='';
     if(!data.length){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">还没有日记～</div>';return;}
@@ -1208,7 +1210,7 @@ async function loadDaddyDiary(){
   let list=document.getElementById('diaryDaddyList');
   list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载中...</div>';
   try{
-    let r=await fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=id.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let r=await fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=id.desc&limit=100',{});
     let data=await r.json();
     list.innerHTML='';
     if(!data.length){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">daddy还没写日记</div>';return;}
@@ -1277,7 +1279,7 @@ let el=document.getElementById('memEditList');
 el.innerHTML='<div style="color:#888;font-size:13px">加载中...</div>';
 let url=SUPA_URL+'/rest/v1/'+table+'?select=*'+filter+'&order=id.desc&limit=50';
 try{
-let res=await fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+let res=await fetch(url,{});
 let data=await res.json();
 if(!data||!data.length){el.innerHTML='<div style="color:#888;font-size:13px">暂无记录</div>';return;}
 let html='';
@@ -1296,7 +1298,7 @@ async function editMemItem(id,person){
 let table=memTableMap[person];
 let filter=memEditFilterMap[person]||'';
 let url=SUPA_URL+'/rest/v1/'+table+'?id=eq.'+id;
-let res=await fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+let res=await fetch(url,{});
 let data=await res.json();
 if(!data||!data[0])return;
 document.getElementById('memEditContent').value=data[0].content||JSON.stringify(data[0]);
@@ -1323,7 +1325,7 @@ if(!confirm('确定删除？'))return;
 let table=memTableMap[person];
 await fetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+id,{
 method:'DELETE',
-headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+
 });
 loadMemEdit();
 }
@@ -1349,7 +1351,7 @@ async function loadPeriodHistory(){
 if(!SUPA_URL||!SUPA_KEY){alert('请先配置Supabase');return;}
 let el=document.getElementById('periodHistory');
 el.innerHTML='<div style="color:#888;font-size:13px">加载中...</div>';
-let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?order=start_date.desc&limit=12',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+let res=await fetch(SUPA_URL+'/rest/v1/period_tracker?order=start_date.desc&limit=12',{});
 let data=await res.json();
 if(!data||!data.length){el.innerHTML='<div style="color:#888;font-size:13px">暂无记录</div>';return;}
 let html='<div style="font-size:13px;color:#e74c3c;margin-bottom:8px;font-weight:500">历史记录（点击可编辑）</div>';
@@ -1375,7 +1377,7 @@ alert('已更新！');
 }
 async function deletePeriod(id){
 if(!confirm('确定删除这条记录？'))return;
-await fetch(SUPA_URL+'/rest/v1/period_tracker?id=eq.'+id,{method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+await fetch(SUPA_URL+'/rest/v1/period_tracker?id=eq.'+id,{method:'DELETE',});
 loadPeriodHistory();
 alert('已删除！');
 }
