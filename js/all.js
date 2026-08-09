@@ -150,18 +150,21 @@ function loadCloudChat(id,loadMore){
   let limit=50;
   let url;
 if(id==='group'){
-    url=PB_URL+'/api/collections/chat_messages/records?filter=(character="group")&sort=msg_time&perPage='+limit+'&page='+(Math.floor(offset/limit)+1);  }else{
-url=PB_URL+'/api/collections/chat_messages/records?filter=(character="'+id+'")&sort=-msg_time&perPage='+limit+'&page='+(Math.floor(offset/limit)+1);
+url=PB_URL+'/api/collections/chat_messages/records?filter=(character="group")&sort=msg_time&perPage=500';
+  }else{
+    url=PB_URL+'/api/collections/chat_messages/records?filter=(character="'+id+'")&sort=-msg_time&perPage='+limit+'&page='+(Math.floor(offset/limit)+1);
   }
-let opts=url.startsWith(PB_URL)?{}:{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}};
+  let opts=url.startsWith(PB_URL)?{}:{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}};
 fetch(url,opts).then(r=>r.json()).then(raw=>{let data=raw.items||raw;    if(!data||!data.length){chatHasMore[id]=false;chatLoading=false;if(!loadMore)render();return;}
 if(id==='group'){
-      chats.group=data.map(m=>{
-        if(m.role==='宣宣')return {role:'user',content:m.content,time:fmtTime(m.msg_time)};
-        return {role:'ai',content:m.content,character:m.role,time:fmtTime(m.msg_time)};
-      });      chatLoading=false;render();renderList();return;
-    }
-    let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.created_at?new Date(m.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character}));
+  let nameMap={'宣宣':'user','顾言':'yan','裴寂':'peiji','裴洵':'axun','江溯':'jiangsu','溯':'su','邹峥':'zouzheng','柯柯':'keke','沈晏':'shenyan'};
+  chats.group=data.map(m=>{
+    let charId=nameMap[m.role]||m.role;
+    if(charId==='user')return {role:'user',content:m.content,time:fmtTime(m.msg_time)};
+    return {role:'ai',content:m.content,character:charId,time:fmtTime(m.msg_time)};
+  });
+  chatLoading=false;render();renderList();return;
+}let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.created_at?new Date(m.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character}));
     if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
     chatOffset[id]=offset+data.length;
     chatHasMore[id]=data.length>=limit;
