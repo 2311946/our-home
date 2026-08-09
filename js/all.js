@@ -149,20 +149,17 @@ function loadCloudChat(id,loadMore){
   let offset=chatOffset[id]||0;
   let limit=50;
   let url;
-  if(id==='group'){
-    url=SUPA_URL+'/rest/v1/chat_messages?or=(character.eq.group,character.like.group_%25)&order=created_at.asc&limit='+limit+'&offset='+offset;
-  }else{
+if(id==='group'){
+    url=PB_URL+'/api/collections/chat_messages/records?filter=(character="group")&sort=msg_time&perPage='+limit+'&page='+(Math.floor(offset/limit)+1);  }else{
 url=PB_URL+'/api/collections/chat_messages/records?filter=(character="'+id+'")&sort=-msg_time&perPage='+limit+'&page='+(Math.floor(offset/limit)+1);
   }
 let opts=url.startsWith(PB_URL)?{}:{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}};
 fetch(url,opts).then(r=>r.json()).then(raw=>{let data=raw.items||raw;    if(!data||!data.length){chatHasMore[id]=false;chatLoading=false;if(!loadMore)render();return;}
-    if(id==='group'){
+if(id==='group'){
       chats.group=data.map(m=>{
-        if(m.character==='group')return {role:'user',content:m.content,time:fmtTime(m.created_at)};
-        let c=m.character?m.character.replace('group_',''):'';
-        return {role:'ai',content:m.content,character:c,time:fmtTime(m.created_at)};
-      });
-      chatLoading=false;render();renderList();return;
+        if(m.role==='宣宣')return {role:'user',content:m.content,time:fmtTime(m.msg_time)};
+        return {role:'ai',content:m.content,character:m.role,time:fmtTime(m.msg_time)};
+      });      chatLoading=false;render();renderList();return;
     }
     let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.created_at?new Date(m.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character}));
     if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
