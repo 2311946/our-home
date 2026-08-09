@@ -126,6 +126,19 @@ function loadCountdown(){
   }
 }
 function shuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function loadPreviews(){
+  characters.forEach(c=>{
+    if(c.id==='group') return;
+    let url=PB_URL+'/api/collections/chat_messages/records?filter=(character="'+c.id+'")&sort=-msg_time&perPage=1';
+    fetch(url).then(r=>r.json()).then(raw=>{
+      let items=raw.items||[];
+      if(items.length){
+        chatPreviews[c.id]={content:items[0].content,time:(items[0].msg_time||'').slice(0,10)};
+        renderList();
+      }
+    }).catch(()=>{});
+  });
+}
 function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let pv=chatPreviews[c.id];let preview=pv?(pv.content||'').slice(0,25):last?(last.content||'').slice(0,25):'还没有消息';let time=pv?pv.time:last?last.time:'';let item=document.createElement('div');item.className='contact-item';item.onclick=()=>enterChat(c.id);item.innerHTML='<div class="contact-avatar" style="background:'+c.color+'">'+c.emoji+'</div><div class="contact-info"><div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div></div><div class="contact-time">'+time+'</div>';list.appendChild(item);});}
 let chatOffset={};let chatLoading=false;let chatHasMore={};
 function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
@@ -791,8 +804,9 @@ function switchTab(tab){
   }else if(tab==='list'){
     document.getElementById('listView').classList.add('active');
     tabBar.children[1].classList.add('active');
-    loadFromCloud().then(()=>renderList());
-    renderList();
+loadFromCloud().then(()=>renderList());
+renderList();
+loadPreviews();    renderList();
   }else if(tab==='mem'){
     document.getElementById('memView').classList.add('active');
     tabBar.children[2].classList.add('active');
