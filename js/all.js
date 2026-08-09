@@ -139,10 +139,10 @@ function loadCloudChat(id,loadMore){
   if(id==='group'){
     url=SUPA_URL+'/rest/v1/chat_messages?or=(character.eq.group,character.like.group_%25)&order=created_at.asc&limit='+limit+'&offset='+offset;
   }else{
-    url=SUPA_URL+'/rest/v1/chat_messages?character=eq.'+id+'&order=created_at.desc&limit='+limit+'&offset='+offset;
+url=PB_URL+'/api/collections/chat_messages/records?filter=(character="'+id+'")&sort=-msg_time&perPage='+limit+'&page='+(Math.floor(offset/limit)+1);
   }
-  fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
-    if(!data||!data.length){chatHasMore[id]=false;chatLoading=false;if(!loadMore)render();return;}
+let opts=url.startsWith(PB_URL)?{}:{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}};
+fetch(url,opts).then(r=>r.json()).then(raw=>{let data=raw.items||raw;    if(!data||!data.length){chatHasMore[id]=false;chatLoading=false;if(!loadMore)render();return;}
     if(id==='group'){
       chats.group=data.map(m=>{
         if(m.character==='group')return {role:'user',content:m.content,time:fmtTime(m.created_at)};
@@ -178,7 +178,7 @@ function doSearch() {
   box.innerHTML = '<div style="text-align:center;padding:20px;color:#888">搜索中...</div>';
   fetch(url, {
     headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-  }).then(r => r.json()).then(data => {
+  }).then(r=>r.json()).then(raw=>{let data=raw.items||raw;
     box.innerHTML = '';
     if (!data.length) {
       box.innerHTML = '<div style="text-align:center;padding:20px;color:#888">没有找到</div>';
