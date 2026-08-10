@@ -1,5 +1,4 @@
-var chatOffset={};var chatLoading={};var chatHasMore={};function nowTime(){return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
-function aiNowTime(){
+var chatOffset={};var chatLoading=false;var chatHasMore={};function aiNowTime(){
   return new Date().toLocaleString('zh-CN',{
     year:'numeric',
     month:'2-digit',
@@ -143,8 +142,7 @@ function loadPreviews(){
     }).catch(()=>{});
   });
 }
-function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let pv=chatPreviews[c.id];let preview=pv?(pv.content||'').slice(0,25):last?(last.content||'').slice(0,25):'还没有消息';let time=pv?pv.time:last?last.time:'';let item=document.createElement('div');item.className='contact-item';item.onclick=()=>enterChat(c.id);let avDiv=document.createElement('div');avDiv.className='contact-avatar';avDiv.style.background=c.color;avDiv.textContent=c.emoji;avDiv.onclick=function(e){e.stopPropagation();openProfile(c.id);};let info=document.createElement('div');info.className='contact-info';info.innerHTML='<div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div>';let timeDiv=document.createElement('div');timeDiv.className='contact-time';timeDiv.textContent=time;item.appendChild(avDiv);item.appendChild(info);item.appendChild(timeDiv);list.appendChild(item);});}function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
-function loadCloudChat(id,loadMore){
+function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let pv=chatPreviews[c.id];let preview=pv?(pv.content||'').slice(0,25):last?(last.content||'').slice(0,25):'还没有消息';let time=pv?pv.time:last?last.time:'';let item=document.createElement('div');item.className='contact-item';let avDiv=document.createElement('div');avDiv.className='contact-avatar';avDiv.style.background=c.color;avDiv.textContent=c.emoji;avDiv.onclick=function(e){e.stopPropagation();openProfile(c.id);};let info=document.createElement('div');info.className='contact-info';info.innerHTML='<div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div>';info.onclick=function(){enterChat(c.id);};let timeDiv=document.createElement('div');timeDiv.className='contact-time';timeDiv.textContent=time;timeDiv.onclick=function(){enterChat(c.id);};item.appendChild(avDiv);item.appendChild(info);item.appendChild(timeDiv);list.appendChild(item);});}function loadCloudChat(id,loadMore){
   if(chatLoading)return;
   if(!SUPA_URL||!SUPA_KEY){render();return;}
   chatLoading=true;
@@ -156,7 +154,7 @@ url=PB_URL+'/api/collections/chat_messages/records?filter=(character="group")&so
   }else{
     url=PB_URL+'/api/collections/chat_messages/records?filter=(character="'+id+'")&sort=-msg_time&perPage='+limit+'&page='+(Math.floor(offset/limit)+1);
   }
-  let opts=url.startsWith(PB_URL)?{}:{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}};
+    let opts=url.startsWith(PB_URL)?{}:{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}};
 fetch(url,opts).then(r=>r.json()).then(raw=>{let data=raw.items||raw;    if(!data||!data.length){chatHasMore[id]=false;chatLoading=false;if(!loadMore)render();return;}
 if(id==='group'){
   let nameMap={'宣宣':'user','顾言':'yan','裴寂':'peiji','裴洵':'axun','江溯':'jiangsu','溯':'su','邹峥':'zouzheng','柯柯':'keke','沈晏':'shenyan'};
@@ -1611,3 +1609,4 @@ function endCall() {
   let btn = document.getElementById('callBtn');
   if (btn) { btn.classList.remove('calling'); btn.textContent = '📞'; }
 }
+function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
