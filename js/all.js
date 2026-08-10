@@ -1611,8 +1611,8 @@ function endCall() {
   if (btn) { btn.classList.remove('calling'); btn.textContent = '📞'; }
 }
 function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
-function savePreset(){let name=prompt('给这个预设起个名字：');if(!name)return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');presets[name]={url:document.getElementById('apiUrl').value,key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('api_presets',JSON.stringify(presets));renderPresets();alert('已保存：'+name);}
-function loadPreset(){let sel=document.getElementById('presetSelect');let name=sel.value;if(!name)return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');let p=presets[name];if(!p)return;document.getElementById('apiUrl').value=p.url||'';document.getElementById('apiKey').value=p.key||'';document.getElementById('modelName').value=p.model||'';apiConfig={url:document.getElementById('apiUrl').value.replace(/\/$/,''),key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('home_api',JSON.stringify(apiConfig));localStorage.setItem('current_preset',name);}
+function savePreset(){let name=prompt('给这个预设起个名字：');if(!name)return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');presets[name]={url:document.getElementById('apiUrl').value,key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value,canTool:document.getElementById('canTool').checked,canVision:document.getElementById('canVision').checked,canReason:document.getElementById('canReason').checked};localStorage.setItem('api_presets',JSON.stringify(presets));renderPresets();alert('已保存：'+name);}
+function loadPreset(){let sel=document.getElementById('presetSelect');let name=sel.value;if(!name)return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');let p=presets[name];if(!p)return;document.getElementById('apiUrl').value=p.url||'';document.getElementById('apiKey').value=p.key||'';document.getElementById('modelName').value=p.model||'';document.getElementById('canTool').checked=p.canTool||false;document.getElementById('canVision').checked=p.canVision||false;document.getElementById('canReason').checked=p.canReason||false;apiConfig={url:document.getElementById('apiUrl').value.replace(/\/$/,''),key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('home_api',JSON.stringify(apiConfig));localStorage.setItem('current_preset',name);}document.getElementById('modelName').dispatchEvent(new Event('input'));
 function delPreset(){let sel=document.getElementById('presetSelect');let name=sel.value;if(!name)return;if(!confirm('删除预设 '+name+'？'))return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');delete presets[name];localStorage.setItem('api_presets',JSON.stringify(presets));renderPresets();}
 function renderPresets(){
   let sel=document.getElementById('presetSelect');
@@ -1621,15 +1621,56 @@ function renderPresets(){
 let currentName=localStorage.getItem('current_preset')||'';
   sel.innerHTML='<option value="">-- 选择预设 --</option>';
   Object.keys(presets).forEach(name=>{
-    let o=document.createElement('option');
-    o.value=name;
-    o.textContent=name;
-    let p=presets[name];
+let o=document.createElement('option');
+o.value=name;
+let p=presets[name];
+let icons='';if(p.canTool)icons+='🔧';if(p.canVision)icons+='👁️';if(p.canReason)icons+='🧠';o.textContent=name+(icons?' '+icons:'');
 if(name===currentName){
         o.selected=true;
     }
     sel.appendChild(o);
   });
+let cp=presets[currentName];if(cp){document.getElementById('canTool').checked=cp.canTool||false;document.getElementById('canVision').checked=cp.canVision||false;document.getElementById('canReason').checked=cp.canReason||false;}
 }
 document.addEventListener('DOMContentLoaded',renderPresets);
 function setStatus(s){let id=document.getElementById('profileModal').dataset.charId;if(!id)return;localStorage.setItem('status_'+id,s);let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[s];document.getElementById('profileStatus').textContent=statusText;document.getElementById('profileModal').style.display='none';let bar=document.getElementById('avatarBar');if(bar){bar.innerHTML='';characters.forEach(c=>{let d=document.createElement('div');d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:60px;flex-shrink:0';d.onclick=function(){openProfile(c.id);};let status=localStorage.getItem('status_'+c.id)||'online';let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[status];let statusClass='status-'+status;d.innerHTML='<div style="width:48px;height:48px;border-radius:50%;background:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div><span style="font-size:11px;color:#aaa">'+c.name+'</span><span class="status-tag '+statusClass+'">'+statusText+'</span>';bar.appendChild(d);});}}
+const MODEL_CAPS={
+  'claude-sonet-4':{canTool:true,canVision:true,canReason:true},
+  'claude-opus-4':{canTool:true,canVision:true,canReason:true},
+  'claude-3.5-sonnet':{canTool:true,canVision:true,canReason:false},
+  'claude-fable-5':{canTool:false,canVision:true,canReason:true},
+  'gpt-4o':{canTool:true,canVision:true,canReason:false},
+  'gpt-o3':{canTool:true,canVision:true,canReason:true},
+  'gemini-2.5-pro':{canTool:true,canVision:true,canReason:true},
+  'gemini-2.5-flash':{canTool:true,canVision:true,canReason:true},
+  'deepseek-r1':{canTool:false,canVision:false,canReason:true},
+  'deepseek-v3':{canTool:true,canVision:false,canReason:false}
+};
+document.getElementById('modelName').addEventListener('input',function(){
+  let m=this.value.toLowerCase();
+  let caps=null;
+  for(let k in MODEL_CAPS){if(m.includes(k)){caps=MODEL_CAPS[k];break;}}
+  if(caps){
+    document.getElementById('canTool').checked=caps.canTool;
+    document.getElementById('canVision').checked=caps.canVision;
+    document.getElementById('canReason').checked=caps.canReason;
+  }
+});
+document.addEventListener('DOMContentLoaded',function(){
+  let name=localStorage.getItem('current_preset')||'';
+  if(!name)return;
+  let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');
+  let p=presets[name];
+  if(p){
+    document.getElementById('canTool').checked=p.canTool||false;
+    document.getElementById('canVision').checked=p.canVision||false;
+    document.getElementById('canReason').checked=p.canReason||false;
+  }
+});
+function getWishes(){return JSON.parse(localStorage.getItem('wishes')||'[]');}
+function saveWishes(w){localStorage.setItem('wishes',JSON.stringify(w));renderWishes();}
+function renderWishes(){let w=getWishes();let list=document.getElementById('wishList');if(!list)return;list.innerHTML='';w.forEach((item,i)=>{let d=document.createElement('div');d.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.05);border-radius:8px';d.innerHTML='<input type="checkbox" '+(item.done?'checked':'')+' onchange="toggleWish('+i+')" style="cursor:pointer"><span style="flex:1;font-size:13px;color:'+(item.done?'#666':'#eee')+';text-decoration:'+(item.done?'line-through':'none')+'">'+item.text+'</span><span onclick="delWish('+i+')" style="color:#666;cursor:pointer;font-size:12px">✕</span>';list.appendChild(d);});let count=w.filter(x=>!x.done).length;let c=document.getElementById('wishCount');if(c)c.textContent=count;}
+function addWish(){let input=document.getElementById('wishInput');let text=input.value.trim();if(!text)return;let w=getWishes();w.unshift({text:text,done:false,date:new Date().toISOString().slice(0,10)});saveWishes(w);input.value='';}
+function toggleWish(i){let w=getWishes();w[i].done=!w[i].done;saveWishes(w);}
+function delWish(i){let w=getWishes();w.splice(i,1);saveWishes(w);}
+document.addEventListener('DOMContentLoaded',renderWishes);

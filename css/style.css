@@ -37,6 +37,11 @@ body.warm .tab-item.active{color:#d4764e}
 .msg.ai.yan{background:linear-gradient(135deg,#2d1f4e,#1e1145)}
 .msg.ai.peiji{background:linear-gradient(135deg,#3d1a1a,#2a0f0f)}
 .msg.ai.shenyan{background:linear-gradient(135deg,#1a2d3d,#0d1e2d)}
+.msg.ai.axun{background:linear-gradient(135deg,#1a3d2d,#0f2a1a)}
+.msg.ai.jiangsu{background:linear-gradient(135deg,#1a3d3d,#0f2a2a)}
+.msg.ai.su{background:linear-gradient(135deg,#3d3d1a,#2a2a0f)}
+.msg.ai.zouzheng{background:linear-gradient(135deg,#2d1a3d,#1e0f2a)}
+.msg.ai.keke{background:linear-gradient(135deg,#3d2d1a,#2a1e0f)}
 .msg-time{font-size:10px;color:#666;margin-top:2px}
 .msg-menu{position:absolute;top:-36px;background:#1a1a2e;border:1px solid #444;border-radius:8px;display:flex;gap:2px;padding:4px;z-index:99}
 .msg-menu button{background:none;border:none;color:#fff;font-size:12px;padding:4px 8px;cursor:pointer;border-radius:4px}
