@@ -6,6 +6,7 @@
 <title>我们的家</title>
 <link rel="stylesheet" href="css/style.css">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
 </head>
 <body>
 <!-- 主页 -->
@@ -246,6 +247,13 @@
       <button onclick="fetchModels()" style="background:#9b59b6;color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer">刷新</button>
     </div>
   </div>
+  <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+<select id="presetSelect" onchange="loadPreset()" style="flex:1;padding:8px;border-radius:8px;background:#1a1a2e;color:#fff;border:1px solid #333">
+<option value="">-- 选择预设 --</option>
+</select>
+<button onclick="savePreset()" style="padding:8px 12px;border-radius:8px;background:#9b59b6;color:#fff;border:none;cursor:pointer">💾 存</button>
+<button onclick="delPreset()" style="padding:8px 12px;border-radius:8px;background:#c0392b;color:#fff;border:none;cursor:pointer">🗑️</button>
+</div>
 <div style="margin-top:12px">
     <label>📏 上下文条数：<span id="ctxVal">30</span></label>
     <input type="range" min="10" max="500" value="30" id="ctxRange" oninput="document.getElementById('ctxVal').textContent=this.value;localStorage.setItem('ctx_count',this.value)" style="width:100%">

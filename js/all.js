@@ -1,3 +1,4 @@
+function nowTime(){return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 var chatOffset={};var chatLoading=false;var chatHasMore={};function aiNowTime(){
   return new Date().toLocaleString('zh-CN',{
     year:'numeric',
@@ -477,7 +478,7 @@ chats[currentChar].slice(-contextCount).forEach(m=>{
     role:m.role==='ai'?'assistant':'user',
     content:withMsgTime(m)
   });
-});chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiConfig.key},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let data=line.slice(5).trim();if(data==='[DONE]')break;try{let j=JSON.parse(data);let t=j.choices[0].delta.content;if(t)chats[currentChar][chats[currentChar].length-1].content+=t;}catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='连接失败';render();}localStorage.setItem('home_chats',JSON.stringify(chats));if(!isRegen)saveToCloud(currentChar,'user',text);saveToCloud(currentChar,'ai',chats[currentChar][chats[currentChar].length-1].content);}
+});chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiConfig.key},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let data=line.slice(5).trim();if(data==='[DONE]')break;try{let j=JSON.parse(data);let t=j.choices[0].delta.content;if(t)chats[currentChar][chats[currentChar].length-1].content+=t;}catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='连接失败';render();}localStorage.setItem('home_chats',JSON.stringify(chats));if(!isRegen)saveToCloud(currentChar,'user',text);setTimeout(()=>saveToCloud(currentChar,'ai',chats[currentChar][chats[currentChar].length-1].content),500);}
 async function sendGroupMsg(text){
   if(!text)return;
 
@@ -507,8 +508,7 @@ async function sendGroupMsg(text){
 
 localStorage.setItem('home_chats',JSON.stringify(chats));}
 }
-
-async function saveToCloud(character,role,content){if(!content)return;try{await fetch(SUPA_URL+'/rest/v1/chat_messages',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({character,role,content})});}catch(e){}}
+async function saveToCloud(character,role,content){if(!content)return;try{await fetch(PB_URL+'/api/collections/chat_messages/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({character,role,content,msg_time:new Date().toISOString()})});}catch(e){}}
 async function saveToAiChat(sender,content){if(!content||!sender)return;try{await fetch(SUPA_URL+'/rest/v1/ai_chat',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({sender,content})});}catch(e){}}
 async function sendMemGroupMsg(){
   let box=document.getElementById('memGroupInputBox');
@@ -1611,3 +1611,25 @@ function endCall() {
   if (btn) { btn.classList.remove('calling'); btn.textContent = '📞'; }
 }
 function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
+function savePreset(){let name=prompt('给这个预设起个名字：');if(!name)return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');presets[name]={url:document.getElementById('apiUrl').value,key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('api_presets',JSON.stringify(presets));renderPresets();alert('已保存：'+name);}
+function loadPreset(){let sel=document.getElementById('presetSelect');let name=sel.value;if(!name)return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');let p=presets[name];if(!p)return;document.getElementById('apiUrl').value=p.url||'';document.getElementById('apiKey').value=p.key||'';document.getElementById('modelName').value=p.model||'';apiConfig={url:document.getElementById('apiUrl').value.replace(/\/$/,''),key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('home_api',JSON.stringify(apiConfig));}
+function delPreset(){let sel=document.getElementById('presetSelect');let name=sel.value;if(!name)return;if(!confirm('删除预设 '+name+'？'))return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');delete presets[name];localStorage.setItem('api_presets',JSON.stringify(presets));renderPresets();}
+function renderPresets(){
+  let sel=document.getElementById('presetSelect');
+  if(!sel)return;
+  let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');
+  let current=JSON.parse(localStorage.getItem('home_api')||'{}');
+  sel.innerHTML='<option value="">-- 选择预设 --</option>';
+  Object.keys(presets).forEach(name=>{
+    let o=document.createElement('option');
+    o.value=name;
+    o.textContent=name;
+    let p=presets[name];
+    if(current.url===p.url && current.key===p.key && current.model===p.model){
+      o.selected=true;
+    }
+    sel.appendChild(o);
+  });
+}
+document.addEventListener('DOMContentLoaded',renderPresets);
+
