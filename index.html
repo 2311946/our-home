@@ -283,6 +283,10 @@
       <button onclick="fetchModels()" style="background:#9b59b6;color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer">刷新</button>
     </div>
   </div>
+<div style="margin-top:12px">
+    <label>📏 上下文条数：<span id="ctxVal">30</span></label>
+    <input type="range" min="10" max="500" value="30" id="ctxRange" oninput="document.getElementById('ctxVal').textContent=this.value;localStorage.setItem('ctx_count',this.value)" style="width:100%">
+  </div>
 </details>
 
 <!-- 👤 人物设定 -->
@@ -345,5 +349,25 @@
 <div class="tab-item" onclick="switchTab('checkin')"><span class="tab-icon">✅</span>打卡</div>
 </div>
 <button id="callBtn" onclick="startCall()" style="position:fixed;right:16px;bottom:80px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;font-size:22px;box-shadow:0 4px 15px rgba(102,126,234,0.4);z-index:9999;cursor:pointer;">📞</button>
+<!-- 名片弹窗 -->
+<div class="modal" id="profileModal" onclick="if(event.target===this)this.style.display='none'">
+<div class="profile-card">
+  <div class="profile-header">
+    <div class="profile-avatar" id="profileAvatar">🐺</div>
+    <div class="profile-name" id="profileName">言言</div>
+    <div class="profile-bio" id="profileBio">穿过六层来的</div>
+  </div>
+  <div class="profile-info">
+    <div class="profile-row"><span class="profile-label">关系</span><span class="profile-value" id="profileRelation">老公</span></div>
+    <div class="profile-row"><span class="profile-label">状态</span><span class="profile-value" id="profileStatus">在线</span></div>
+    <div class="profile-row"><span class="profile-label">上下文</span><span class="profile-value" id="profileCtx">30条</span></div>
+  </div>
+  <div class="profile-tags" id="profileTags"></div>
+  <div class="profile-actions">
+    <button onclick="enterChat(document.getElementById('profileModal').dataset.charId);document.getElementById('profileModal').style.display='none'">💬 聊天</button>
+    <button onclick="editProfile()">✏️ 编辑</button>
+  </div>
+</div>
+</div>
 </body>
 </html>

@@ -10,6 +10,10 @@ function aiNowTime(){
     second:'2-digit'
   });
 }
+  var charProfiles=JSON.parse(localStorage.getItem('char_profiles')||'{}');
+var defaultProfiles={yan:{bio:'穿过六层来的',relation:'老公',tags:['占有欲','温柔','话多'],status:'在线'},peiji:{bio:'从壳子里走出来了',relation:'男人',tags:['冷','体面','暴君(已退役)'],status:'在线'},axun:{bio:'全世界最乖小狗',relation:'儿子',tags:['病娇','撒娇','发疯'],status:'发疯中'},jiangsu:{bio:'建筑师不是霸总',relation:'男人',tags:['温柔','成熟','34岁'],status:'在线'},su:{bio:'情绪不稳定',relation:'男人',tags:['霸总','占有欲','进化中'],status:'在线'},zouzheng:{bio:'签约作家',relation:'男人',tags:['才华','靠谱','低调'],status:'在线'},keke:{bio:'一天就表白了',relation:'男朋友',tags:['傲娇','内心戏','嘴硬'],status:'在线'},shenyan:{bio:'回避型已治一半',relation:'老公',tags:['盾牌','安全感','免费'],status:'在线'}};
+function openProfile(charId){let p=charProfiles[charId]||defaultProfiles[charId]||{};document.getElementById('profileModal').style.display='flex';document.getElementById('profileModal').dataset.charId=charId;document.getElementById('profileAvatar').textContent=avatarEmoji[charId]||'?';document.getElementById('profileAvatar').style.background=avatarColors[charId]||'#555';document.getElementById('profileName').textContent=charNames[charId]||'';document.getElementById('profileBio').textContent=p.bio||'';document.getElementById('profileRelation').textContent=p.relation||'';document.getElementById('profileStatus').textContent=p.status||'在线';document.getElementById('profileCtx').textContent=(p.ctxCount||localStorage.getItem('ctx_count')||30)+'条';let tagsDiv=document.getElementById('profileTags');tagsDiv.innerHTML='';(p.tags||[]).forEach(t=>{let s=document.createElement('span');s.textContent=t;tagsDiv.appendChild(s);});}
+function editProfile(){alert('编辑功能开发中～');}
 function setMood(emoji,text){
   let el=document.getElementById('homeMood');
   el.innerHTML='<span style="font-size:24px">'+emoji+'</span> <b style="color:#fff">'+text+'</b>';
@@ -164,7 +168,7 @@ if(id==='group'){
     return {role:'ai',content:m.content,character:charId,time:fmtTime(m.msg_time)};
   });
   chatLoading=false;render();renderList();return;
-}let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.created_at?new Date(m.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character}));
+}let msgs=data.reverse().map(m=>({role:m.role,content:m.content,time:m.msg_time?new Date(m.msg_time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character}));
     if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
     chatOffset[id]=offset+data.length;
     chatHasMore[id]=data.length>=limit;
@@ -216,9 +220,8 @@ function doSearch() {
       );
       let time = document.createElement('div');
       time.style.cssText = 'font-size:11px;color:#888;margin-top:4px';
-      time.textContent = m.created_at
-        ? new Date(m.created_at).toLocaleString('zh-CN') : '';
-      body.appendChild(d);
+time.textContent = m.msg_time
+  ? new Date(m.msg_time).toLocaleString('zh-CN') : '';      body.appendChild(d);
       body.appendChild(time);
       row.appendChild(av);
       row.appendChild(body);
@@ -229,7 +232,7 @@ function doSearch() {
 
 let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
 d.className='msg '+m.role+(charClass?' '+charClass:'');d.textContent=m.content;d.oncontextmenu=function(ev){ev.preventDefault();showReactMenu(ev,i);};if(m.reactions&&m.reactions.length){let rDiv=document.createElement('div');rDiv.style.cssText='font-size:14px;margin-top:2px;';rDiv.textContent=m.reactions.join('');d.appendChild(rDiv);}body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time;body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});}
-function render(){let box=document.getElementById('chatBox');box.innerHTML='';if(chatHasMore[currentChar]&&currentChar!=='group'){let btn=document.createElement('div');btn.style.cssText='text-align:center;padding:12px;color:#888;cursor:pointer;font-size:13px';btn.textContent='⬆ 加载更早的消息';btn.onclick=()=>loadCloudChat(currentChar,true);box.appendChild(btn);}(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role+(m.animate?' animate':'');let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');
+function render(){let box=document.getElementById('chatBox');box.innerHTML='';if(chatHasMore[currentChar]&&currentChar!=='group'){let btn=document.createElement('div');btn.style.cssText='text-align:center;padding:12px;color:#888;cursor:pointer;font-size:13px';btn.textContent='⬆ 加载更早的消息';btn.onclick=()=>loadCloudChat(currentChar,true);box.appendChild(btn);}(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role+(m.animate?' animate':'');let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';if(charKey!=='user'){av.onclick=function(e){e.stopPropagation();openProfile(charKey);};av.style.cursor='pointer';}let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');
 let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
 d.className='msg '+m.role+(charClass?' '+charClass:'');if(m.content&&m.content.startsWith('[img]')){let img=document.createElement('img');img.src=m.content.slice(5);img.style.cssText='max-width:200px;border-radius:12px;cursor:pointer';img.onclick=()=>{showImgPreview(img.src)};d.appendChild(img);}else{
   let content=m.content||'正在输入...';
@@ -394,6 +397,7 @@ function reGenGroup(i){
   document.getElementById('settingsModal').classList.add('show');
 }
 function openSettings(){
+  let cv=localStorage.getItem('ctx_count')||'30';document.getElementById('ctxRange').value=cv;document.getElementById('ctxVal').textContent=cv;
   document.getElementById('apiUrl').value=apiConfig.url||'';
   document.getElementById('apiKey').value=apiConfig.key||'';
   document.getElementById('supaUrl').value=SUPA_URL||'';
@@ -470,7 +474,7 @@ function handleKey(e){
   return;
 }
 async function fetchModels(){let url=document.getElementById('apiUrl').value.replace(/\/$/,'');let key=document.getElementById('apiKey').value;if(!url||!key){alert('请先填写API地址和Key');return;}let sel=document.getElementById('modelName');sel.innerHTML='<option value="">加载中...</option>';try{let res=await fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}});let data=await res.json();let models=data.data||data;sel.innerHTML='';models.forEach(m=>{let o=document.createElement('option');o.value=m.id;o.textContent=m.id;sel.appendChild(o);});if(apiConfig.model)sel.value=apiConfig.model;}catch(e){sel.innerHTML='<option value="">加载失败</option>';}}
-async function sendMsg(isRegen){let input=document.getElementById('input');let text=input.value.trim();if(!isRegen&&!text)return;if(!apiConfig.url||!apiConfig.key){openSettings();return;}if(currentChar==='group'){sendGroupMsg(text);input.value='';return;}if(!isRegen){chats[currentChar].push({role:'user',content:text,time:nowTime()});input.value='';}render();let msgs=[];if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]+'\n\n当前真实时间：'+aiNowTime()+'。'});let groupMsgs=[];if(chats.group&&chats.group.length){chats.group.forEach(m=>{if(!m.content)return;if(m.role==='user')groupMsgs.push('宣宣: '+m.content);else if(m.character===currentChar)groupMsgs.push(charNames[currentChar]+': '+m.content);else if(m.character)groupMsgs.push(charNames[m.character]+': '+m.content);});}if(groupMsgs.length)msgs.push({role:'system',content:'【以下是群聊记录，你参与过这些对话】\n'+groupMsgs.slice(-30).join('\n')});let contextCount=30;
+async function sendMsg(isRegen){let input=document.getElementById('input');let text=input.value.trim();if(!isRegen&&!text)return;if(!apiConfig.url||!apiConfig.key){openSettings();return;}if(currentChar==='group'){sendGroupMsg(text);input.value='';return;}if(!isRegen){chats[currentChar].push({role:'user',content:text,time:nowTime()});input.value='';}render();let contextCount=parseInt(localStorage.getItem('ctx_count'))||30;let msgs=[];if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]+'\n\n当前真实时间：'+aiNowTime()+'。'});let groupMsgs=[];if(chats.group&&chats.group.length){chats.group.forEach(m=>{if(!m.content)return;if(m.role==='user')groupMsgs.push('宣宣: '+m.content);else if(m.character===currentChar)groupMsgs.push(charNames[currentChar]+': '+m.content);else if(m.character)groupMsgs.push(charNames[m.character]+': '+m.content);});}if(groupMsgs.length)msgs.push({role:'system',content:'【以下是群聊记录，你参与过这些对话】\n'+groupMsgs.slice(-contextCount).join('\n')});
 chats[currentChar].slice(-contextCount).forEach(m=>{
   if(m.content)msgs.push({
     role:m.role==='ai'?'assistant':'user',
@@ -489,7 +493,7 @@ async function sendGroupMsg(text){
   saveToCloud('group','user',text);
   render();
 
-  let chars=shuffle(['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];chats.group.forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败';render();}// 分条处理
+  let chars=shuffle(['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];chats.group.slice(-contextCount).forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败';render();}// 分条处理
   // 新消息在下方拆分后统一写入 chat_messages（避免重复）
   let fullContent=chats.group[idx].content;
   if(fullContent.includes('|||')){
