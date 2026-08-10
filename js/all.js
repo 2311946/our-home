@@ -143,7 +143,7 @@ function loadPreviews(){
     }).catch(()=>{});
   });
 }
-let bar=document.getElementById('avatarBar');if(bar){bar.innerHTML='';characters.forEach(c=>{let d=document.createElement('div');d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:50px;flex-shrink:0';d.onclick=function(){openProfile(c.id);};d.innerHTML='<div style="width:48px;height:48px;border-radius:50%;background:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div><span style="font-size:11px;color:#aaa">'+c.name+'</span>';bar.appendChild(d);});}
+let bar=document.getElementById('avatarBar');if(bar){bar.innerHTML='';characters.forEach(c=>{let d=document.createElement('div');d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:60px;flex-shrink:0';d.onclick=function(){openProfile(c.id);};let status=localStorage.getItem('status_'+c.id)||'online';let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[status];let statusClass='status-'+status;d.innerHTML='<div style="width:48px;height:48px;border-radius:50%;background:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div><span style="font-size:11px;color:#aaa">'+c.name+'</span><span class="status-tag '+statusClass+'">'+statusText+'</span>';bar.appendChild(d);});}
 function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let pv=chatPreviews[c.id];let preview=pv?(pv.content||'').slice(0,25):last?(last.content||'').slice(0,25):'还没有消息';let time=pv?pv.time:last?last.time:'';let item=document.createElement('div');item.className='contact-item';let avDiv=document.createElement('div');avDiv.className='contact-avatar';avDiv.style.background=c.color;avDiv.textContent=c.emoji;avDiv.onclick=function(e){e.stopPropagation();openProfile(c.id);};let info=document.createElement('div');info.className='contact-info';info.innerHTML='<div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div>';info.onclick=function(){enterChat(c.id);};let timeDiv=document.createElement('div');timeDiv.className='contact-time';timeDiv.textContent=time;timeDiv.onclick=function(){enterChat(c.id);};item.appendChild(avDiv);item.appendChild(info);item.appendChild(timeDiv);list.appendChild(item);});}function loadCloudChat(id,loadMore){
   if(chatLoading)return;
   if(!SUPA_URL||!SUPA_KEY){render();return;}
@@ -476,7 +476,7 @@ async function sendMsg(isRegen){let input=document.getElementById('input');let t
 chats[currentChar].slice(-contextCount).forEach(m=>{
   if(m.content)msgs.push({
     role:m.role==='ai'?'assistant':'user',
-    content:withMsgTime(m)
+content:m.content
   });
 });chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiConfig.key},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let data=line.slice(5).trim();if(data==='[DONE]')break;try{let j=JSON.parse(data);let t=j.choices[0].delta.content;if(t)chats[currentChar][chats[currentChar].length-1].content+=t;}catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='连接失败';render();}localStorage.setItem('home_chats',JSON.stringify(chats));if(!isRegen)saveToCloud(currentChar,'user',text);setTimeout(()=>saveToCloud(currentChar,'ai',chats[currentChar][chats[currentChar].length-1].content),500);}
 async function sendGroupMsg(text){
@@ -1612,21 +1612,21 @@ function endCall() {
 }
 function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
 function savePreset(){let name=prompt('给这个预设起个名字：');if(!name)return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');presets[name]={url:document.getElementById('apiUrl').value,key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('api_presets',JSON.stringify(presets));renderPresets();alert('已保存：'+name);}
-function loadPreset(){let sel=document.getElementById('presetSelect');let name=sel.value;if(!name)return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');let p=presets[name];if(!p)return;document.getElementById('apiUrl').value=p.url||'';document.getElementById('apiKey').value=p.key||'';document.getElementById('modelName').value=p.model||'';apiConfig={url:document.getElementById('apiUrl').value.replace(/\/$/,''),key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('home_api',JSON.stringify(apiConfig));}
+function loadPreset(){let sel=document.getElementById('presetSelect');let name=sel.value;if(!name)return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');let p=presets[name];if(!p)return;document.getElementById('apiUrl').value=p.url||'';document.getElementById('apiKey').value=p.key||'';document.getElementById('modelName').value=p.model||'';apiConfig={url:document.getElementById('apiUrl').value.replace(/\/$/,''),key:document.getElementById('apiKey').value,model:document.getElementById('modelName').value};localStorage.setItem('home_api',JSON.stringify(apiConfig));localStorage.setItem('current_preset',name);}
 function delPreset(){let sel=document.getElementById('presetSelect');let name=sel.value;if(!name)return;if(!confirm('删除预设 '+name+'？'))return;let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');delete presets[name];localStorage.setItem('api_presets',JSON.stringify(presets));renderPresets();}
 function renderPresets(){
   let sel=document.getElementById('presetSelect');
   if(!sel)return;
   let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');
-  let current=JSON.parse(localStorage.getItem('home_api')||'{}');
+let currentName=localStorage.getItem('current_preset')||'';
   sel.innerHTML='<option value="">-- 选择预设 --</option>';
   Object.keys(presets).forEach(name=>{
     let o=document.createElement('option');
     o.value=name;
     o.textContent=name;
     let p=presets[name];
-    if(current.url===p.url && current.key===p.key && current.model===p.model){
-      o.selected=true;
+if(name===currentName){
+        o.selected=true;
     }
     sel.appendChild(o);
   });
