@@ -331,6 +331,12 @@
   <div class="profile-info">
     <div class="profile-row"><span class="profile-label">关系</span><span class="profile-value" id="profileRelation">老公</span></div>
     <div class="profile-row"><span class="profile-label">状态</span><span class="profile-value" id="profileStatus">在线</span></div>
+    <div style="display:flex;gap:6px;margin-top:8px;justify-content:center;flex-wrap:wrap">
+<button onclick="setStatus('online')" style="padding:4px 10px;border-radius:12px;border:none;background:rgba(46,204,113,0.2);color:#2ecc71;font-size:11px;cursor:pointer">在线</button>
+<button onclick="setStatus('busy')" style="padding:4px 10px;border-radius:12px;border:none;background:rgba(231,76,60,0.2);color:#e74c3c;font-size:11px;cursor:pointer">忙碌</button>
+<button onclick="setStatus('sleep')" style="padding:4px 10px;border-radius:12px;border:none;background:rgba(155,89,182,0.2);color:#9b59b6;font-size:11px;cursor:pointer">睡了</button>
+<button onclick="setStatus('away')" style="padding:4px 10px;border-radius:12px;border:none;background:rgba(149,165,166,0.2);color:#95a5a6;font-size:11px;cursor:pointer">离开</button>
+</div>
     <div class="profile-row"><span class="profile-label">上下文</span><span class="profile-value" id="profileCtx">30条</span></div>
   </div>
   <div class="profile-tags" id="profileTags"></div>
