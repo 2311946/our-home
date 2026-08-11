@@ -84,23 +84,85 @@ async function showModelPicker(){
   let modal=document.createElement('div');modal.id='modelPickerModal';
   modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999';
   modal.onclick=e=>{if(e.target===modal)modal.remove();};
-  let current=apiConfig.model||'';
-  modal.innerHTML='<div style="background:#16213e;border-radius:16px;padding:20px;width:85%;max-width:320px"><div style="color:#fff;font-size:16px;margin-bottom:12px">🔄 切换模型</div><div style="color:#888;font-size:13px">加载中...</div></div>';
+  
+  let currentPreset=localStorage.getItem('preset_'+currentChar)||localStorage.getItem('current_preset')||'';
+  let currentModel=localStorage.getItem('model_'+currentChar)||apiConfig.model||'';
+  
+  let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');
+  let presetOptions = '<option value="">-- 全局默认 API --</option>';
+  Object.keys(presets).forEach(name=>{
+    let sel = name===currentPreset ? 'selected' : '';
+    presetOptions += `<option value="${name}" ${sel}>${name}</option>`;
+  });
+
+  let html=`
+  <div style="background:#16213e;border-radius:16px;padding:20px;width:85%;max-width:320px;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="color:#fff;font-size:16px;margin-bottom:12px;text-align:center;">🔄 为 ${charNames[currentChar]||'此角色'} 设置模型</div>
+    
+    <div style="margin-bottom:12px;">
+      <div style="color:#888;font-size:12px;margin-bottom:4px;">1. 选择预设 (接口通道)</div>
+      <select id="pickerPresetSel" style="width:100%;padding:8px;background:#253554;color:#eee;border:1px solid #444;border-radius:8px;outline:none;">
+        ${presetOptions}
+      </select>
+    </div>
+    
+    <div style="color:#888;font-size:12px;margin-bottom:4px;">2. 选择模型名称</div>
+    <div id="pickerModelList" style="flex:1;overflow-y:auto;background:#0f172a;border-radius:8px;padding:8px;min-height:150px;">
+      <div style="color:#888;font-size:13px;text-align:center;margin-top:20px;">加载中...</div>
+    </div>
+  </div>`;
+  
+  modal.innerHTML=html;
   document.body.appendChild(modal);
-  try{
-    let res=await fetch(apiConfig.url+'/models',{headers:{'Authorization':'Bearer '+apiConfig.key}});
-    let data=await res.json();
-    let models=data.data||data;
-    let html='<div style="background:#16213e;border-radius:16px;padding:20px;width:85%;max-width:320px;max-height:70vh;overflow-y:auto"><div style="color:#fff;font-size:16px;margin-bottom:8px">🔄 切换模型</div><div style="color:#888;font-size:12px;margin-bottom:12px">当前: '+current+'</div>';
-    models.forEach(m=>{
-      let id=m.id||m;
-      let active=id===current?'background:#9b59b6;color:#fff':'background:#0f3460;color:#aaa';
-      html+='<div class="model-opt" data-model="'+id.replace(/"/g,'&quot;')+'" style="padding:10px 14px;margin:6px 0;border-radius:10px;cursor:pointer;font-size:13px;'+active+'">'+id+'</div>';
-    });
-    html+='</div>';
-    modal.innerHTML=html;
-    modal.querySelectorAll('.model-opt').forEach(el=>{el.onclick=()=>{apiConfig.model=el.dataset.model;localStorage.setItem('api_model',el.dataset.model);modal.remove();togglePlusMenu();};});
-  }catch(e){
-    modal.innerHTML='<div style="background:#16213e;border-radius:16px;padding:20px;width:85%;max-width:320px"><div style="color:#fff;font-size:16px;margin-bottom:12px">🔄 切换模型</div><div style="color:#f66;font-size:13px">加载失败: '+e.message+'</div></div>';
+  
+  let selEl = document.getElementById('pickerPresetSel');
+  let listEl = document.getElementById('pickerModelList');
+  
+  async function loadModelsForPreset(presetName) {
+    let url = apiConfig.url;
+    let key = apiConfig.key;
+    if(presetName && presets[presetName]) {
+      url = presets[presetName].url;
+      key = presets[presetName].key;
+    }
+    url = url.replace(/\/$/, '');
+    
+    if(!url || !key) {
+      listEl.innerHTML = '<div style="color:#e74c3c;font-size:13px;text-align:center;margin-top:20px;">请先在设置中配置 API 地址和 Key</div>';
+      return;
+    }
+    
+    listEl.innerHTML = '<div style="color:#888;font-size:13px;text-align:center;margin-top:20px;">加载中...</div>';
+    try {
+      let res = await fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}});
+      if(!res.ok) throw new Error('API 请求失败');
+      let data = await res.json();
+      let models = data.data||data;
+      if(!models || !models.length) throw new Error('未获取到模型列表');
+      
+      let listHtml = '';
+      models.forEach(m=>{
+        let id = m.id||m;
+        let active = id===currentModel ? 'background:#9b59b6;color:#fff' : 'background:#253554;color:#aaa';
+        listHtml += `<div class="model-opt" data-model="${id.replace(/"/g,'&quot;')}" style="padding:10px 14px;margin:6px 0;border-radius:8px;cursor:pointer;font-size:13px;${active}">${id}</div>`;
+      });
+      listEl.innerHTML = listHtml;
+      
+      listEl.querySelectorAll('.model-opt').forEach(el=>{
+        el.onclick = () => {
+          let chosenModel = el.dataset.model;
+          localStorage.setItem('preset_'+currentChar, selEl.value);
+          localStorage.setItem('model_'+currentChar, chosenModel);
+          modal.remove();
+          togglePlusMenu();
+          alert('已为 '+ (charNames[currentChar]||'当前角色') + ' 绑定：\n预设: ' + (selEl.value||'全局默认') + '\n模型: ' + chosenModel);
+        };
+      });
+    } catch(e) {
+      listEl.innerHTML = `<div style="color:#e74c3c;font-size:13px;text-align:center;margin-top:20px;">加载失败:\n${e.message}</div>`;
+    }
   }
+  
+  selEl.onchange = () => loadModelsForPreset(selEl.value);
+  loadModelsForPreset(selEl.value);
 }

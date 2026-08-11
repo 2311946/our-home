@@ -1,6 +1,6 @@
 function loadCloudChat(id,loadMore){
   if(chatLoading)return;
-  if(!SUPA_URL||!SUPA_KEY){render();return;}
+  if(!PB_URL){render();return;}
   chatLoading=true;
   let offset=chatOffset[id]||0;
   let limit=50;

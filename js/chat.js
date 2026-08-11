@@ -1,3 +1,23 @@
+
+function getApiForChar(charId) {
+  let presetName = localStorage.getItem('preset_'+charId);
+  if(presetName) {
+    let presets = JSON.parse(localStorage.getItem('api_presets')||'{}');
+    if(presets[presetName]) {
+      return {
+        url: presets[presetName].url.replace(/\/$/, ''),
+        key: presets[presetName].key,
+        model: localStorage.getItem('model_'+charId) || presets[presetName].model
+      };
+    }
+  }
+  return {
+    url: apiConfig.url.replace(/\/$/, ''),
+    key: apiConfig.key,
+    model: localStorage.getItem('model_'+charId) || apiConfig.model
+  };
+}
+
 function importChat(input){
   let file=input.files[0];
   if(!file)return;
@@ -246,11 +266,14 @@ function reGenGroup(i){
   });
 
   let idx=i;
-  fetch(apiConfig.url+'/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},
-    body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})
-  }).then(res=>{
+  (()=>{
+    let api = getApiForChar(c);
+    return fetch(api.url+'/chat/completions',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+api.key,'Content-Type':'application/json'},
+      body:JSON.stringify({model:api.model,messages:msgs,stream:true})
+    });
+  })().then(res=>{
     let reader=res.body.getReader();
     let dec=new TextDecoder();
     let buf='';
@@ -308,7 +331,8 @@ chats[currentChar].slice(-contextCount).forEach(m=>{
     role:m.role==='ai'?'assistant':'user',
 content:m.content
   });
-});chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiConfig.key},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();return;}let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let data=line.slice(5).trim();if(data==='[DONE]')break;try{let j=JSON.parse(data);let t=j.choices[0].delta.content||'';let think=j.choices[0].delta.reasoning_content||j.choices[0].delta.thinking||'';let last=chats[currentChar][chats[currentChar].length-1];if(think)last.thinking=(last.thinking||'')+think;if(t)last.content+=t;}catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='❌ 连接失败: '+e.message;render();}let lastMsg=chats[currentChar][chats[currentChar].length-1];if(lastMsg.content.includes('<think>')){let thinkMatch=lastMsg.content.match(/<think>([\s\S]*?)<\/think>/);if(thinkMatch){lastMsg.thinking=thinkMatch[1].trim();lastMsg.content=lastMsg.content.replace(/<think>[\s\S]*?<\/think>/,'').trim();render();}}localStorage.setItem('home_chats',JSON.stringify(chats));if(!isRegen)saveToCloud(currentChar,'user',text);setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking);},500);}
+});chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let api = getApiForChar(currentChar);
+  let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+api.key},body:JSON.stringify({model:api.model,messages:msgs,stream:true})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();return;}let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let data=line.slice(5).trim();if(data==='[DONE]')break;try{let j=JSON.parse(data);let t=j.choices[0].delta.content||'';let think=j.choices[0].delta.reasoning_content||j.choices[0].delta.thinking||'';let last=chats[currentChar][chats[currentChar].length-1];if(think)last.thinking=(last.thinking||'')+think;if(t)last.content+=t;}catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='❌ 连接失败: '+e.message;render();}let lastMsg=chats[currentChar][chats[currentChar].length-1];if(lastMsg.content.includes('<think>')){let thinkMatch=lastMsg.content.match(/<think>([\s\S]*?)<\/think>/);if(thinkMatch){lastMsg.thinking=thinkMatch[1].trim();lastMsg.content=lastMsg.content.replace(/<think>[\s\S]*?<\/think>/,'').trim();render();}}localStorage.setItem('home_chats',JSON.stringify(chats));if(!isRegen)saveToCloud(currentChar,'user',text);setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking);},500);}
 
 async function sendGroupMsg(text){
   if(!text)return;
@@ -322,7 +346,8 @@ async function sendGroupMsg(text){
   saveToCloud('group','user',text);
   render();
 
-  let chars=shuffle(['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];chats.group.slice(-contextCount).forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let res=await fetch(apiConfig.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+apiConfig.key,'Content-Type':'application/json'},body:JSON.stringify({model:apiConfig.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败';render();}// 分条处理
+  let chars=shuffle(['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke']);for(let c of chars){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];chats.group.slice(-contextCount).forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let api = getApiForChar(c);
+   let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+api.key,'Content-Type':'application/json'},body:JSON.stringify({model:api.model,messages:msgs,stream:true})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{let j=JSON.parse(d);chats.group[idx].content+=j.choices[0].delta.content||'';render();}catch(e){}}}}catch(e){chats.group[idx].content='连接失败';render();}// 分条处理
   // 新消息在下方拆分后统一写入 chat_messages（避免重复）
   let fullContent=chats.group[idx].content;
   if(fullContent.includes('|||')){
@@ -524,11 +549,12 @@ async function callSendToAI(text) {
   if (!chats[char]) chats[char] = [];
   chats[char].push({role:'user', content: text, time: nowTime()});
   try {
-    let res = await fetch(apiConfig.url + '/chat/completions', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + apiConfig.key},
-      body: JSON.stringify({ model: apiConfig.model || 'claude-sonnet-4-20250514', messages: msgs, max_tokens: 200 })
-    });
+    let api = getApiForChar(char);
+   let res = await fetch(api.url + '/chat/completions', {
+     method: 'POST',
+     headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + api.key},
+     body: JSON.stringify({ model: api.model || 'claude-sonnet-4-20250514', messages: msgs, max_tokens: 200 })
+   });
     let data = await res.json();
     let reply = data.choices[0].message.content;
     chats[char].push({role:'assistant', content: reply, time: nowTime()});
