@@ -1694,7 +1694,7 @@ async function showModelPicker(){
     });
     html+='</div>';
     modal.innerHTML=html;
-    modal.querySelectorAll('.model-opt').forEach(el=>{el.onclick=()=>{apiConfig.model=el.dataset.model;localStorage.setItem('api_model',el.dataset.model);modal.remove();togglePlusMenu();};});
+    modal.querySelectorAll('.model-opt').forEach(el=>{el.onclick=()=>selectModel(el.dataset.model);});
   }catch(e){
     modal.innerHTML='<div style="background:#16213e;border-radius:16px;padding:20px;width:85%;max-width:320px"><div style="color:#fff;font-size:16px;margin-bottom:12px">🔄 切换模型</div><div style="color:#f66;font-size:13px">加载失败: '+e.message+'</div></div>';
   }

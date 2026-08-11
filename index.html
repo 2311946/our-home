@@ -161,10 +161,14 @@
 <input id="searchInput" placeholder="搜索聊天记录..." style="width:100%;background:#253554;border:none;border-radius:16px;padding:8px 14px;color:#eee;font-size:14px;outline:none" oninput="doSearch()">
 </div>
 <div class="chat-box" id="chatBox"></div>
-<div id="plusMenu" style="display:none;background:#16213e;padding:12px 16px;border-top:1px solid #0f3460;display:none">
-<div style="display:flex;gap:20px">
+<div id="plusMenu" style="display:none;background:#16213e;padding:12px 16px;border-top:1px solid #0f3460">
+<div style="display:flex;gap:20px;flex-wrap:wrap">
 <div onclick="document.getElementById('imgPicker').click()" style="text-align:center;cursor:pointer"><div style="font-size:24px">📷</div><div style="font-size:11px;color:#aaa;margin-top:4px">图片</div></div>
 <div onclick="takePhoto()" style="text-align:center;cursor:pointer"><div style="font-size:24px">📸</div><div style="font-size:11px;color:#aaa;margin-top:4px">拍照</div></div>
+<div onclick="showModelPicker()" style="text-align:center;cursor:pointer"><div style="font-size:24px">🔄</div><div style="font-size:11px;color:#aaa;margin-top:4px">模型</div></div>
+<div onclick="showStatusPicker()" style="text-align:center;cursor:pointer"><div style="font-size:24px">🎭</div><div style="font-size:11px;color:#aaa;margin-top:4px">状态</div></div>
+<div onclick="exportChat()" style="text-align:center;cursor:pointer"><div style="font-size:24px">💾</div><div style="font-size:11px;color:#aaa;margin-top:4px">导出</div></div>
+<div onclick="searchChat()" style="text-align:center;cursor:pointer"><div style="font-size:24px">🔍</div><div style="font-size:11px;color:#aaa;margin-top:4px">搜索</div></div>
 </div>
 </div>
 <div class="input-area">
