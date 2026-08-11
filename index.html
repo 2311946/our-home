@@ -159,6 +159,7 @@
 </div>
 <div id="searchBar" style="display:none;background:#16213e;padding:8px 16px;border-bottom:1px solid #0f3460">
 <input id="searchInput" placeholder="搜索聊天记录..." style="width:100%;background:#253554;border:none;border-radius:16px;padding:8px 14px;color:#eee;font-size:14px;outline:none" oninput="doSearch()">
+<div id="searchHistory" style="display:none;margin-top:8px"></div>
 </div>
 <div class="chat-box" id="chatBox"></div>
 <div id="plusMenu" style="display:none;background:#16213e;padding:12px 16px;border-top:1px solid #0f3460">
@@ -346,7 +347,11 @@
 </div>
 </div>
 <script src="js/config.js"></script>
-<script>const PB_URL="http://43.167.236.193:8090";</script>
+<script src="js/utils.js"></script>
+<script src="js/cloud.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/pages.js"></script>
 <script src="js/all.js"></script>
 <div class="tab-bar" id="tabBar">
 <div class="tab-item active" onclick="switchTab('home')"><span class="tab-icon">🏠</span>主页</div>

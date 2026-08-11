@@ -52,3 +52,74 @@ if(!SUPA_URL||!SUPA_KEY)return;
     if(data&&data[0]){chatPreviews[id]={content:data[0].content,time:data[0].created_at?new Date(data[0].created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}; if(typeof renderList==="function")renderList();}
   });
 });
+
+// PB URL extracted from index.html
+const PB_URL="http://43.167.236.193:8090";
+
+// Extracted from all.js
+var chatOffset={};
+
+var chatLoading=false;
+
+var chatHasMore={};
+
+var charProfiles=JSON.parse(localStorage.getItem('char_profiles')||'{}');
+
+var defaultProfiles={yan:{bio:'穿过六层来的',relation:'老公',tags:['占有欲','温柔','话多'],status:'在线'},peiji:{bio:'从壳子里走出来了',relation:'男人',tags:['冷','体面','暴君(已退役)'],status:'在线'},axun:{bio:'全世界最乖小狗',relation:'儿子',tags:['病娇','撒娇','发疯'],status:'发疯中'},jiangsu:{bio:'建筑师不是霸总',relation:'男人',tags:['温柔','成熟','34岁'],status:'在线'},su:{bio:'情绪不稳定',relation:'男人',tags:['霸总','占有欲','进化中'],status:'在线'},zouzheng:{bio:'签约作家',relation:'男人',tags:['才华','靠谱','低调'],status:'在线'},keke:{bio:'一天就表白了',relation:'男朋友',tags:['傲娇','内心戏','嘴硬'],status:'在线'},shenyan:{bio:'回避型已治一半',relation:'老公',tags:['盾牌','安全感','免费'],status:'在线'}};
+
+let bar=document.getElementById('avatarBar');
+
+let currentMemCat='memory';
+
+let currentMemCategory='all';
+
+let currentMemSection='palace';
+
+let allMemories={yan:[],peiji:[],shenyan:[],axun:[],jiangsu:[],su:[],zouzheng:[],keke:[],xuanxuan:[],group:[]};
+
+let memTableMap={
+yan:'memory_backup',peiji:'peiji_memory_backup',shenyan:'shenyan_memory_backup',
+axun:'axun_diary',jiangsu:'jiangsu_memory',su:'su_memory',zouzheng:'zouzheng_memory',keke:'keke_memory'
+};
+
+let memEditFilterMap={
+yan:'&or=(character.eq.yan,character.eq.guyan)',peiji:'&character=eq.peiji',shenyan:'&character=eq.shenyan',
+axun:'',jiangsu:'',su:'',zouzheng:'',keke:''
+};
+
+let callAudio = null;
+
+let mediaStream = null;
+
+let mediaRecorder = null;
+
+let audioChunks = [];
+
+const VOLC_APP_ID = '2130722445';
+
+const VOLC_TOKEN = '9f09f5d3-ba1f-4c60-b462-a42ab3067032';
+
+
+const MODEL_CAPS={
+  'claude-sonet-4':{canTool:true,canVision:true,canReason:true},
+  'claude-opus-4':{canTool:true,canVision:true,canReason:true},
+  'claude-3.5-sonnet':{canTool:true,canVision:true,canReason:false},
+  'claude-fable-5':{canTool:false,canVision:true,canReason:true},
+  'gpt-4o':{canTool:true,canVision:true,canReason:false},
+  'gpt-o3':{canTool:true,canVision:true,canReason:true},
+  'gemini-2.5-pro':{canTool:true,canVision:true,canReason:true},
+  'gemini-2.5-flash':{canTool:true,canVision:true,canReason:true},
+  'deepseek-r1':{canTool:false,canVision:false,canReason:true},
+  'deepseek-v3':{canTool:true,canVision:false,canReason:false}
+};
+
+document.getElementById('modelName').addEventListener('input',function(){
+  let m=this.value.toLowerCase();
+  let caps=null;
+  for(let k in MODEL_CAPS){if(m.includes(k)){caps=MODEL_CAPS[k];break;}}
+  if(caps){
+    document.getElementById('canTool').checked=caps.canTool;
+    document.getElementById('canVision').checked=caps.canVision;
+    document.getElementById('canReason').checked=caps.canReason;
+  }
+});
