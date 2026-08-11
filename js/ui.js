@@ -40,7 +40,7 @@ function openSettings(){
     tabs.appendChild(t);
   });
   document.getElementById('sysPrompt').value=prompts[editingPromptChar]||'';
-  document.getElementById('settingsModal').classList.add('show');
+  renderApiUsage(); document.getElementById('settingsModal').classList.add('show');
 }
 
 function openSettings(){
@@ -62,7 +62,7 @@ function openSettings(){
     tabs.appendChild(t);
   });
   document.getElementById('sysPrompt').value=prompts[editingPromptChar]||'';
-  document.getElementById('settingsModal').classList.add('show');
+  renderApiUsage(); document.getElementById('settingsModal').classList.add('show');
 }
 
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
@@ -165,4 +165,31 @@ async function showModelPicker(){
   
   selEl.onchange = () => loadModelsForPreset(selEl.value);
   loadModelsForPreset(selEl.value);
+}
+
+function renderApiUsage() {
+  let list = document.getElementById('apiUsageList');
+  if(!list) return;
+  let stats = JSON.parse(localStorage.getItem('api_usage_stats')||'{}');
+  let html = '';
+  let totalIn = 0, totalOut = 0;
+  for(let m in stats) {
+    html += `<div style="display:flex;justify-content:space-between;margin-bottom:6px;border-bottom:1px solid #333;padding-bottom:4px;">
+      <span style="color:#9b59b6">${m}</span>
+      <span>${stats[m].in} ⬆ / ${stats[m].out} ⬇</span>
+    </div>`;
+    totalIn += stats[m].in;
+    totalOut += stats[m].out;
+  }
+  if(!html) {
+    list.innerHTML = '暂无用量记录';
+  } else {
+    list.innerHTML = `<div style="color:#fff;font-weight:bold;margin-bottom:8px;">总计: ${totalIn} ⬆ / ${totalOut} ⬇</div>` + html;
+  }
+}
+function clearUsageStats() {
+  if(confirm('确定清除所有用量统计吗？')) {
+    localStorage.removeItem('api_usage_stats');
+    renderApiUsage();
+  }
 }

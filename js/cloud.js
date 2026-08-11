@@ -18,10 +18,32 @@ if(id==='group'){
     if(m.character&&m.character.indexOf('group_')===0){return {role:'ai',content:m.content,character:m.character.slice(6),time:fmtTime(m.msg_time)};}
     let charId=nameMap[m.role]||m.role;
     if(charId==='user')return {role:'user',content:m.content,time:fmtTime(m.msg_time)};
-    return {role:'ai',content:m.content,character:charId,time:fmtTime(m.msg_time)};
+   
+      let thinking = m.thinking || '';
+      let in_tokens = 0, out_tokens = 0;
+      let tm = thinking.match(/<!--tokens:(\d+)\/(\d+)-->/);
+      if(tm) {
+        in_tokens = parseInt(tm[1]);
+        out_tokens = parseInt(tm[2]);
+        thinking = thinking.replace(tm[0], '').trim();
+      }
+
+   return {role:'ai',content:m.content,character:charId,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,time:fmtTime(m.msg_time)};
   });
   chatLoading=false;render();renderList();return;
-}let msgs=data.reverse().map(m=>({role:m.role,content:m.content,thinking:m.thinking||'',time:m.msg_time?new Date(m.msg_time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character}));
+}let msgs=data.reverse().map(m=>{
+      
+      let thinking = m.thinking || '';
+      let in_tokens = 0, out_tokens = 0;
+      let tm = thinking.match(/<!--tokens:(\d+)\/(\d+)-->/);
+      if(tm) {
+        in_tokens = parseInt(tm[1]);
+        out_tokens = parseInt(tm[2]);
+        thinking = thinking.replace(tm[0], '').trim();
+      }
+
+      return {role:m.role,content:m.content,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,time:m.msg_time?new Date(m.msg_time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character};
+  });
     if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
     chatOffset[id]=offset+data.length;
     chatHasMore[id]=data.length>=limit;

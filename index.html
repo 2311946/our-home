@@ -262,8 +262,19 @@
 <div class="modal-box settings-redesign">
 <h3>⚙ 设置</h3>
   <!-- 📡 API配置 -->
+
+<details class="settings-section" id="apiUsagePanel">
+  <summary>📊 API 用量统计</summary>
+  <div class="section-body">
+    <div id="apiUsageList" style="font-size:13px; color:#aaa; line-height:1.6; background:#0f172a; padding:10px; border-radius:8px; max-height:150px; overflow-y:auto;">
+      加载中...
+    </div>
+    <button onclick="clearUsageStats()" style="margin-top:10px; background:#e74c3c; color:#fff; border:none; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">清除统计</button>
+  </div>
+</details>
+
 <details class="settings-section" open>
-  <summary>📡 API配置</summary>
+<summary>📡 API配置</summary>
   <div class="section-body">
     <label>API地址</label>
     <input id="apiUrl" placeholder="https://your-api.com/v1">
