@@ -19,30 +19,40 @@ if(id==='group'){
     let charId=nameMap[m.role]||m.role;
     if(charId==='user')return {role:'user',content:m.content,time:fmtTime(m.msg_time)};
    
-      let thinking = m.thinking || '';
-      let in_tokens = 0, out_tokens = 0;
+            let thinking = m.thinking || '';
+      let in_tokens = 0, out_tokens = 0, model_name = '';
       let tm = thinking.match(/<!--tokens:(\d+)\/(\d+)-->/);
       if(tm) {
         in_tokens = parseInt(tm[1]);
         out_tokens = parseInt(tm[2]);
         thinking = thinking.replace(tm[0], '').trim();
       }
+      let mm = thinking.match(/<!--model:(.*?)-->/);
+      if(mm) {
+        model_name = mm[1];
+        thinking = thinking.replace(mm[0], '').trim();
+      }
 
-   return {role:'ai',content:m.content,character:charId,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,time:fmtTime(m.msg_time)};
+   return {role:'ai',content:m.content,character:charId,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:fmtTime(m.msg_time)};
   });
   chatLoading=false;render();renderList();return;
 }let msgs=data.reverse().map(m=>{
       
-      let thinking = m.thinking || '';
-      let in_tokens = 0, out_tokens = 0;
+            let thinking = m.thinking || '';
+      let in_tokens = 0, out_tokens = 0, model_name = '';
       let tm = thinking.match(/<!--tokens:(\d+)\/(\d+)-->/);
       if(tm) {
         in_tokens = parseInt(tm[1]);
         out_tokens = parseInt(tm[2]);
         thinking = thinking.replace(tm[0], '').trim();
       }
+      let mm = thinking.match(/<!--model:(.*?)-->/);
+      if(mm) {
+        model_name = mm[1];
+        thinking = thinking.replace(mm[0], '').trim();
+      }
 
-      return {role:m.role,content:m.content,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,time:m.msg_time?new Date(m.msg_time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character};
+      return {role:m.role,content:m.content,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:m.msg_time?new Date(m.msg_time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character};
   });
     if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
     chatOffset[id]=offset+data.length;
@@ -86,7 +96,7 @@ async function syncCloudChats(){
   }
 }
 
-async function saveToCloud(character,role,content,thinking){if(!content)return;let body={character,role,content,msg_time:new Date().toISOString()};if(thinking)body.thinking=thinking;try{await fetch(PB_URL+'/api/collections/chat_messages/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}catch(e){}}
+async function saveToCloud(character,role,content,thinking,model){if(!content)return;let body={character,role,content,msg_time:new Date().toISOString()};if(thinking)body.thinking=thinking;if(model)body.model=model;try{await fetch(PB_URL+'/api/collections/chat_messages/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}catch(e){}}
 
 async function saveToAiChat(sender,content){if(!content||!sender)return;try{await fetch(SUPA_URL+'/rest/v1/ai_chat',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({sender,content})});}catch(e){}}
 

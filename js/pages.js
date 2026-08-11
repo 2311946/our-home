@@ -91,8 +91,7 @@ function saveSettings(){
   localStorage.setItem('home_api',JSON.stringify(apiConfig));
   localStorage.setItem('home_prompts',JSON.stringify(prompts));
   localStorage.setItem('supa_url',SUPA_URL);
-  localStorage.setItem('supa_key',SUPA_KEY);
-  closeSettings();
+  localStorage.setItem('supa_key',SUPA_KEY); closeSettings(); showToast('设置已保存');
 }
 
 async function fetchModels(){let url=document.getElementById('apiUrl').value.replace(/\/$/,'');let key=document.getElementById('apiKey').value;if(!url||!key){alert('请先填写API地址和Key');return;}let sel=document.getElementById('modelName');sel.innerHTML='<option value="">加载中...</option>';try{let res=await fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}});let data=await res.json();let models=data.data||data;sel.innerHTML='';models.forEach(m=>{let o=document.createElement('option');o.value=m.id;o.textContent=m.id;sel.appendChild(o);});if(apiConfig.model)sel.value=apiConfig.model;}catch(e){sel.innerHTML='<option value="">加载失败</option>';}}

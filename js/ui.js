@@ -1,3 +1,32 @@
+
+let currentToast = null;
+function showToast(msg, duration = 2000) {
+  if (currentToast) {
+    currentToast.remove();
+    currentToast = null;
+  }
+  let toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#1a1a2e; color:#fff; padding:10px 20px; border-radius:12px; font-size:13px; z-index:10000; box-shadow:0 4px 12px rgba(0,0,0,0.3); transition: opacity 0.3s, top 0.3s; opacity:0;';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  
+  // Animate in
+  setTimeout(() => {
+    toast.style.opacity = '1';
+    toast.style.top = '40px';
+  }, 10);
+  
+  currentToast = toast;
+  
+  setTimeout(() => {
+    if (currentToast === toast) {
+      toast.style.opacity = '0';
+      toast.style.top = '20px';
+      setTimeout(() => { if(toast.parentNode) toast.remove(); }, 300);
+    }
+  }, duration);
+}
+
 function openProfile(charId){let p=charProfiles[charId]||defaultProfiles[charId]||{};document.getElementById('profileModal').style.display='flex';document.getElementById('profileModal').dataset.charId=charId;document.getElementById('profileAvatar').textContent=avatarEmoji[charId]||'?';document.getElementById('profileAvatar').style.background=avatarColors[charId]||'#555';document.getElementById('profileName').textContent=charNames[charId]||'';document.getElementById('profileBio').textContent=p.bio||'';document.getElementById('profileRelation').textContent=p.relation||'';document.getElementById('profileStatus').textContent=p.status||'在线';document.getElementById('profileCtx').textContent=(p.ctxCount||localStorage.getItem('ctx_count')||30)+'条';let tagsDiv=document.getElementById('profileTags');tagsDiv.innerHTML='';(p.tags||[]).forEach(t=>{let s=document.createElement('span');s.textContent=t;tagsDiv.appendChild(s);});}
 
 function editProfile(){alert('编辑功能开发中～');}
@@ -22,26 +51,8 @@ function showImgPreview(src){
 
 function toggleSearch(){let bar=document.getElementById('searchBar');bar.style.display=bar.style.display==='none'?'block':'none';if(bar.style.display==='none'){document.getElementById('searchInput').value='';render();}else{let si=document.getElementById('searchInput');if(si&&!si.value.trim())renderSearchHistory();}}
 
-function openSettings(){
-  document.getElementById('apiUrl').value=apiConfig.url||'';
-  document.getElementById('apiKey').value=apiConfig.key||'';
-  document.getElementById('supaUrl').value=SUPA_URL||'';
-  document.getElementById('supaKey').value=SUPA_KEY||'';
-  let sel=document.getElementById('modelName');
-  if(apiConfig.model&&sel.options.length<=1){sel.innerHTML='<option value="'+apiConfig.model+'">'+apiConfig.model+'</option>';}
-  if(apiConfig.model)sel.value=apiConfig.model;
-  editingPromptChar=currentChar&&currentChar!=='group'?currentChar:'yan';
-  let tabs=document.getElementById('charTabs');tabs.innerHTML='';
-  characters.filter(c=>c.id!=='group').forEach(c=>{
-    let t=document.createElement('div');
-    t.className='char-tab'+(c.id===editingPromptChar?' active':'');
-    t.textContent=c.name;
-    t.onclick=()=>switchPromptTab(c.id);
-    tabs.appendChild(t);
-  });
-  document.getElementById('sysPrompt').value=prompts[editingPromptChar]||'';
-  renderApiUsage(); document.getElementById('settingsModal').classList.add('show');
-}
+// 打开搜索栏并聚焦输入框（补充 plus 菜单 🔍 按钮缺失的实现）
+function searchChat(){let bar=document.getElementById('searchBar');bar.style.display='block';let si=document.getElementById('searchInput');if(si){si.focus();if(!si.value.trim())renderSearchHistory();}}
 
 function openSettings(){
   let cv=localStorage.getItem('ctx_count')||'30';document.getElementById('ctxRange').value=cv;document.getElementById('ctxVal').textContent=cv;
@@ -77,7 +88,10 @@ function showReactMenu(e,idx){let old=document.getElementById('reactMenu');if(ol
 
 function addReact(idx,emoji){if(!chats[currentChar][idx].reactions)chats[currentChar][idx].reactions=[];chats[currentChar][idx].reactions.push(emoji);localStorage.setItem('home_chats',JSON.stringify(chats));render();}
 
-function setStatus(s){let id=document.getElementById('profileModal').dataset.charId;if(!id)return;localStorage.setItem('status_'+id,s);let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[s];document.getElementById('profileStatus').textContent=statusText;document.getElementById('profileModal').style.display='none';let bar=document.getElementById('avatarBar');if(bar){bar.innerHTML='';characters.forEach(c=>{let d=document.createElement('div');d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:60px;flex-shrink:0';d.onclick=function(){openProfile(c.id);};let status=localStorage.getItem('status_'+c.id)||'online';let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[status];let statusClass='status-'+status;d.innerHTML='<div style="width:48px;height:48px;border-radius:50%;background:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div><span style="font-size:11px;color:#aaa">'+c.name+'</span><span class="status-tag '+statusClass+'">'+statusText+'</span>';bar.appendChild(d);});}}
+function setStatus(s){let id=document.getElementById('profileModal').dataset.charId;if(!id)return;localStorage.setItem('status_'+id,s);let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[s];document.getElementById('profileStatus').textContent=statusText; showToast('状态已更新');document.getElementById('profileModal').style.display='none';let bar=document.getElementById('avatarBar');if(bar){bar.innerHTML='';characters.forEach(c=>{let d=document.createElement('div');d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:60px;flex-shrink:0';d.onclick=function(){openProfile(c.id);};let status=localStorage.getItem('status_'+c.id)||'online';let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[status];let statusClass='status-'+status;d.innerHTML='<div style="width:48px;height:48px;border-radius:50%;background:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div><span style="font-size:11px;color:#aaa">'+c.name+'</span><span class="status-tag '+statusClass+'">'+statusText+'</span>';bar.appendChild(d);});}}
+
+// 打开当前角色名片以设置状态（补充 plus 菜单 🎭 按钮缺失的实现）
+function showStatusPicker(){openProfile(currentChar);}
 
 async function showModelPicker(){
   let old=document.getElementById('modelPickerModal');if(old)old.remove();
@@ -155,7 +169,7 @@ async function showModelPicker(){
           localStorage.setItem('model_'+currentChar, chosenModel);
           modal.remove();
           togglePlusMenu();
-          alert('已为 '+ (charNames[currentChar]||'当前角色') + ' 绑定：\n预设: ' + (selEl.value||'全局默认') + '\n模型: ' + chosenModel);
+          showToast('已切换: ' + chosenModel);
         };
       });
     } catch(e) {

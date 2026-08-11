@@ -160,7 +160,7 @@ time.textContent = m.msg_time
     box.innerHTML = '<div style="text-align:center;padding:20px;color:#f00">搜索失败</div>';
 
 let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
-d.className='msg '+m.role+(charClass?' '+charClass:'');d.textContent=m.content;d.oncontextmenu=function(ev){ev.preventDefault();showReactMenu(ev,i);};if(m.reactions&&m.reactions.length){let rDiv=document.createElement('div');rDiv.style.cssText='font-size:14px;margin-top:2px;';rDiv.textContent=m.reactions.join('');d.appendChild(rDiv);}body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time + (m.in_tokens ? ' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇' : '');body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});}
+d.className='msg '+m.role+(charClass?' '+charClass:'');d.textContent=m.content;d.oncontextmenu=function(ev){ev.preventDefault();showReactMenu(ev,i);};if(m.reactions&&m.reactions.length){let rDiv=document.createElement('div');rDiv.style.cssText='font-size:14px;margin-top:2px;';rDiv.textContent=m.reactions.join('');d.appendChild(rDiv);}body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time + (m.model_name ? ' · 🤖 ' + m.model_name : '') + ((m.in_tokens || m.out_tokens) ? ' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇' : '');body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});}
 
 function render(){let box=document.getElementById('chatBox');box.innerHTML='';if(chatHasMore[currentChar]&&currentChar!=='group'){let btn=document.createElement('div');btn.style.cssText='text-align:center;padding:12px;color:#888;cursor:pointer;font-size:13px';btn.textContent='⬆ 加载更早的消息';btn.onclick=()=>loadCloudChat(currentChar,true);box.appendChild(btn);}(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role+(m.animate?' animate':'');row.dataset.role=m.role;row.dataset.content=m.content||'';if(isGroup&&m.role==='ai')row.dataset.char=m.character||'';let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';if(charKey!=='user'){av.onclick=function(e){e.stopPropagation();openProfile(charKey);};av.style.cursor='pointer';}let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');
 let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
@@ -195,7 +195,7 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(m.content&&m.content.s
   }else{
     d.textContent=content;
   }
-}if(m.thinking){console.log('THINK HIT',m.thinking.slice(0,20));let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time + (m.in_tokens ? ' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇' : '');body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});box.scrollTop=box.scrollHeight;}
+}if(m.thinking){console.log('THINK HIT',m.thinking.slice(0,20));let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time + (m.model_name ? ' · 🤖 ' + m.model_name : '') + ((m.in_tokens || m.out_tokens) ? ' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇' : '');body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});box.scrollTop=box.scrollHeight;}
 
 function copyMsg(i){navigator.clipboard.writeText(chats[currentChar][i].content);}
 
@@ -235,7 +235,7 @@ function exportChat(){
   a.href=URL.createObjectURL(blob);
   a.download='our-home-chat-'+new Date().toISOString().slice(0,10)+'.txt';
   a.click();
-  URL.revokeObjectURL(a.href);
+  URL.revokeObjectURL(a.href); showToast('导出成功');
 }
 
 function reGenGroup(i){
@@ -290,7 +290,7 @@ function reGenGroup(i){
         }
         parts.forEach(p=>saveToCloud('group_'+c,'ai',p));
       }else{
-        saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':''));
+        saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':'') + (chats.group[idx].model_name?' <!--model:'+chats.group[idx].model_name+'-->':''));
       }
       localStorage.setItem('home_chats',JSON.stringify(chats));
       render();
@@ -307,8 +307,9 @@ function reGenGroup(i){
         if(j.usage){
             chats.group[idx].in_tokens = j.usage.prompt_tokens||0;
             chats.group[idx].out_tokens = j.usage.completion_tokens||0;
+            chats.group[idx].model_name = j.model || (typeof api !== 'undefined' ? api.model : 'unknown');
             let stats=JSON.parse(localStorage.getItem('api_usage_stats')||'{}');
-            let mName='unknown';
+            let mName = typeof api !== 'undefined' ? api.model : 'unknown';
             if(!stats[mName]) stats[mName]={in:0,out:0};
             stats[mName].in+=chats.group[idx].in_tokens;
             stats[mName].out+=chats.group[idx].out_tokens;
@@ -353,6 +354,7 @@ content:m.content
             let lastMsg=chats[currentChar][chats[currentChar].length-1];
             lastMsg.in_tokens = j.usage.prompt_tokens||0;
             lastMsg.out_tokens = j.usage.completion_tokens||0;
+            lastMsg.model_name = j.model || api.model || 'unknown';
             let stats=JSON.parse(localStorage.getItem('api_usage_stats')||'{}');
             let mName=api.model||'unknown';
             if(!stats[mName]) stats[mName]={in:0,out:0};
@@ -367,7 +369,7 @@ content:m.content
             if(think)last.thinking=(last.thinking||'')+think;
             if(t)last.content+=t;
         }
-    }catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='❌ 连接失败: '+e.message;render();}let lastMsg=chats[currentChar][chats[currentChar].length-1];if(lastMsg.content.includes('<think>')){let thinkMatch=lastMsg.content.match(/<think>([\s\S]*?)<\/think>/);if(thinkMatch){lastMsg.thinking=thinkMatch[1].trim();lastMsg.content=lastMsg.content.replace(/<think>[\s\S]*?<\/think>/,'').trim();render();}}localStorage.setItem('home_chats',JSON.stringify(chats));if(!isRegen)saveToCloud(currentChar,'user',text);setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking + (lastMsg.in_tokens?' <!--tokens:'+lastMsg.in_tokens+'/'+lastMsg.out_tokens+'-->':''));},500);}
+    }catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='❌ 连接失败: '+e.message;render();}let lastMsg=chats[currentChar][chats[currentChar].length-1];if(lastMsg.content.includes('<think>')){let thinkMatch=lastMsg.content.match(/<think>([\s\S]*?)<\/think>/);if(thinkMatch){lastMsg.thinking=thinkMatch[1].trim();lastMsg.content=lastMsg.content.replace(/<think>[\s\S]*?<\/think>/,'').trim();render();}}localStorage.setItem('home_chats',JSON.stringify(chats));if(!isRegen)saveToCloud(currentChar,'user',text);setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking + (lastMsg.in_tokens?' <!--tokens:'+lastMsg.in_tokens+'/'+lastMsg.out_tokens+'-->':'') + (lastMsg.model_name?' <!--model:'+lastMsg.model_name+'-->':''));},500);}
 
 async function sendGroupMsg(text){
   if(!text)return;
@@ -387,6 +389,7 @@ async function sendGroupMsg(text){
         if(j.usage){
             chats.group[idx].in_tokens = j.usage.prompt_tokens||0;
             chats.group[idx].out_tokens = j.usage.completion_tokens||0;
+            chats.group[idx].model_name = j.model || (typeof api !== 'undefined' ? api.model : 'unknown');
             let stats=JSON.parse(localStorage.getItem('api_usage_stats')||'{}');
             let mName=api.model||'unknown';
             if(!stats[mName]) stats[mName]={in:0,out:0};
@@ -406,11 +409,11 @@ async function sendGroupMsg(text){
     chats.group.splice(idx,1);
     parts.forEach((part,pi)=>{
       chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime(),animate:true});
-      saveToCloud('group_'+c,'ai',part, chats.group[idx+pi]? (chats.group[idx+pi].thinking||'') + (chats.group[idx+pi].in_tokens?' <!--tokens:'+chats.group[idx+pi].in_tokens+'/'+chats.group[idx+pi].out_tokens+'-->':'') : '');
+      saveToCloud('group_'+c,'ai',part, chats.group[idx+pi]? (chats.group[idx+pi].thinking||'') + (chats.group[idx+pi].in_tokens?' <!--tokens:'+chats.group[idx+pi].in_tokens+'/'+chats.group[idx+pi].out_tokens+'-->':'') + (chats.group[idx+pi].model_name?' <!--model:'+chats.group[idx+pi].model_name+'-->':'') : '');
     });
     render();
   }else{
-    saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':''));
+    saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':'') + (chats.group[idx].model_name?' <!--model:'+chats.group[idx].model_name+'-->':''));
   }
 
 localStorage.setItem('home_chats',JSON.stringify(chats));}
