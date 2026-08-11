@@ -54,7 +54,7 @@ if(!SUPA_URL||!SUPA_KEY)return;
 });
 
 // PB URL extracted from index.html
-const PB_URL="http://43.167.236.193:8090";
+const PB_URL="https://yanyan-pb.duckdns.org";
 
 // Extracted from all.js
 var chatOffset={};
