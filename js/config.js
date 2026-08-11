@@ -45,13 +45,6 @@ let s=localStorage.getItem('home_api');if(s)apiConfig=JSON.parse(s);
 let p=localStorage.getItem('home_prompts');if(p)prompts=JSON.parse(p);
 let c2=localStorage.getItem('home_chats');if(c2){chats=JSON.parse(c2);}chats.group=[];
 delete chats.yan;delete chats.peiji;delete chats.shenyan;let chatPreviews={};
-['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke'].forEach(id=>{
-if(!SUPA_URL||!SUPA_KEY)return;
-  let url=SUPA_URL+'/rest/v1/chat_messages?character=eq.'+id+'&order=created_at.desc&limit=1';
-  fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
-    if(data&&data[0]){chatPreviews[id]={content:data[0].content,time:data[0].created_at?new Date(data[0].created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}; if(typeof renderList==="function")renderList();}
-  });
-});
 
 // PB URL extracted from index.html
 const PB_URL="https://yanyan-pb.duckdns.org";
