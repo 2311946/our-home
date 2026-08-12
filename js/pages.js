@@ -575,68 +575,47 @@ function updateTimer(){
   setInterval(tick,1000);
 }
 
-function loadHomeWeather(){
+// [已替换] 天气改用 wttr.in 免费API
+async function loadHomeWeather(){
   let el=document.getElementById('homeWeather');
-  if(!el||!SUPA_URL||!SUPA_KEY)return;
-  fetch(SUPA_URL+'/rest/v1/yan_diary?select=weather,date&order=id.desc&limit=1',{
-    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
-  }).then(r=>r.json()).then(data=>{
-    if(data&&data[0]&&data[0].weather){
-      el.textContent=data[0].weather;
-    }else{
-      el.textContent='暂无天气数据';
-    }
-  }).catch(()=>{el.textContent='加载失败';});
+  if(!el)return;
+  try{
+    let res=await fetch('https://wttr.in/济南?format=j1');
+    let data=await res.json();
+    let cur=data.current_condition[0];
+    let temp=cur.temp_C;
+    let desc=cur.lang_zh[0].value||cur.weatherDesc[0].value;
+    let feel=cur.FeelsLikeC;
+    el.innerHTML=`${desc} ${temp}°C（体感${feel}°C）`;
+  }catch(e){
+    el.textContent='天气获取失败';
+  }
 }
 
+// [已迁移至PB] period_tracker Supabase请求已移除
 function loadHomePeriod(){
   let el=document.getElementById('homePeriod');
-  if(!el||!SUPA_URL||!SUPA_KEY)return;
-  fetch(SUPA_URL+'/rest/v1/period_tracker?select=*&order=start_date.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
-    if(data&&data.length){
-      let p=data[0];
-      let daysSince=Math.floor((new Date()-new Date(p.start_date))/(1000*60*60*24));
-      let nextEstimate=p.cycle_days||28;
-      let daysUntil=nextEstimate-daysSince;
-      if(!p.end_date){
-        let daysOn=Math.floor((new Date()-new Date(p.start_date))/(1000*60*60*24))+1;
-        el.innerHTML='🔴 进行中（第'+daysOn+'天）';
-      }else if(daysUntil<=3&&daysUntil>0){
-        el.innerHTML='⚠️ <b style="color:#e74c3c">预计'+daysUntil+'天后来</b>';
-      }else if(daysUntil<=0){
-        el.innerHTML='⚠️ <b style="color:#e74c3c">可能已经到了</b>';
-      }else{
-        el.innerHTML='下次约 <b style="color:#fff">'+daysUntil+'天后</b>（周期'+nextEstimate+'天）';
-      }
-    }else{el.textContent='暂无记录';}
-  }).catch(()=>{el.textContent='加载失败';});
+  if(!el)return;
+  el.textContent='暂无记录';
 }
 
+// [已迁移至PB] water_tracker Supabase请求已移除，改用localStorage
 async function addWaterHome(){
   let today=new Date().toISOString().slice(0,10);
-  try{
-    let res=await fetch(SUPA_URL+'/rest/v1/water_tracker?date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
-    let data=await res.json();
-    if(data&&data.length){
-      let newCups=data[0].cups+1;
-      await fetch(SUPA_URL+'/rest/v1/water_tracker?id=eq.'+data[0].id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({cups:newCups})});
-    }else{
-      await fetch(SUPA_URL+'/rest/v1/water_tracker',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:today,cups:1})});
-    }
-    loadHomeWater();
-    popConfetti();
-  }catch(e){}
+  let key='water_'+today;
+  let cups=parseInt(localStorage.getItem(key)||'0')+1;
+  localStorage.setItem(key,cups.toString());
+  loadHomeWater();
+  popConfetti();
 }
 
 function loadHomeWater(){
   let el=document.getElementById('homeWater');
-  if(!el||!SUPA_URL||!SUPA_KEY)return;
+  if(!el)return;
   let today=new Date().toISOString().slice(0,10);
-  fetch(SUPA_URL+'/rest/v1/water_tracker?select=*&date=eq.'+today,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
-    let cups=(data&&data.length)?data[0].cups:0;
-    let bar='💧'.repeat(Math.min(cups,8))+'○'.repeat(Math.max(0,8-cups));
-    el.innerHTML=bar+' <b style="color:#fff">'+cups+'/8</b>';
-  }).catch(()=>{el.textContent='加载失败';});
+  let cups=parseInt(localStorage.getItem('water_'+today)||'0');
+  let bar='💧'.repeat(Math.min(cups,8))+'○'.repeat(Math.max(0,8-cups));
+  el.innerHTML=bar+' <b style="color:#fff">'+cups+'/8</b>';
 }
 
 function loadCheckins(){
