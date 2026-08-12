@@ -765,7 +765,7 @@ function showQuotePreview(){
     box=document.createElement('div');
     box.id='quotePreview';
     box.style.cssText='display:none;background:rgba(155,89,182,0.1);border-left:3px solid #9b59b6;padding:8px 12px;margin:8px 12px 0;border-radius:6px;font-size:13px;color:#aaa;position:relative';
-    document.querySelector('.chat-input').prepend(box);
+    document.querySelector('.input-area').prepend(box);
   }
   box.innerHTML='<div><strong>'+window.quoteMsgData.sender+'</strong>: '+window.quoteMsgData.text+'</div><span onclick="window.quoteMsgData=null;this.parentElement.style.display=\'none\'" style="position:absolute;right:8px;top:8px;cursor:pointer;font-size:16px">✕</span>';
   box.style.display='block';
