@@ -393,12 +393,14 @@ async function sendMsg(isRegen){
     input.value='';
   }
   render();
-  let contextCount=parseInt(localStorage.getItem('ctx_count'))||30;
+  let contextCount=parseInt(localStorage.getItem('ctx_count_'+currentChar)||localStorage.getItem('ctx_count'))||30;
   let msgs=[];
   if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]+'\n\n当前真实时间：'+aiNowTime()+'。'});
   let groupMsgs=[];
-  if(chats.group&&chats.group.length){chats.group.forEach(m=>{if(!m.content)return;if(m.role==='user')groupMsgs.push('宣宣: '+m.content);else if(m.character===currentChar)groupMsgs.push(charNames[currentChar]+': '+m.content);else if(m.character)groupMsgs.push(charNames[m.character]+': '+m.content);});}
-  if(groupMsgs.length)msgs.push({role:'system',content:'【以下是群聊记录，你参与过这些对话】\n'+groupMsgs.slice(-contextCount).join('\n')});
+  let useGroupCtx=localStorage.getItem('group_ctx_'+currentChar)==='true';
+  let groupCtxCount=parseInt(localStorage.getItem('group_ctx_count_'+currentChar)||'10');
+  if(useGroupCtx&&chats.group&&chats.group.length){chats.group.forEach(m=>{if(!m.content)return;if(m.role==='user')groupMsgs.push('宣宣: '+m.content);else if(m.character===currentChar)groupMsgs.push(charNames[currentChar]+': '+m.content);else if(m.character)groupMsgs.push(charNames[m.character]+': '+m.content);});}
+  if(groupMsgs.length)msgs.push({role:'system',content:'【以下是群聊记录，你参与过这些对话】\n'+groupMsgs.slice(-groupCtxCount).join('\n')});
 chats[currentChar].slice(-contextCount).forEach(m=>{
   if(m.content){
     let apiContent=m.content;

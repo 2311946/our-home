@@ -345,3 +345,113 @@ function clearUsageStats() {
     renderApiUsage();
   }
 }
+
+// === 角色独立设置面板 ===
+function openCharSettings(charId){
+  if(!charId)return;
+  let old=document.getElementById('charSettingsModal');
+  if(old)old.remove();
+
+  let currentModel=localStorage.getItem('model_'+charId)||apiConfig.model||'';
+  let ctxCount=localStorage.getItem('ctx_count_'+charId)||localStorage.getItem('ctx_count')||'30';
+  let groupCtx=localStorage.getItem('group_ctx_'+charId)==='true';
+  let groupCtxCount=localStorage.getItem('group_ctx_count_'+charId)||'10';
+  let promptText=prompts[charId]||'';
+
+  let overlay=document.createElement('div');
+  overlay.id='charSettingsModal';
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:10000';
+  overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+
+  overlay.innerHTML=`
+    <div style="background:#16213e;border-radius:16px;padding:20px;width:90%;max-width:340px;max-height:80vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+      <span onclick="document.getElementById('charSettingsModal').remove()" style="position:absolute;right:14px;top:10px;cursor:pointer;font-size:18px;color:#e74c3c">✕</span>
+      <div style="color:#fff;font-size:16px;margin-bottom:16px;text-align:center">⚙️ ${charNames[charId]||charId} 的设置</div>
+
+      <!-- 模型选择 -->
+      <div style="margin-bottom:14px">
+        <div style="color:#9b59b6;font-size:13px;margin-bottom:6px">🤖 模型选择</div>
+        <input id="csModel" value="${currentModel.replace(/"/g,'&quot;')}" placeholder="模型名称" style="width:100%;padding:8px 12px;background:#253554;color:#eee;border:1px solid #444;border-radius:8px;outline:none;box-sizing:border-box;font-size:13px" />
+        <div style="margin-top:4px;font-size:11px;color:#666">当前: ${currentModel||'全局默认'}</div>
+      </div>
+
+      <!-- 人设Prompt -->
+      <div style="margin-bottom:14px">
+        <div style="color:#9b59b6;font-size:13px;margin-bottom:6px">📝 人设 Prompt</div>
+        <textarea id="csPrompt" rows="5" style="width:100%;padding:8px 12px;background:#253554;color:#eee;border:1px solid #444;border-radius:8px;outline:none;box-sizing:border-box;font-size:13px;resize:vertical;line-height:1.5">${promptText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      </div>
+
+      <!-- 上下文条数 -->
+      <div style="margin-bottom:14px">
+        <div style="color:#9b59b6;font-size:13px;margin-bottom:6px">📊 上下文条数: <span id="csCtxVal">${ctxCount}</span></div>
+        <input id="csCtxRange" type="range" min="10" max="100" step="5" value="${ctxCount}" oninput="document.getElementById('csCtxVal').textContent=this.value" style="width:100%;accent-color:#9b59b6" />
+      </div>
+
+      <!-- 群聊记录 -->
+      <div style="margin-bottom:18px">
+        <div style="color:#9b59b6;font-size:13px;margin-bottom:6px">💬 带入群聊记录</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <label style="display:flex;align-items:center;gap:6px;color:#aaa;font-size:13px;cursor:pointer">
+            <input id="csGroupCtx" type="checkbox" ${groupCtx?'checked':''} style="accent-color:#9b59b6" />
+            启用
+          </label>
+          <select id="csGroupCtxCount" style="padding:4px 8px;background:#253554;color:#eee;border:1px solid #444;border-radius:6px;font-size:12px;outline:none">
+            <option value="5" ${groupCtxCount==='5'?'selected':''}>5条</option>
+            <option value="10" ${groupCtxCount==='10'?'selected':''}>10条</option>
+            <option value="20" ${groupCtxCount==='20'?'selected':''}>20条</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 保存按钮 -->
+      <button onclick="saveCharSettings('${charId}')" style="width:100%;padding:12px;border:none;border-radius:10px;background:#9b59b6;color:#fff;font-size:14px;cursor:pointer">💾 保存设置</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function saveCharSettings(charId){
+  let model=document.getElementById('csModel').value.trim();
+  let promptText=document.getElementById('csPrompt').value;
+  let ctxCount=document.getElementById('csCtxRange').value;
+  let groupCtx=document.getElementById('csGroupCtx').checked;
+  let groupCtxCount=document.getElementById('csGroupCtxCount').value;
+
+  // 存 localStorage
+  if(model) localStorage.setItem('model_'+charId,model);
+  else localStorage.removeItem('model_'+charId);
+  localStorage.setItem('ctx_count_'+charId,ctxCount);
+  localStorage.setItem('group_ctx_'+charId,groupCtx.toString());
+  localStorage.setItem('group_ctx_count_'+charId,groupCtxCount);
+
+  // 更新内存中的 prompt
+  prompts[charId]=promptText;
+  localStorage.setItem('home_prompts',JSON.stringify(prompts));
+
+  // 写入PB（如果有PB地址）
+  if(PB_URL){
+    try{
+      // 先查是否已有记录
+      let res=await fetch(PB_URL+'/api/collections/char_prompts/records?filter=character="'+charId+'"');
+      let data=await res.json();
+      if(data&&data.items&&data.items.length){
+        // 更新
+        await fetch(PB_URL+'/api/collections/char_prompts/records/'+data.items[0].id,{
+          method:'PATCH',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({prompt:promptText})
+        });
+      }else{
+        // 新建
+        await fetch(PB_URL+'/api/collections/char_prompts/records',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({character:charId,prompt:promptText})
+        });
+      }
+    }catch(e){}
+  }
+
+  document.getElementById('charSettingsModal').remove();
+  showToast('设置已保存 ✅');
+}
