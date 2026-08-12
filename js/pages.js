@@ -224,7 +224,7 @@ async function loadOBMemory(charId) {
     method: "tools/call",
     params: {
       name: "breath_search",
-      arguments: { query: charId, domain: charId, max_results: 20 }
+      arguments: { query: charId, domain: charId, max_results: 50 }
     },
     id: 1
   };
@@ -239,7 +239,17 @@ async function loadOBMemory(charId) {
     });
     let data = await res.json();
     let text = data.result?.content?.[0]?.text || '';
-    return text;
+    // 清洗：去掉元数据行，只保留真正的内容段落
+    let lines = text.split('\n');
+    let cleaned = lines.filter(line => {
+      if(line.startsWith('[OBM2')) return false;
+      if(line.startsWith('[bucket_id:')) return false;
+      if(line.startsWith('=== 记忆')) return false;
+      if(line.trim() === '---') return false;
+      if(line.trim() === '——') return false;
+      return true;
+    }).join('\n');
+    return cleaned;
   } catch(e) {
     return '加载失败: ' + e.message;
   }
@@ -251,7 +261,18 @@ function showOBMemory(personId){
   if(!list)return;
   list.innerHTML='<div style="padding:20px;text-align:center;color:#888">正在加载记忆宫殿…</div>';
   loadOBMemory(personId).then(t=>{
-    list.innerHTML='<pre style="white-space:pre-wrap;word-break:break-word;color:#d6c7ff;font-size:13px;line-height:1.7;padding:14px;margin:0;font-family:inherit">'+t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>';
+    if(!t || t.trim()==='' || t.indexOf('加载失败')===0){
+      list.innerHTML='<div style="padding:20px;text-align:center;color:#888">'+(t||'暂无记忆')+'</div>';
+      return;
+    }
+    // 按 🔖 Footprint 行作为分隔标志，拆分多条记忆
+    let blocks=t.split(/🔖\s*Footprint/gi).map(b=>b.trim()).filter(b=>b.length>0);
+    if(blocks.length===0){
+      list.innerHTML='<div style="padding:20px;text-align:center;color:#888">暂无记忆</div>';
+      return;
+    }
+    let esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    list.innerHTML=blocks.map(b=>'<div class="mem-card"><div class="mem-content">'+esc(b)+'</div></div>').join('');
   });
 }
 
