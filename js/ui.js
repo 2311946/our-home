@@ -361,6 +361,7 @@ function openCharSettings(charId){
   let ctxCount=localStorage.getItem('ctx_count_'+charId)||localStorage.getItem('ctx_count')||'30';
   let groupCtx=localStorage.getItem('group_ctx_'+charId)==='true';
   let groupCtxCount=localStorage.getItem('group_ctx_count_'+charId)||'10';
+  let useStream=localStorage.getItem('stream_'+charId)!=='false';
 
   let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');
   let presetOptions='<option value="">-- 全局默认 API --</option>';
@@ -387,6 +388,13 @@ function openCharSettings(charId){
     '<div style="margin-bottom:14px">'+
       '<div style="color:#9b59b6;font-size:13px;margin-bottom:6px">📝 人设 Prompt</div>'+
       '<textarea id="csPrompt" rows="5" style="width:100%;padding:8px 12px;background:#253554;color:#eee;border:1px solid #444;border-radius:8px;outline:none;box-sizing:border-box;font-size:13px;resize:vertical;line-height:1.5"></textarea>'+
+    '</div>'+
+    '<div style="margin-bottom:14px;padding:12px 14px;background:#0f172a;border-radius:10px">'+
+      '<div style="color:#9b59b6;font-size:14px;margin-bottom:6px;font-weight:500">⚡ 输出模式</div>'+
+      '<label style="display:flex;align-items:center;gap:8px;color:#eee;font-size:14px;cursor:pointer">'+
+        '<input id="csStream" type="checkbox" '+(useStream?'checked':'')+' style="accent-color:#9b59b6;width:18px;height:18px" /> 开启流式输出 (打字机效果)'+
+      '</label>'+
+      '<div style="color:#666;font-size:11px;margin-top:6px">关闭则等整段回复生成完一次性显示，支持不支持流式的特殊模型</div>'+
     '</div>'+
     '<div style="margin-bottom:18px;padding:12px 14px;background:#0f172a;border-radius:10px">'+
       '<div style="color:#9b59b6;font-size:14px;margin-bottom:10px;font-weight:500">📊 上下文条数: <span id="csCtxVal" style="color:#fff;font-size:16px;font-weight:700">'+ctxCount+'</span> 条</div>'+
@@ -461,6 +469,7 @@ async function saveCharSettings(){
   let ctxCount=document.getElementById('csCtxRange').value;
   let groupCtx=document.getElementById('csGroupCtx').checked;
   let groupCtxCount=document.getElementById('csGroupCtxCount').value;
+  let useStream=document.getElementById('csStream').checked;
   let presetSel=document.getElementById('csPresetSel');
   let preset=presetSel?presetSel.value:'';
 
@@ -471,6 +480,7 @@ async function saveCharSettings(){
   localStorage.setItem('ctx_count_'+charId,ctxCount);
   localStorage.setItem('group_ctx_'+charId,groupCtx.toString());
   localStorage.setItem('group_ctx_count_'+charId,groupCtxCount);
+  localStorage.setItem('stream_'+charId,useStream.toString());
 
   // 更新内存中的 prompt
   prompts[charId]=promptText;
