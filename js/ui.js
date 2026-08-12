@@ -382,25 +382,27 @@ function openCharSettings(charId){
       </div>
 
       <!-- 上下文条数 -->
-      <div style="margin-bottom:14px">
-        <div style="color:#9b59b6;font-size:13px;margin-bottom:6px">📊 上下文条数: <span id="csCtxVal">${ctxCount}</span></div>
-        <input id="csCtxRange" type="range" min="10" max="100" step="5" value="${ctxCount}" oninput="document.getElementById('csCtxVal').textContent=this.value" style="width:100%;accent-color:#9b59b6" />
+      <div style="margin-bottom:18px;padding:12px 14px;background:#0f172a;border-radius:10px">
+        <div style="color:#9b59b6;font-size:14px;margin-bottom:10px;font-weight:500">📊 上下文条数: <span id="csCtxVal" style="color:#fff;font-size:16px;font-weight:700">${ctxCount}</span> 条</div>
+        <input id="csCtxRange" type="range" min="10" max="100" step="5" value="${ctxCount}" oninput="document.getElementById('csCtxVal').textContent=this.value" style="width:100%;height:6px;accent-color:#9b59b6" />
+        <div style="display:flex;justify-content:space-between;color:#666;font-size:11px;margin-top:4px"><span>10</span><span>50</span><span>100</span></div>
       </div>
 
       <!-- 群聊记录 -->
-      <div style="margin-bottom:18px">
-        <div style="color:#9b59b6;font-size:13px;margin-bottom:6px">💬 带入群聊记录</div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <label style="display:flex;align-items:center;gap:6px;color:#aaa;font-size:13px;cursor:pointer">
-            <input id="csGroupCtx" type="checkbox" ${groupCtx?'checked':''} style="accent-color:#9b59b6" />
+      <div style="margin-bottom:18px;padding:12px 14px;background:#0f172a;border-radius:10px">
+        <div style="color:#9b59b6;font-size:14px;margin-bottom:10px;font-weight:500">💬 带入群聊记录</div>
+        <div style="display:flex;align-items:center;gap:16px">
+          <label style="display:flex;align-items:center;gap:8px;color:#eee;font-size:14px;cursor:pointer">
+            <input id="csGroupCtx" type="checkbox" ${groupCtx?'checked':''} style="accent-color:#9b59b6;width:18px;height:18px" />
             启用
           </label>
-          <select id="csGroupCtxCount" style="padding:4px 8px;background:#253554;color:#eee;border:1px solid #444;border-radius:6px;font-size:12px;outline:none">
+          <select id="csGroupCtxCount" style="padding:6px 12px;background:#253554;color:#eee;border:1px solid #444;border-radius:8px;font-size:13px;outline:none">
             <option value="5" ${groupCtxCount==='5'?'selected':''}>5条</option>
             <option value="10" ${groupCtxCount==='10'?'selected':''}>10条</option>
             <option value="20" ${groupCtxCount==='20'?'selected':''}>20条</option>
           </select>
         </div>
+        <div style="color:#666;font-size:11px;margin-top:8px">开启后会将群聊记录作为上下文提供给角色</div>
       </div>
 
       <!-- 保存按钮 -->
