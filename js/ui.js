@@ -171,7 +171,9 @@ function toggleSearch(){let bar=document.getElementById('searchBar');bar.style.d
 function searchChat(){let bar=document.getElementById('searchBar');bar.style.display='block';let si=document.getElementById('searchInput');if(si){si.focus();if(!si.value.trim())renderSearchHistory();}}
 
 function openSettings(){
-  switchTab('settings');
+  initSettings();
+  let m=document.getElementById('settingsModal');
+  if(m)m.style.display='flex';
 }
 
 function initSettings(){
@@ -196,7 +198,10 @@ function initSettings(){
   renderApiUsage();
 }
 
-function closeSettings(){ /* 设置已改为独立页面，无需关闭弹窗 */ }
+function closeSettings(){
+  let m=document.getElementById('settingsModal');
+  if(m)m.style.display='none';
+}
 
 function togglePlusMenu(){let m=document.getElementById('plusMenu');m.style.display=m.style.display==='none'?'block':'none';}
 

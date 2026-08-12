@@ -289,14 +289,13 @@
 </div>
 </div>
 </div>
-<div class="view" id="settingsView">
-<div class="list-header">
-<button onclick="goBack()" style="background:none;border:none;color:#aaa;font-size:22px;cursor:pointer">←</button>
-<h2 style="flex:1;text-align:center">⚙ 设置</h2>
-<span style="width:40px"></span>
+<div class="modal" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+<div class="modal-box" style="max-width:360px;width:90%;max-height:85vh;overflow-y:auto">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<h3 style="margin:0;color:#9b59b6">⚙ 设置</h3>
+<span onclick="closeSettings()" style="cursor:pointer;font-size:22px;color:#e74c3c;line-height:1">✕</span>
 </div>
-<div class="settings-page" style="padding:12px;padding-bottom:90px;overflow-y:auto">
-<h3 style="margin:0 0 10px;color:#fff">⚙ 设置</h3>
+<div class="settings-page" style="padding:0">
   <!-- 📡 API配置 -->
 
 <details class="settings-section" id="apiUsagePanel">
@@ -309,7 +308,7 @@
   </div>
 </details>
 
-<details class="settings-section" open>
+<details class="settings-section">
 <summary>📡 API配置</summary>
   <div class="section-body">
     <label>API地址</label>
@@ -402,6 +401,7 @@
 <button class="save" onclick="saveSettings()" style="width:100%;margin-top:16px;background:#9b59b6;border:none;color:#fff;border-radius:10px;padding:13px;font-size:15px;cursor:pointer">💾 保存设置</button>
 </div>
 </div>
+</div>
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/cloud.js"></script>
@@ -414,7 +414,6 @@
 <div class="tab-item" onclick="switchTab('list')"><span class="tab-icon">💬</span>聊天</div>
 <div class="tab-item" onclick="switchTab('moments')"><span class="tab-icon">💫</span>朋友圈</div>
 <div class="tab-item" onclick="switchTab('mem')"><span class="tab-icon">📖</span>记忆</div>
-<div class="tab-item" onclick="switchTab('settings')"><span class="tab-icon">⚙️</span>设置</div>
 <div class="tab-item" onclick="switchTab('checkin')"><span class="tab-icon">✅</span>打卡</div>
 </div>
 <button id="callBtn" onclick="startCall()" style="position:fixed;right:16px;bottom:80px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;font-size:22px;box-shadow:0 4px 15px rgba(102,126,234,0.4);z-index:9999;cursor:pointer;">📞</button>

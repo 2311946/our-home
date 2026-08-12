@@ -508,12 +508,8 @@ loadPreviews();    renderList();
     loadMem();
   }else if(tab==='checkin'){
     document.getElementById('checkinView').classList.add('active');
-    tabBar.children[5].classList.add('active');
-    loadCheckins();
-  }else if(tab==='settings'){
-    document.getElementById('settingsView').classList.add('active');
     tabBar.children[4].classList.add('active');
-    initSettings();
+    loadCheckins();
   }
 }
 
