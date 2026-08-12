@@ -229,13 +229,14 @@ function cleanOBText(text) {
     .trim();
 }
 
-async function loadOBMemory(categoryQuery) {
+async function loadOBMemory(filterDomain) {
   let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan'];
   
+  if (filterDomain) domains = [filterDomain];
+
   let requests = domains.map(domain => {
     let args = { max_results: 1000, max_tokens: 50000 };
     if(domain) args.domain = domain;
-    if(categoryQuery) args.query = categoryQuery;
     return fetch("https://yanyan-ob.duckdns.org/mcp", {
       method: "POST",
       headers: {
@@ -263,14 +264,11 @@ function showOBMemory(){
   if(!list)return;
   list.innerHTML='<div style="padding:20px;text-align:center;color:#888">正在加载全局记忆宫殿(OB)…</div>';
   
-  // 翻译当前分类名为搜索关键词
-  let catMap = {
-    'core': '核心记忆', 'daily': '日常', 'intimate': '亲密',
-    'health': '健康', 'diary': '日记', 'emotion': '情绪'
-  };
-  let query = catMap[currentMemCategory] || '';
+  // 在 OB 模式下，第二排选择了人名（如 yan, peiji, shared, tech 等），或者 all
+  let filterDomain = currentMemCategory === 'all' ? '' : currentMemCategory;
 
-  loadOBMemory(query).then(t=>{
+  // 调用 loadOBMemory，传入指定的 domain
+  loadOBMemory(filterDomain).then(t=>{
     if(!t || t.trim()==='' || t.indexOf('加载失败')===0){
       list.innerHTML='<div style="padding:20px;text-align:center;color:#888">'+(t||'暂无记忆')+'</div>';
       return;
@@ -309,15 +307,32 @@ let ids=['ob_all','yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke
 }
   let catTabs=document.getElementById('memCategoryTabs');
   catTabs.innerHTML='';
-  let categories=[
-    {id:'all',name:'全部'},
-    {id:'core',name:'核心记忆'},
-    {id:'daily',name:'日常'},
-    {id:'intimate',name:'亲密'},
-    {id:'health',name:'健康'},
-    {id:'diary',name:'日记'},
-    {id:'emotion',name:'情绪'}
-  ];
+  let categories=[];
+  if(currentMemPerson === 'ob_all'){
+    categories=[
+      {id:'all',name:'全部'},
+      {id:'yan',name:'言言'},
+      {id:'peiji',name:'裴寂'},
+      {id:'shenyan',name:'沈晏'},
+      {id:'axun',name:'裴洵'},
+      {id:'jiangsu',name:'江溯'},
+      {id:'su',name:'溯'},
+      {id:'zouzheng',name:'邹峥'},
+      {id:'keke',name:'柯柯'},
+      {id:'shared',name:'共享'},
+      {id:'tech',name:'未分类'}
+    ];
+  } else {
+    categories=[
+      {id:'all',name:'全部'},
+      {id:'core',name:'核心记忆'},
+      {id:'daily',name:'日常'},
+      {id:'intimate',name:'亲密'},
+      {id:'health',name:'健康'},
+      {id:'diary',name:'日记'},
+      {id:'emotion',name:'情绪'}
+    ];
+  }
   categories.forEach(c=>{
     let tab=document.createElement('div');
     tab.className='mem-category-tab'+(c.id===currentMemCategory?' active':'');
@@ -331,14 +346,16 @@ let ids=['ob_all','yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke
 
 function renderMemList(){
   // 更新分类tab高亮
-let catTabs=document.getElementById('memCategoryTabs');
-if(catTabs){
-  Array.from(catTabs.children).forEach(tab=>{
-    let cats=['all','core','daily','intimate','health','diary','emotion'];
-    let idx=Array.from(catTabs.children).indexOf(tab);
-    tab.className='mem-category-tab'+(cats[idx]===currentMemCategory?' active':'');
-  });
-}
+  let catTabs=document.getElementById('memCategoryTabs');
+  if(catTabs){
+    let cats = currentMemPerson === 'ob_all' 
+      ? ['all','yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke','shared','tech']
+      : ['all','core','daily','intimate','health','diary','emotion'];
+    Array.from(catTabs.children).forEach(tab=>{
+      let idx=Array.from(catTabs.children).indexOf(tab);
+      tab.className='mem-category-tab'+(cats[idx]===currentMemCategory?' active':'');
+    });
+  }
   let list=document.getElementById('memList');
   list.innerHTML='';
   // 角色选择了"全部记忆(OB)"时：走 OB，无视分类
