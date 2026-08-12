@@ -90,6 +90,7 @@ function saveSettings(){
   SUPA_KEY=document.getElementById('supaKey').value;
   localStorage.setItem('home_api',JSON.stringify(apiConfig));
   localStorage.setItem('home_prompts',JSON.stringify(prompts));
+  if(typeof savePromptToCloud==='function')savePromptToCloud(editingPromptChar,prompts[editingPromptChar]);
   localStorage.setItem('supa_url',SUPA_URL);
   localStorage.setItem('supa_key',SUPA_KEY); closeSettings(); showToast('设置已保存');
 }
@@ -230,13 +231,18 @@ function cleanOBText(text) {
 }
 
 async function loadOBMemory(filterDomain) {
-  let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan', '未分类'];
+  let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan'];
   
   if (filterDomain) domains = [filterDomain];
 
   let requests = domains.map(domain => {
-    let args = { max_results: 1000, max_tokens: 50000 };
-    if(domain) args.domain = domain;
+    let args = { max_results: 50 };
+    if(domain) {
+      args.domain = domain;
+      args.query = domain;
+    } else {
+      args.query = '记忆';
+    }
     return fetch("https://yanyan-ob.duckdns.org/mcp", {
       method: "POST",
       headers: {
@@ -246,7 +252,7 @@ async function loadOBMemory(filterDomain) {
       body: JSON.stringify({
         jsonrpc: "2.0",
         method: "tools/call",
-        params: { name: "breath_advanced", arguments: args },
+        params: { name: "breath_search", arguments: args },
         id: 1
       })
     }).then(r => r.json()).then(data => {

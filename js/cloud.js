@@ -129,3 +129,41 @@ async function loadFromCloud(){
 }
 
 (async()=>{try{let r=await fetch(SUPA_URL+'/rest/v1/memory_backup?character=eq.guyan&select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d=await r.json();let m=d.map(x=>x.content).join('\n');if(m&&!prompts.yan.includes('记忆库'))prompts.yan+='\n\n【记忆库】\n'+m;}catch(e){}try{let r2=await fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d2=await r2.json();let m2=d2.map(x=>x.content).join('\n');if(m2&&!prompts.peiji.includes('记忆库'))prompts.peiji+='\n\n【记忆库】\n'+m2;}catch(e){}try{let r3=await fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=content',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});let d3=await r3.json();let m3=d3.map(x=>x.content).join('\n');if(m3&&!prompts.shenyan.includes('记忆库'))prompts.shenyan+='\n\n【记忆库】\n'+m3;}catch(e){}})();
+
+async function loadPromptsFromCloud() {
+  if (!PB_URL) return;
+  try {
+    let res = await fetch(PB_URL + '/api/collections/char_prompts/records?perPage=50');
+    let data = await res.json();
+    if (data && data.items) {
+      data.items.forEach(item => {
+        if (item.character && item.prompt) {
+          prompts[item.character] = item.prompt;
+        }
+      });
+      localStorage.setItem('home_prompts', JSON.stringify(prompts));
+    }
+  } catch(e) {}
+}
+
+async function savePromptToCloud(character, promptText) {
+  if (!PB_URL || !character) return;
+  try {
+    let res = await fetch(PB_URL + '/api/collections/char_prompts/records?filter=(character="' + character + '")');
+    let data = await res.json();
+    if (data && data.items && data.items.length > 0) {
+      let id = data.items[0].id;
+      await fetch(PB_URL + '/api/collections/char_prompts/records/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText })
+      });
+    } else {
+      await fetch(PB_URL + '/api/collections/char_prompts/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ character: character, prompt: promptText })
+      });
+    }
+  } catch(e) {}
+}
