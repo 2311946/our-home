@@ -155,15 +155,12 @@ function loadMem(){
     tab.onclick=()=>{
       currentMemPerson=p.id;
       renderMemTabs();
-      showOBMemory(p.id);
     };
     personTabs.appendChild(tab);
   });
 
-  // 分类tab与高亮（不依赖 Supabase）
+  // 分类tab与高亮（renderMemList 内根据分类决定走 OB 还是 Supabase）
   renderMemTabs();
-  // 记忆宫殿统一走 OB（初始默认角色也走 OB）
-  showOBMemory(currentMemPerson);
 
   // Supabase 仅用于记忆搜索/分类补全；未配置则跳过，不影响 OB 展示
   if(!SUPA_URL||!SUPA_KEY) return;
@@ -245,7 +242,6 @@ async function loadOBMemory(charId) {
       if(line.startsWith('[OBM2')) return false;
       if(line.startsWith('[bucket_id:')) return false;
       if(line.startsWith('=== 记忆')) return false;
-      if(line.trim() === '---') return false;
       if(line.trim() === '——') return false;
       return true;
     }).join('\n');
@@ -265,14 +261,20 @@ function showOBMemory(personId){
       list.innerHTML='<div style="padding:20px;text-align:center;color:#888">'+(t||'暂无记忆')+'</div>';
       return;
     }
-    // 按 🔖 Footprint 行作为分隔标志，拆分多条记忆
-    let blocks=t.split(/🔖\s*Footprint/gi).map(b=>b.trim()).filter(b=>b.length>0);
-    if(blocks.length===0){
+    // 按 📌 或 --- 拆分成多条记忆
+    let items = t.split(/\n(?=📌)|(?<=\n)---\n/);
+    list.innerHTML='';
+    items.forEach(item => {
+      if(!item.trim()) return;
+      let card = document.createElement('div');
+      card.className = 'mem-card';
+      card.style.cssText = 'background:#1a1a2e;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #2a2a4a;white-space:pre-wrap;font-size:13px;line-height:1.6;color:#ddd;';
+      card.textContent = item.trim();
+      list.appendChild(card);
+    });
+    if(list.children.length===0){
       list.innerHTML='<div style="padding:20px;text-align:center;color:#888">暂无记忆</div>';
-      return;
     }
-    let esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    list.innerHTML=blocks.map(b=>'<div class="mem-card"><div class="mem-content">'+esc(b)+'</div></div>').join('');
   });
 }
 
@@ -319,6 +321,11 @@ if(catTabs){
 }
   let list=document.getElementById('memList');
   list.innerHTML='';
+  // 全部记忆：数据源改为 OB 记忆宫殿；群聊仍走 Supabase 存档
+  if(currentMemCategory==='all' && currentMemPerson!=='group'){
+    showOBMemory(currentMemPerson);
+    return;
+  }
   if(currentMemPerson==='group'){
     let gi=document.getElementById('memGroupInput');if(gi)gi.style.display='block';
     list.style.paddingBottom='130px';
