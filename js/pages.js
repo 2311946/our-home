@@ -215,40 +215,32 @@ fetch(SUPA_URL+'/rest/v1/ai_chat?select=id,sender,content,created_at&order=creat
   });
 }
 
-async function loadOBMemory(charId) {
-  let body = {
-    jsonrpc: "2.0",
-    method: "tools/call",
-    params: {
-      name: "breath_advanced",
-      arguments: { query: charId, domain: charId, max_results: 50 }
-    },
-    id: 1
-  };
-  try {
-    let res = await fetch("https://yanyan-ob.duckdns.org/mcp", {
+async function loadOBMemory(filterDomain) {
+  let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan'];
+  
+  // 如果指定了角色就只请求那个domain
+  if(filterDomain) domains = [filterDomain];
+  
+  let requests = domains.map(domain => {
+    let args = { max_results: 50 };
+    if(domain) args.domain = domain;
+    return fetch("https://yanyan-ob.duckdns.org/mcp", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer ob-xuanxuan-yanyan-2026"
       },
-      body: JSON.stringify(body)
-    });
-    let data = await res.json();
-    let text = data.result?.content?.[0]?.text || '';
-    // 清洗：去掉元数据行，只保留真正的内容段落
-    let lines = text.split('\n');
-    let cleaned = lines.filter(line => {
-      if(line.startsWith('[OBM2')) return false;
-      if(line.startsWith('[bucket_id:')) return false;
-      if(line.startsWith('=== 记忆')) return false;
-      if(line.trim() === '——') return false;
-      return true;
-    }).join('\n');
-    return cleaned;
-  } catch(e) {
-    return '加载失败: ' + e.message;
-  }
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: { name: "breath_advanced", arguments: args },
+        id: 1
+      })
+    }).then(r => r.json()).then(data => data.result?.content?.[0]?.text || '').catch(() => '');
+  });
+  
+  let results = await Promise.all(requests);
+  return results.filter(t => t).join('\n---\n');
 }
 
 function showOBMemory(personId){
