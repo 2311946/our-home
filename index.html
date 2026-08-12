@@ -330,6 +330,20 @@
   </div>
 </details>
 
+<details class="setting-section">
+  <summary>💬 群聊配置</summary>
+  <div class="setting-item">
+    <label>回复人数模式</label>
+    <select id="groupReplyMode" onchange="localStorage.setItem('group_reply_mode',this.value)">
+      <option value="1-3">随机1-3人</option>
+      <option value="2-5">随机2-5人</option>
+      <option value="all">全员回复</option>
+      <option value="1">固定1人</option>
+      <option value="2">固定2人</option>
+    </select>
+  </div>
+</details>
+
 <!-- 🎨 主题美化 -->
 <details class="settings-section">
   <summary>🎨 主题美化</summary>

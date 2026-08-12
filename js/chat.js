@@ -769,7 +769,7 @@ function quoteMsg(idx){
   let charKey = m.role === 'user' ? 'user' : (isGroup ? m.character : currentChar);
   let sender = m.role === 'user' ? '你' : (charNames[charKey] || charKey);
   let content = m.content || '';
-  window.quoteMsgData={sender:sender,text:content.slice(0,50)+(content.length>50?'...':'')};
+  window.quoteMsgData={sender:sender,text:content};
   showQuotePreview();
   document.getElementById('input').focus();
 }
@@ -779,9 +779,15 @@ function showQuotePreview(){
   if(!box){
     box=document.createElement('div');
     box.id='quotePreview';
-    box.style.cssText='display:none;background:rgba(155,89,182,0.1);border-left:3px solid #9b59b6;padding:8px 12px;margin:8px 12px 0;border-radius:6px;font-size:13px;color:#aaa;position:relative';
-    document.querySelector('.input-area').prepend(box);
+    box.style.cssText='display:none;background:rgba(155,89,182,0.1);border-left:3px solid #9b59b6;padding:6px 10px;border-radius:6px;font-size:12px;color:#aaa;position:relative;max-height:60px;overflow-y:auto;white-space:pre-wrap;word-wrap:break-word;line-height:1.4';
+    let inputArea=document.querySelector('.input-area');
+    let wrapper=document.createElement('div');
+    wrapper.style.cssText='display:flex;flex-direction:column;flex:1;gap:6px';
+    let textarea=inputArea.querySelector('textarea');
+    inputArea.insertBefore(wrapper,textarea);
+    wrapper.appendChild(box);
+    wrapper.appendChild(textarea);
   }
-  box.innerHTML='<div><strong>'+window.quoteMsgData.sender+'</strong>: '+window.quoteMsgData.text+'</div><span onclick="window.quoteMsgData=null;this.parentElement.style.display=\'none\'" style="position:absolute;right:8px;top:8px;cursor:pointer;font-size:16px">✕</span>';
+  box.innerHTML='<div style="padding-right:20px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical"><strong>'+window.quoteMsgData.sender+'</strong>: '+window.quoteMsgData.text+'</div><span onclick="window.quoteMsgData=null;document.getElementById(\'quotePreview\').style.display=\'none\'" style="position:absolute;right:6px;top:4px;cursor:pointer;font-size:14px;color:#e74c3c">✕</span>';
   box.style.display='block';
 }
