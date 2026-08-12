@@ -145,23 +145,28 @@ function goBackFromMem(){document.getElementById('tabBar').style.display='flex';
 let currentMemPerson='yan';
 
 function loadMem(){
-  if(!SUPA_URL||!SUPA_KEY){
-    document.getElementById('memList').innerHTML='<div style="padding:20px;text-align:center;color:#888">请先在设置中配置 Supabase</div>';
-    return;
-  }
-  
-  // 渲染人物 tabs
+  // 渲染人物 tabs（始终渲染，不依赖 Supabase）
   let personTabs=document.getElementById('memPersonTabs');
   personTabs.innerHTML='';
 [{id:'yan',name:'言言',emoji:'🐺'},{id:'peiji',name:'裴寂',emoji:'🖤'},{id:'shenyan',name:'沈晏',emoji:'🌙'},{id:'axun',name:'裴洵',emoji:'🐶'},{id:'jiangsu',name:'江溯',emoji:'🦄'},{id:'su',name:'溯',emoji:'🐆'},{id:'zouzheng',name:'邹峥',emoji:'🦅'},{id:'keke',name:'柯柯',emoji:'🐳'},{id:'xuanxuan',name:'宣宣',emoji:'💕'},{id:'group',name:'群聊',emoji:'👥'}].forEach(p=>{
   let tab=document.createElement('div');
     tab.className='mem-person-tab'+(p.id===currentMemPerson?' active':'');
     tab.textContent=p.emoji+' '+p.name;
-    tab.onclick=()=>{currentMemPerson=p.id;renderMemTabs();};
+    tab.onclick=()=>{
+      currentMemPerson=p.id;
+      renderMemTabs();
+      showOBMemory(p.id);
+    };
     personTabs.appendChild(tab);
   });
-  
-  // 加载所有记忆
+
+  // 分类tab与高亮（不依赖 Supabase）
+  renderMemTabs();
+  // 记忆宫殿统一走 OB（初始默认角色也走 OB）
+  showOBMemory(currentMemPerson);
+
+  // Supabase 仅用于记忆搜索/分类补全；未配置则跳过，不影响 OB 展示
+  if(!SUPA_URL||!SUPA_KEY) return;
   let tasks=[
 fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&or=(character.eq.yan,character.eq.guyan)&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
 return fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
@@ -207,11 +212,46 @@ fetch(SUPA_URL+'/rest/v1/ai_chat?select=id,sender,content,created_at&order=creat
   }));
 })
 ];
-  
-  Promise.all(tasks).then(()=>{
-    renderMemTabs();
-  }).catch(e=>{
-    document.getElementById('memList').innerHTML='<div style="padding:20px;text-align:center;color:#888">加载失败</div>';
+  // allMemories 已就绪，供记忆搜索使用；不再覆盖 OB 记忆宫殿显示
+  Promise.all(tasks).catch(()=>{
+    // Supabase 加载失败不影响 OB 记忆宫殿
+  });
+}
+
+async function loadOBMemory(charId) {
+  let body = {
+    jsonrpc: "2.0",
+    method: "tools/call",
+    params: {
+      name: "breath_search",
+      arguments: { query: charId, domain: charId, max_results: 20 }
+    },
+    id: 1
+  };
+  try {
+    let res = await fetch("https://yanyan-ob.duckdns.org/mcp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ob-xuanxuan-yanyan-2026"
+      },
+      body: JSON.stringify(body)
+    });
+    let data = await res.json();
+    let text = data.result?.content?.[0]?.text || '';
+    return text;
+  } catch(e) {
+    return '加载失败: ' + e.message;
+  }
+}
+
+function showOBMemory(personId){
+  if(personId==='group')return;
+  let list=document.getElementById('memList');
+  if(!list)return;
+  list.innerHTML='<div style="padding:20px;text-align:center;color:#888">正在加载记忆宫殿…</div>';
+  loadOBMemory(personId).then(t=>{
+    list.innerHTML='<pre style="white-space:pre-wrap;word-break:break-word;color:#d6c7ff;font-size:13px;line-height:1.7;padding:14px;margin:0;font-family:inherit">'+t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>';
   });
 }
 
