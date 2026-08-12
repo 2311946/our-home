@@ -233,7 +233,7 @@ async function loadOBMemory(categoryQuery) {
   let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan'];
   
   let requests = domains.map(domain => {
-    let args = { max_results: 0, max_tokens: 50000 };
+    let args = { max_results: 1000, max_tokens: 50000 };
     if(domain) args.domain = domain;
     if(categoryQuery) args.query = categoryQuery;
     return fetch("https://yanyan-ob.duckdns.org/mcp", {
