@@ -56,15 +56,15 @@ body.warm .tab-item.active{color:#d4764e}
 .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:99;align-items:center;justify-content:center}
 .modal.show{display:flex}
 .modal-box{background:#16213e;border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:85vh;overflow-y:auto}
-.modal-box h3{margin-bottom:16px;color:#9b59b6}
-.modal-box label{display:block;margin:8px 0 4px;color:#aaa;font-size:13px}
-.modal-box input,.modal-box textarea,.modal-box select{width:100%;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px 12px;color:#eee;font-size:14px;outline:none;margin-bottom:8px}
-.modal-box textarea{height:80px;resize:vertical}
-.modal-box .section{border-top:1px solid #0f3460;margin-top:16px;padding-top:12px}
-.modal-box .btn-row{display:flex;gap:8px;margin-top:16px}
-.modal-box button{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px}
-.modal-box .save{background:#9b59b6;color:#fff}
-.modal-box .cancel{background:#253554;color:#aaa}
+.modal-box h3,.settings-page h3{margin-bottom:16px;color:#9b59b6}
+.modal-box label,.settings-page label{display:block;margin:8px 0 4px;color:#aaa;font-size:13px}
+.modal-box input,.modal-box textarea,.modal-box select,.settings-page input,.settings-page textarea,.settings-page select{width:100%;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px 12px;color:#eee;font-size:14px;outline:none;margin-bottom:8px}
+.modal-box textarea,.settings-page textarea{height:80px;resize:vertical}
+.modal-box .section,.settings-page .section{border-top:1px solid #0f3460;margin-top:16px;padding-top:12px}
+.modal-box .btn-row,.settings-page .btn-row{display:flex;gap:8px;margin-top:16px}
+.modal-box button,.settings-page button{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+.modal-box .save,.settings-page .save{background:#9b59b6;color:#fff}
+.modal-box .cancel,.settings-page .cancel{background:#253554;color:#aaa}
 .clear-btn{background:#e74c3c;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;margin-top:8px}
 .char-tabs{display:flex;gap:6px;margin-bottom:8px}
 .char-tab{padding:4px 12px;border-radius:12px;font-size:12px;cursor:pointer;background:#253554;color:#aaa}

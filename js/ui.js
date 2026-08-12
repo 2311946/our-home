@@ -171,6 +171,10 @@ function toggleSearch(){let bar=document.getElementById('searchBar');bar.style.d
 function searchChat(){let bar=document.getElementById('searchBar');bar.style.display='block';let si=document.getElementById('searchInput');if(si){si.focus();if(!si.value.trim())renderSearchHistory();}}
 
 function openSettings(){
+  switchTab('settings');
+}
+
+function initSettings(){
   let cv=localStorage.getItem('ctx_count')||'30';document.getElementById('ctxRange').value=cv;document.getElementById('ctxVal').textContent=cv;
   document.getElementById('apiUrl').value=apiConfig.url||'';
   document.getElementById('apiKey').value=apiConfig.key||'';
@@ -189,10 +193,10 @@ function openSettings(){
     tabs.appendChild(t);
   });
   document.getElementById('sysPrompt').value=prompts[editingPromptChar]||'';
-  renderApiUsage(); document.getElementById('settingsModal').classList.add('show');
+  renderApiUsage();
 }
 
-function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
+function closeSettings(){ /* 设置已改为独立页面，无需关闭弹窗 */ }
 
 function togglePlusMenu(){let m=document.getElementById('plusMenu');m.style.display=m.style.display==='none'?'block':'none';}
 
