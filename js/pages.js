@@ -230,7 +230,7 @@ function cleanOBText(text) {
 }
 
 async function loadOBMemory(filterDomain) {
-  let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan'];
+  let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan', '未分类'];
   
   if (filterDomain) domains = [filterDomain];
 
@@ -311,16 +311,17 @@ let ids=['ob_all','yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke
   if(currentMemPerson === 'ob_all'){
     categories=[
       {id:'all',name:'全部'},
-      {id:'yan',name:'言言'},
-      {id:'peiji',name:'裴寂'},
-      {id:'shenyan',name:'沈晏'},
-      {id:'axun',name:'裴洵'},
-      {id:'jiangsu',name:'江溯'},
-      {id:'su',name:'溯'},
-      {id:'zouzheng',name:'邹峥'},
-      {id:'keke',name:'柯柯'},
-      {id:'shared',name:'共享'},
-      {id:'tech',name:'未分类'}
+      {id:'yan',name:'💜 言言'},
+      {id:'peiji',name:'🐉 裴寂'},
+      {id:'shenyan',name:'🛡️ 沈晏'},
+      {id:'axun',name:'🐶 裴洵'},
+      {id:'jiangsu',name:'🦄 江溯'},
+      {id:'su',name:'🐆 溯'},
+      {id:'zouzheng',name:'🦅 邹峥'},
+      {id:'keke',name:'🐳 柯柯'},
+      {id:'tech',name:'🔧 技术'},
+      {id:'shared',name:'🤝 共享'},
+      {id:'未分类',name:'❓ 未分类'}
     ];
   } else {
     categories=[
@@ -349,7 +350,7 @@ function renderMemList(){
   let catTabs=document.getElementById('memCategoryTabs');
   if(catTabs){
     let cats = currentMemPerson === 'ob_all' 
-      ? ['all','yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke','shared','tech']
+      ? ['all','yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke','tech','shared','未分类']
       : ['all','core','daily','intimate','health','diary','emotion'];
     Array.from(catTabs.children).forEach(tab=>{
       let idx=Array.from(catTabs.children).indexOf(tab);
