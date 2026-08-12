@@ -142,13 +142,13 @@ let memCategories=[{id:'memory',name:'💜 言言的记忆',table:'memory_backup
 
 function goBackFromMem(){document.getElementById('tabBar').style.display='flex';switchTab('home');}
 
-let currentMemPerson='yan';
+let currentMemPerson='ob_all';
 
 function loadMem(){
   // 渲染人物 tabs（始终渲染，不依赖 Supabase）
   let personTabs=document.getElementById('memPersonTabs');
   personTabs.innerHTML='';
-[{id:'yan',name:'言言',emoji:'🐺'},{id:'peiji',name:'裴寂',emoji:'🖤'},{id:'shenyan',name:'沈晏',emoji:'🌙'},{id:'axun',name:'裴洵',emoji:'🐶'},{id:'jiangsu',name:'江溯',emoji:'🦄'},{id:'su',name:'溯',emoji:'🐆'},{id:'zouzheng',name:'邹峥',emoji:'🦅'},{id:'keke',name:'柯柯',emoji:'🐳'},{id:'xuanxuan',name:'宣宣',emoji:'💕'},{id:'group',name:'群聊',emoji:'👥'}].forEach(p=>{
+[{id:'ob_all',name:'全部记忆',emoji:'🧠'},{id:'yan',name:'言言',emoji:'🐺'},{id:'peiji',name:'裴寂',emoji:'🖤'},{id:'shenyan',name:'沈晏',emoji:'🌙'},{id:'axun',name:'裴洵',emoji:'🐶'},{id:'jiangsu',name:'江溯',emoji:'🦄'},{id:'su',name:'溯',emoji:'🐆'},{id:'zouzheng',name:'邹峥',emoji:'🦅'},{id:'keke',name:'柯柯',emoji:'🐳'},{id:'xuanxuan',name:'宣宣',emoji:'💕'},{id:'group',name:'群聊',emoji:'👥'}].forEach(p=>{
   let tab=document.createElement('div');
     tab.className='mem-person-tab'+(p.id===currentMemPerson?' active':'');
     tab.textContent=p.emoji+' '+p.name;
@@ -215,15 +215,27 @@ fetch(SUPA_URL+'/rest/v1/ai_chat?select=id,sender,content,created_at&order=creat
   });
 }
 
-async function loadOBMemory(filterDomain) {
+// 清理OB返回的元数据
+function cleanOBText(text) {
+  return text
+    .split('\n')
+    .filter(line => !line.match(/^\[OBM2/))  // 去掉[OBM2...]行
+    .filter(line => !line.match(/^h=/))       // 去掉h=hash行
+    .filter(line => !line.match(/^\[权重:/))   // 去掉[权重:]行
+    .filter(line => !line.match(/^token 预算不足/)) // 去掉预算不足提示
+    .join('\n')
+    .replace(/\[bucket_id:[a-f0-9]+\]/g, '')  // 去掉bucket_id标记
+    .replace(/Footprint:.*$/gm, '')           // 去掉Footprint行
+    .trim();
+}
+
+async function loadOBMemory(categoryQuery) {
   let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan'];
   
-  // 如果指定了角色就只请求那个domain
-  if(filterDomain) domains = [filterDomain];
-  
   let requests = domains.map(domain => {
-    let args = { max_results: 50 };
+    let args = { max_results: 100, max_tokens: 10000 };
     if(domain) args.domain = domain;
+    if(categoryQuery) args.query = categoryQuery;
     return fetch("https://yanyan-ob.duckdns.org/mcp", {
       method: "POST",
       headers: {
@@ -236,19 +248,29 @@ async function loadOBMemory(filterDomain) {
         params: { name: "breath_advanced", arguments: args },
         id: 1
       })
-    }).then(r => r.json()).then(data => data.result?.content?.[0]?.text || '').catch(() => '');
+    }).then(r => r.json()).then(data => {
+      let t = data.result?.content?.[0]?.text || '';
+      return t ? cleanOBText(t) : '';
+    }).catch(() => '');
   });
   
   let results = await Promise.all(requests);
   return results.filter(t => t).join('\n---\n');
 }
 
-function showOBMemory(personId){
-  if(personId==='group')return;
+function showOBMemory(){
   let list=document.getElementById('memList');
   if(!list)return;
-  list.innerHTML='<div style="padding:20px;text-align:center;color:#888">正在加载记忆宫殿…</div>';
-  loadOBMemory(personId).then(t=>{
+  list.innerHTML='<div style="padding:20px;text-align:center;color:#888">正在加载全局记忆宫殿(OB)…</div>';
+  
+  // 翻译当前分类名为搜索关键词
+  let catMap = {
+    'core': '核心记忆', 'daily': '日常', 'intimate': '亲密',
+    'health': '健康', 'diary': '日记', 'emotion': '情绪'
+  };
+  let query = catMap[currentMemCategory] || '';
+
+  loadOBMemory(query).then(t=>{
     if(!t || t.trim()==='' || t.indexOf('加载失败')===0){
       list.innerHTML='<div style="padding:20px;text-align:center;color:#888">'+(t||'暂无记忆')+'</div>';
       return;
@@ -276,7 +298,7 @@ function renderMemTabs(){
 let personTabs=document.getElementById('memPersonTabs');
 if(personTabs){
   Array.from(personTabs.children).forEach((tab,i)=>{
-let ids=['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke','xuanxuan','group'];    tab.className='mem-person-tab'+(ids[i]===currentMemPerson?' active':'');
+let ids=['ob_all','yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke','xuanxuan','group'];    tab.className='mem-person-tab'+(ids[i]===currentMemPerson?' active':'');
   });
 }
   let catTabs=document.getElementById('memCategoryTabs');
@@ -313,11 +335,12 @@ if(catTabs){
 }
   let list=document.getElementById('memList');
   list.innerHTML='';
-  // 全部记忆：数据源改为 OB 记忆宫殿；群聊仍走 Supabase 存档
-  if(currentMemCategory==='all' && currentMemPerson!=='group'){
-    showOBMemory(currentMemPerson);
+  // 角色选择了"全部记忆(OB)"时：走 OB，无视分类
+  if(currentMemPerson==='ob_all'){
+    showOBMemory();
     return;
   }
+  // 其余角色都走原有的 Supabase 逻辑
   if(currentMemPerson==='group'){
     let gi=document.getElementById('memGroupInput');if(gi)gi.style.display='block';
     list.style.paddingBottom='130px';
