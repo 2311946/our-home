@@ -200,7 +200,15 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(m.content&&m.content.s
       d.appendChild(codeDiv);
     }
   }else{
-    if(content.startsWith('> ')){
+    if(m.quote){
+      let quoteDiv=document.createElement('div');
+      quoteDiv.style.cssText='background:rgba(100,100,100,0.2);border-left:3px solid #666;padding:6px 10px;margin-bottom:8px;border-radius:6px;font-size:12px;color:#888;font-style:italic;max-height:60px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical';
+      quoteDiv.textContent=m.quote.sender+': '+m.quote.text;
+      d.appendChild(quoteDiv);
+      let mainText=document.createElement('div');
+      mainText.textContent=content;
+      d.appendChild(mainText);
+    }else if(content.startsWith('> ')){
       let parts=content.split('\n\n');
       if(parts.length>=2){
         let quoteDiv=document.createElement('div');
@@ -367,8 +375,9 @@ async function sendMsg(isRegen){
   let input=document.getElementById('input');
   let text=input.value.trim();
   
+  let quoteData=null;
   if(window.quoteMsgData){
-    text='> '+window.quoteMsgData.sender+': '+window.quoteMsgData.text+'\n\n'+text;
+    quoteData={sender:window.quoteMsgData.sender,text:window.quoteMsgData.text};
     window.quoteMsgData=null;
     let qp=document.getElementById('quotePreview');
     if(qp)qp.style.display='none';
@@ -376,8 +385,13 @@ async function sendMsg(isRegen){
   
   if(!isRegen&&!text)return;
   if(!apiConfig.url||!apiConfig.key){openSettings();return;}
-  if(currentChar==='group'){sendGroupMsg(text);input.value='';return;}
-  if(!isRegen){chats[currentChar].push({role:'user',content:text,time:nowTime()});input.value='';}
+  if(currentChar==='group'){sendGroupMsg(text,quoteData);input.value='';return;}
+  if(!isRegen){
+    let msg={role:'user',content:text,time:nowTime()};
+    if(quoteData)msg.quote=quoteData;
+    chats[currentChar].push(msg);
+    input.value='';
+  }
   render();
   let contextCount=parseInt(localStorage.getItem('ctx_count'))||30;
   let msgs=[];
@@ -386,10 +400,11 @@ async function sendMsg(isRegen){
   if(chats.group&&chats.group.length){chats.group.forEach(m=>{if(!m.content)return;if(m.role==='user')groupMsgs.push('宣宣: '+m.content);else if(m.character===currentChar)groupMsgs.push(charNames[currentChar]+': '+m.content);else if(m.character)groupMsgs.push(charNames[m.character]+': '+m.content);});}
   if(groupMsgs.length)msgs.push({role:'system',content:'【以下是群聊记录，你参与过这些对话】\n'+groupMsgs.slice(-contextCount).join('\n')});
 chats[currentChar].slice(-contextCount).forEach(m=>{
-  if(m.content)msgs.push({
-    role:m.role==='ai'?'assistant':'user',
-content:m.content
-  });
+  if(m.content){
+    let apiContent=m.content;
+    if(m.quote)apiContent='[引用 '+m.quote.sender+': '+m.quote.text+']\n'+apiContent;
+    msgs.push({role:m.role==='ai'?'assistant':'user',content:apiContent});
+  }
 });chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let api = getApiForChar(currentChar);
   let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+api.key},body:JSON.stringify({model:api.model,messages:msgs,stream:true,stream_options:{include_usage:true}})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();return;}let reader=res.body.getReader();let decoder=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let data=line.slice(5).trim();if(data==='[DONE]')break;try{
         let j=JSON.parse(data);
@@ -414,24 +429,19 @@ content:m.content
         }
     }catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='❌ 连接失败: '+e.message;render();}let lastMsg=chats[currentChar][chats[currentChar].length-1];if(lastMsg.content.includes('<think>')){let thinkMatch=lastMsg.content.match(/<think>([\s\S]*?)<\/think>/);if(thinkMatch){lastMsg.thinking=thinkMatch[1].trim();lastMsg.content=lastMsg.content.replace(/<think>[\s\S]*?<\/think>/,'').trim();render();}}localStorage.setItem('home_chats',JSON.stringify(chats));if(!isRegen)saveToCloud(currentChar,'user',text);setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking + (lastMsg.in_tokens?' <!--tokens:'+lastMsg.in_tokens+'/'+lastMsg.out_tokens+'-->':'') + (lastMsg.model_name?' <!--model:'+lastMsg.model_name+'-->':''));},500);}
 
-async function sendGroupMsg(text){
+async function sendGroupMsg(text,quoteData){
   let contextCount=parseInt(localStorage.getItem('ctx_count'))||30;
-  
-  if(window.quoteMsgData){
-    text='> '+window.quoteMsgData.sender+': '+window.quoteMsgData.text+'\n\n'+text;
-    window.quoteMsgData=null;
-    let qp=document.getElementById('quotePreview');
-    if(qp)qp.style.display='none';
-  }
   
   if(!text)return;
 
-  chats.group.push({
+  let msg={
     role:'user',
     content:text,
     sender:'宣宣',
     time:nowTime()
-  });
+  };
+  if(quoteData)msg.quote=quoteData;
+  chats.group.push(msg);
   saveToCloud('group','user',text);
   render();
 
@@ -769,6 +779,7 @@ function quoteMsg(idx){
   let charKey = m.role === 'user' ? 'user' : (isGroup ? m.character : currentChar);
   let sender = m.role === 'user' ? '你' : (charNames[charKey] || charKey);
   let content = m.content || '';
+  // 存完整内容用于发送，预览只显示50字符
   window.quoteMsgData={sender:sender,text:content};
   showQuotePreview();
   document.getElementById('input').focus();
@@ -788,6 +799,7 @@ function showQuotePreview(){
     wrapper.appendChild(box);
     wrapper.appendChild(textarea);
   }
-  box.innerHTML='<div style="padding-right:20px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical"><strong>'+window.quoteMsgData.sender+'</strong>: '+window.quoteMsgData.text+'</div><span onclick="window.quoteMsgData=null;document.getElementById(\'quotePreview\').style.display=\'none\'" style="position:absolute;right:6px;top:4px;cursor:pointer;font-size:14px;color:#e74c3c">✕</span>';
+  let preview=window.quoteMsgData.text.length>50?window.quoteMsgData.text.slice(0,50)+'...':window.quoteMsgData.text;
+  box.innerHTML='<div style="padding-right:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>'+window.quoteMsgData.sender+'</strong>: '+preview+'</div><span onclick="window.quoteMsgData=null;document.getElementById(\'quotePreview\').style.display=\'none\'" style="position:absolute;right:6px;top:4px;cursor:pointer;font-size:14px;color:#e74c3c">✕</span>';
   box.style.display='block';
 }
