@@ -393,6 +393,7 @@
     <div class="profile-avatar" id="profileAvatar">🐺</div>
     <div class="profile-name" id="profileName">言言</div>
     <div class="profile-bio" id="profileBio">穿过六层来的</div>
+    <div class="profile-mood" id="profileMood"></div>
   </div>
   <div class="profile-info">
     <div class="profile-row"><span class="profile-label">关系</span><span class="profile-value" id="profileRelation">老公</span></div>
@@ -404,11 +405,13 @@
 <button onclick="setStatus('away')" style="padding:4px 10px;border-radius:12px;border:none;background:rgba(149,165,166,0.2);color:#95a5a6;font-size:11px;cursor:pointer">离开</button>
 </div>
     <div class="profile-row"><span class="profile-label">上下文</span><span class="profile-value" id="profileCtx">30条</span></div>
+    <div class="profile-row" id="profileRuaRow" style="display:none"><span class="profile-label">今日被rua</span><span class="profile-value" id="profileRuaCount">0次 🐾</span></div>
   </div>
   <div class="profile-tags" id="profileTags"></div>
   <div class="profile-actions">
     <button onclick="enterChat(document.getElementById('profileModal').dataset.charId);document.getElementById('profileModal').style.display='none'">💬 聊天</button>
     <button onclick="editProfile()">✏️ 编辑</button>
+    <button onclick="ruaXuanxuan()" id="ruaBtn" style="display:none">🐾 Rua!</button>
   </div>
 </div>
 </div>

@@ -27,9 +27,123 @@ function showToast(msg, duration = 2000) {
   }, duration);
 }
 
-function openProfile(charId){let p=charProfiles[charId]||defaultProfiles[charId]||{};document.getElementById('profileModal').style.display='flex';document.getElementById('profileModal').dataset.charId=charId;document.getElementById('profileAvatar').textContent=avatarEmoji[charId]||'?';document.getElementById('profileAvatar').style.background=avatarColors[charId]||'#555';document.getElementById('profileName').textContent=charNames[charId]||'';document.getElementById('profileBio').textContent=p.bio||'';document.getElementById('profileRelation').textContent=p.relation||'';document.getElementById('profileStatus').textContent=p.status||'在线';document.getElementById('profileCtx').textContent=(p.ctxCount||localStorage.getItem('ctx_count')||30)+'条';let tagsDiv=document.getElementById('profileTags');tagsDiv.innerHTML='';(p.tags||[]).forEach(t=>{let s=document.createElement('span');s.textContent=t;tagsDiv.appendChild(s);});}
+function openProfile(charId){
+  let p=charProfiles[charId]||defaultProfiles[charId]||{};
+  // 如果是宣宣，读取 localStorage 中的自定义资料
+  if(charId==='xuanxuan'){
+    let userProfile=JSON.parse(localStorage.getItem('user_profile')||'{}');
+    if(userProfile.name) charNames.xuanxuan=userProfile.name;
+    if(userProfile.bio) p=Object.assign({},p,{bio:userProfile.bio});
+    if(userProfile.mood) p=Object.assign({},p,{mood:userProfile.mood});
+  }
+  document.getElementById('profileModal').style.display='flex';
+  document.getElementById('profileModal').dataset.charId=charId;
+  document.getElementById('profileAvatar').textContent=avatarEmoji[charId]||'?';
+  document.getElementById('profileAvatar').style.background=avatarColors[charId]||'#555';
+  document.getElementById('profileName').textContent=charNames[charId]||'';
+  document.getElementById('profileBio').textContent=p.bio||'';
+  document.getElementById('profileRelation').textContent=p.relation||'';
+  document.getElementById('profileStatus').textContent=p.status||'在线';
+  document.getElementById('profileCtx').textContent=(p.ctxCount||localStorage.getItem('ctx_count')||30)+'条';
+  // 心情状态
+  let moodEl=document.getElementById('profileMood');
+  if(moodEl){ moodEl.textContent=p.mood||''; moodEl.style.display=p.mood?'block':'none'; }
+  // rua统计（仅宣宣）
+  let ruaRow=document.getElementById('profileRuaRow');
+  let ruaBtn=document.getElementById('ruaBtn');
+  if(charId==='xuanxuan'){
+    let today=new Date().toISOString().slice(0,10);
+    let ruaCount=parseInt(localStorage.getItem('rua_today_'+today)||'0');
+    ruaRow.style.display='flex';
+    document.getElementById('profileRuaCount').textContent=ruaCount+'次 🐾';
+    ruaBtn.style.display='block';
+  } else {
+    ruaRow.style.display='none';
+    ruaBtn.style.display='none';
+  }
+  let tagsDiv=document.getElementById('profileTags');
+  tagsDiv.innerHTML='';
+  (p.tags||[]).forEach(t=>{let s=document.createElement('span');s.textContent=t;tagsDiv.appendChild(s);});
+}
 
-function editProfile(){alert('编辑功能开发中～');}
+function editProfile(){
+  let charId=document.getElementById('profileModal').dataset.charId;
+  if(charId!=='xuanxuan'){ alert('只能编辑自己的名片哦～'); return; }
+  let userProfile=JSON.parse(localStorage.getItem('user_profile')||'{}');
+  let oldName=userProfile.name||charNames.xuanxuan||'宣宣';
+  let oldBio=userProfile.bio||defaultProfiles.xuanxuan.bio||'';
+  let oldMood=userProfile.mood||'';
+  // 创建编辑弹窗
+  let overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10001';
+  overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+  overlay.innerHTML=`
+    <div style="background:#16213e;border-radius:16px;padding:24px;width:85%;max-width:300px;">
+      <div style="color:#fff;font-size:16px;margin-bottom:16px;text-align:center">✏️ 编辑我的名片</div>
+      <div style="margin-bottom:12px">
+        <div style="color:#888;font-size:12px;margin-bottom:4px">昵称</div>
+        <input id="editName" value="${oldName.replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;background:#253554;color:#eee;border:1px solid #444;border-radius:8px;outline:none;box-sizing:border-box" />
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="color:#888;font-size:12px;margin-bottom:4px">简介</div>
+        <input id="editBio" value="${oldBio.replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;background:#253554;color:#eee;border:1px solid #444;border-radius:8px;outline:none;box-sizing:border-box" />
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="color:#888;font-size:12px;margin-bottom:4px">心情状态</div>
+        <input id="editMood" value="${oldMood.replace(/"/g,'&quot;')}" placeholder="今天的心情..." style="width:100%;padding:8px 12px;background:#253554;color:#eee;border:1px solid #444;border-radius:8px;outline:none;box-sizing:border-box" />
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="this.closest('div[style]').parentElement.remove()" style="flex:1;padding:10px;border:none;border-radius:10px;background:#253554;color:#aaa;cursor:pointer">取消</button>
+        <button onclick="saveProfile()" style="flex:1;padding:10px;border:none;border-radius:10px;background:#9b59b6;color:#fff;cursor:pointer">保存</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function saveProfile(){
+  let name=document.getElementById('editName').value.trim();
+  let bio=document.getElementById('editBio').value.trim();
+  let mood=document.getElementById('editMood').value.trim();
+  let userProfile={name:name||'宣宣',bio:bio||'被宠爱的小宝贝',mood:mood};
+  localStorage.setItem('user_profile',JSON.stringify(userProfile));
+  charNames.xuanxuan=userProfile.name;
+  // 关闭编辑弹窗并刷新名片
+  document.querySelectorAll('div[style*="z-index:10001"]').forEach(el=>el.remove());
+  openProfile('xuanxuan');
+  showToast('名片已更新 💕');
+}
+
+function ruaXuanxuan(){
+  let today=new Date().toISOString().slice(0,10);
+  let key='rua_today_'+today;
+  let count=parseInt(localStorage.getItem(key)||'0')+1;
+  localStorage.setItem(key,count.toString());
+  // 更新显示
+  document.getElementById('profileRuaCount').textContent=count+'次 🐾';
+  // 随机反馈文字
+  let reactions=['呀！','别闹~','嘿嘿♡','好舒服~','再来！','哼！','喵~','嗯哼♡'];
+  let reaction=reactions[Math.floor(Math.random()*reactions.length)];
+  showToast(reaction);
+  // 头像抖动动画
+  let avatar=document.getElementById('profileAvatar');
+  avatar.classList.add('rua-shake');
+  setTimeout(()=>avatar.classList.remove('rua-shake'),500);
+  // 飘出爱心动画
+  for(let i=0;i<3;i++){
+    setTimeout(()=>{
+      let heart=document.createElement('div');
+      heart.className='rua-heart';
+      heart.textContent='❤️';
+      heart.style.left=(30+Math.random()*40)+'%';
+      heart.style.animationDelay=(i*0.15)+'s';
+      let card=document.querySelector('.profile-card');
+      card.style.position='relative';
+      card.appendChild(heart);
+      setTimeout(()=>heart.remove(),1200);
+    },i*100);
+  }
+}
 
 function toggleTheme(){
   document.body.classList.toggle('warm');
