@@ -200,7 +200,22 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(m.content&&m.content.s
       d.appendChild(codeDiv);
     }
   }else{
-    d.textContent=content;
+    if(content.startsWith('> ')){
+      let parts=content.split('\n\n');
+      if(parts.length>=2){
+        let quoteDiv=document.createElement('div');
+        quoteDiv.style.cssText='background:rgba(100,100,100,0.2);border-left:3px solid #666;padding:6px 10px;margin-bottom:8px;border-radius:6px;font-size:12px;color:#888;font-style:italic';
+        quoteDiv.textContent=parts[0].replace('> ','');
+        d.appendChild(quoteDiv);
+        let mainText=document.createElement('div');
+        mainText.textContent=parts.slice(1).join('\n\n');
+        d.appendChild(mainText);
+      }else{
+        d.textContent=content;
+      }
+    }else{
+      d.textContent=content;
+    }
   }
 }if(m.thinking){console.log('THINK HIT',m.thinking.slice(0,20));let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button><button onclick="quoteMsg('+i+')">💬 引用</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time + (m.model_name ? ' · 🤖 ' + m.model_name : '') + ((m.in_tokens || m.out_tokens) ? ' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇' : '');body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});box.scrollTop=box.scrollHeight;}
 
