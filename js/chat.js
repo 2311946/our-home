@@ -454,7 +454,15 @@ chats[currentChar].slice(-contextCount).forEach(m=>{
             if(think)last.thinking=(last.thinking||'')+think;
             if(t)last.content+=t;
         }
-    }catch(e){}}render();}}catch(e){chats[currentChar][chats[currentChar].length-1].content='❌ 连接失败: '+e.message;render();}let lastMsg=chats[currentChar][chats[currentChar].length-1];if(lastMsg.content.includes('<think>')){let thinkMatch=lastMsg.content.match(/<think>([\s\S]*?)<\/think>/);if(thinkMatch){lastMsg.thinking=thinkMatch[1].trim();lastMsg.content=lastMsg.content.replace(/<think>[\s\S]*?<\/think>/,'').trim();render();}}localStorage.setItem('home_chats',JSON.stringify(chats));if(!isRegen)saveToCloud(currentChar,'user',text);setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking + (lastMsg.in_tokens?' <!--tokens:'+lastMsg.in_tokens+'/'+lastMsg.out_tokens+'-->':'') + (lastMsg.model_name?' <!--model:'+lastMsg.model_name+'-->':''));},500);}
+    }catch(e){}}render();}
+  }
+}catch(e){chats[currentChar][chats[currentChar].length-1].content='❌ 连接失败: '+e.message;render();}
+let lastMsg=chats[currentChar][chats[currentChar].length-1];
+if(lastMsg.content.includes('<think>')){let thinkMatch=lastMsg.content.match(/<think>([\s\S]*?)<\/think>/);if(thinkMatch){lastMsg.thinking=thinkMatch[1].trim();lastMsg.content=lastMsg.content.replace(/<think>[\s\S]*?<\/think>/,'').trim();render();}}
+localStorage.setItem('home_chats',JSON.stringify(chats));
+if(!isRegen)saveToCloud(currentChar,'user',text);
+setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking + (lastMsg.in_tokens?' <!--tokens:'+lastMsg.in_tokens+'/'+lastMsg.out_tokens+'-->':'') + (lastMsg.model_name?' <!--model:'+lastMsg.model_name+'-->':''));},500);
+}
 
 async function sendGroupMsg(text,quoteData){
   let contextCount=parseInt(localStorage.getItem('ctx_count'))||30;
