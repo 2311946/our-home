@@ -15,9 +15,9 @@ fetch(url,opts).then(r=>r.json()).then(raw=>{let data=raw.items||raw;    if(!dat
 if(id==='group'){
   let nameMap={'宣宣':'user','顾言':'yan','裴寂':'peiji','裴洵':'axun','江溯':'jiangsu','溯':'su','邹峥':'zouzheng','柯柯':'keke','沈晏':'shenyan'};
   chats.group=data.map(m=>{
-    if(m.character&&m.character.indexOf('group_')===0){return {role:'ai',content:m.content,character:m.character.slice(6),time:fmtTime(m.msg_time)};}
+    if(m.character&&m.character.indexOf('group_')===0){return {role:'ai',content:m.content,character:m.character.slice(6),time:fmtTime(m.msg_time),pb_id:m.id};}
     let charId=nameMap[m.role]||m.role;
-    if(charId==='user')return {role:'user',content:m.content,time:fmtTime(m.msg_time)};
+    if(charId==='user')return {role:'user',content:m.content,time:fmtTime(m.msg_time),pb_id:m.id};
    
             let thinking = m.thinking || '';
       let in_tokens = 0, out_tokens = 0, model_name = '';
@@ -33,7 +33,7 @@ if(id==='group'){
         thinking = thinking.replace(mm[0], '').trim();
       }
 
-   return {role:'ai',content:m.content,character:charId,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:fmtTime(m.msg_time)};
+   return {role:'ai',content:m.content,character:charId,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:fmtTime(m.msg_time),pb_id:m.id};
   });
   chatLoading=false;render();renderList();return;
 }let msgs=data.reverse().map(m=>{
@@ -52,7 +52,7 @@ if(id==='group'){
         thinking = thinking.replace(mm[0], '').trim();
       }
 
-      return {role:m.role,content:m.content,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:m.msg_time?new Date(m.msg_time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character};
+      return {role:m.role,content:m.content,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:m.msg_time?new Date(m.msg_time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character,pb_id:m.id};
   });
     if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
     chatOffset[id]=offset+data.length;
