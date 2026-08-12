@@ -497,14 +497,18 @@ function switchTab(tab){
 loadFromCloud().then(()=>renderList());
 renderList();
 loadPreviews();    renderList();
+  }else if(tab==='moments'){
+    document.getElementById('momentsView').classList.add('active');
+    tabBar.children[2].classList.add('active');
+    renderMoments();
   }else if(tab==='mem'){
     document.getElementById('memView').classList.add('active');
-    tabBar.children[2].classList.add('active');
+    tabBar.children[3].classList.add('active');
     switchMemSection('palace');
     loadMem();
   }else if(tab==='checkin'){
     document.getElementById('checkinView').classList.add('active');
-    tabBar.children[4].classList.add('active');
+    tabBar.children[5].classList.add('active');
     loadCheckins();
   }
 }
@@ -893,6 +897,177 @@ async function loadDaddyDiary(){
       list.appendChild(card);
     });
   }catch(e){list.innerHTML='<div style="text-align:center;color:#888;padding:20px">加载失败</div>';}
+}
+
+// === 朋友圈功能 ===
+function getMoments() {
+  return JSON.parse(localStorage.getItem('moments')||'[]');
+}
+
+function renderMoments() {
+  let list = document.getElementById('momentsList');
+  if(!list) return;
+  let moments = getMoments();
+  if(moments.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#888;padding:40px">还没有动态哦，快来发第一条吧！</div>';
+    return;
+  }
+  
+  let html = '';
+  moments.forEach((m, idx) => {
+    let charId = m.char_id || 'xuanxuan';
+    let name = charNames[charId] || charId;
+    let emoji = avatarEmoji[charId] || '👤';
+    let color = avatarColors[charId] || '#555';
+    let likesCount = m.likes ? m.likes.length : 0;
+    
+    // 点赞的人名列表
+    let likesText = '';
+    if (likesCount > 0) {
+      let likeNames = m.likes.map(id => charNames[id]||id).join(', ');
+      likesText = `<div style="background:rgba(255,255,255,0.05);padding:6px 12px;border-radius:6px;font-size:12px;color:#9b59b6;margin-top:8px">❤️ ${likeNames}</div>`;
+    }
+
+    // 评论区
+    let commentsHtml = '';
+    if (m.comments && m.comments.length > 0) {
+      let cItems = m.comments.map(c => `
+        <div style="margin-bottom:4px;font-size:13px">
+          <span style="color:#9b59b6;font-weight:bold">${charNames[c.from]||c.from}</span>: 
+          <span style="color:#eee">${c.text}</span>
+        </div>
+      `).join('');
+      commentsHtml = `<div style="background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:6px;margin-top:4px">${cItems}</div>`;
+    }
+
+    html += `
+      <div style="background:#16213e;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
+        <div style="display:flex;gap:12px">
+          <div style="width:44px;height:44px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0" onclick="openProfile('${charId}')">${emoji}</div>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <div style="font-weight:bold;color:#fff;font-size:15px">${name}</div>
+              <div style="color:#666;font-size:11px">${m.time}</div>
+            </div>
+            <div style="color:#ddd;font-size:14px;margin-top:8px;line-height:1.6;white-space:pre-wrap">${m.content}</div>
+            
+            <div style="display:flex;gap:16px;margin-top:12px">
+              <span onclick="likeMoment(${idx})" style="color:#888;font-size:13px;cursor:pointer">❤️ 赞 ${likesCount>0?likesCount:''}</span>
+              <span onclick="commentMoment(${idx})" style="color:#888;font-size:13px;cursor:pointer">💬 评论</span>
+            </div>
+            ${likesText}
+            ${commentsHtml}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  list.innerHTML = html;
+}
+
+function postMoment() {
+  let input = document.getElementById('momentInput');
+  let text = input.value.trim();
+  if(!text) return;
+  
+  let moments = getMoments();
+  // 插入到最前面
+  moments.unshift({
+    id: Date.now().toString(),
+    char_id: 'xuanxuan', // 宣宣自己发
+    content: text,
+    time: new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'}),
+    likes: [],
+    comments: []
+  });
+  localStorage.setItem('moments', JSON.stringify(moments));
+  input.value = '';
+  
+  logActivity('xuanxuan', '发了朋友圈', text.length > 10 ? text.slice(0,10)+'...' : text);
+  renderMoments();
+  showToast('发布成功！');
+}
+
+function likeMoment(idx) {
+  let moments = getMoments();
+  let m = moments[idx];
+  if(!m.likes) m.likes = [];
+  // 简单模拟：每次点赞，宣宣的名字加入（如果已有点赞则取消）
+  let myId = 'xuanxuan';
+  let i = m.likes.indexOf(myId);
+  if(i > -1) {
+    m.likes.splice(i, 1);
+  } else {
+    m.likes.push(myId);
+    logActivity('xuanxuan', '赞了', (charNames[m.char_id]||m.char_id) + ' 的朋友圈');
+  }
+  localStorage.setItem('moments', JSON.stringify(moments));
+  renderMoments();
+}
+
+function commentMoment(idx) {
+  let text = prompt('输入评论内容:');
+  if(!text || !text.trim()) return;
+  
+  let moments = getMoments();
+  let m = moments[idx];
+  if(!m.comments) m.comments = [];
+  m.comments.push({
+    from: 'xuanxuan',
+    text: text.trim(),
+    time: new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'})
+  });
+  localStorage.setItem('moments', JSON.stringify(moments));
+  logActivity('xuanxuan', '评论了', (charNames[m.char_id]||m.char_id) + ' 的朋友圈');
+  renderMoments();
+}
+
+// === 活动日志功能 ===
+function logActivity(charId, action, detail) {
+  let log = JSON.parse(localStorage.getItem('activity_log')||'[]');
+  let timeStr = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+  log.unshift({ char_id: charId, action: action, detail: detail, time: timeStr, ts: Date.now() });
+  // 只保留最近10条
+  if(log.length > 10) log = log.slice(0, 10);
+  localStorage.setItem('activity_log', JSON.stringify(log));
+  renderActivityLog();
+}
+
+function renderActivityLog() {
+  let el = document.getElementById('homeActivityLog');
+  if(!el) return;
+  let log = JSON.parse(localStorage.getItem('activity_log')||'[]');
+  if(log.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:10px 0">暂无动态</div>';
+    return;
+  }
+  
+  let now = Date.now();
+  let html = '';
+  log.forEach(item => {
+    let name = charNames[item.char_id] || item.char_id;
+    let emoji = avatarEmoji[item.char_id] || '👤';
+    
+    // 计算多久前
+    let timeStr = item.time;
+    if(item.ts) {
+      let diff = Math.floor((now - item.ts) / 60000); // 分钟
+      if(diff < 1) timeStr = '刚刚';
+      else if(diff < 60) timeStr = diff + '分钟前';
+      else if(diff < 1440) timeStr = Math.floor(diff/60) + '小时前';
+    }
+    
+    html += `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:10px">
+        <span style="font-size:16px">${emoji}</span>
+        <span style="color:#fff">${name}</span>
+        <span style="color:#aaa">${item.action}</span>
+        <span style="color:#9b59b6;flex:1">${item.detail||''}</span>
+        <span style="color:#666;font-size:11px">${timeStr}</span>
+      </div>
+    `;
+  });
+  el.innerHTML = html;
 }
 
 updateHomeDays();

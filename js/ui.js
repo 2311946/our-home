@@ -112,6 +112,7 @@ function saveProfile(){
   document.querySelectorAll('div[style*="z-index:10001"]').forEach(el=>el.remove());
   openProfile('xuanxuan');
   showToast('名片已更新 💕');
+  if(typeof logActivity === 'function') logActivity('xuanxuan', '更新了名片', '');
 }
 
 function ruaXuanxuan(){
@@ -125,6 +126,7 @@ function ruaXuanxuan(){
   let reactions=['呀！','别闹~','嘿嘿♡','好舒服~','再来！','哼！','喵~','嗯哼♡'];
   let reaction=reactions[Math.floor(Math.random()*reactions.length)];
   showToast(reaction);
+  if(typeof logActivity === 'function') logActivity('xuanxuan', '被rua了', `累计 ${count} 次`);
   // 头像抖动动画
   let avatar=document.getElementById('profileAvatar');
   avatar.classList.add('rua-shake');

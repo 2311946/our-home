@@ -71,10 +71,40 @@
 <span onclick="setMood('🥺','委屈')" style="font-size:28px;cursor:pointer">🥺</span>
 <span onclick="setMood('😌','平静')" style="font-size:28px;cursor:pointer">😌</span>
 </div>
-
 </div>
 </details>
 
+<details style="margin:0 12px; margin-bottom:20px">
+<summary style="font-size:13px;color:#888;padding:10px 0;cursor:pointer;border-bottom:1px solid #1a1a2e">📋 最近动态</summary>
+<div class="home-card" style="text-align:left; padding:12px">
+<div id="homeActivityLog" style="font-size:13px;color:#aaa;line-height:1.8">加载中...</div>
+</div>
+</details>
+
+</div>
+</div>
+
+<!-- 朋友圈 -->
+<div class="view" id="momentsView">
+<div class="list-header" style="position:sticky;top:0;z-index:100;background:rgba(22,33,62,0.9);backdrop-filter:blur(10px)">
+<h2>💫 朋友圈</h2>
+</div>
+<div style="padding:16px;padding-bottom:100px;overflow-y:auto;height:calc(100vh - 60px)">
+  <!-- 宣宣发动态区 -->
+  <div style="background:#16213e;border-radius:16px;padding:16px;margin-bottom:20px;box-shadow:0 10px 30px rgba(0,0,0,0.2)">
+    <div style="display:flex;gap:12px">
+      <div style="width:40px;height:40px;border-radius:50%;background:#e91e63;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">💕</div>
+      <div style="flex:1">
+        <textarea id="momentInput" placeholder="宣宣今天想分享什么..." style="width:100%;background:#253554;border:none;border-radius:12px;padding:12px;color:#eee;font-size:14px;outline:none;resize:none;height:80px;box-sizing:border-box"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button onclick="postMoment()" style="background:#9b59b6;border:none;color:#fff;border-radius:16px;padding:8px 20px;font-size:14px;cursor:pointer">发布 🚀</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 动态列表 -->
+  <div id="momentsList"></div>
 </div>
 </div>
 
@@ -382,6 +412,7 @@
 <div class="tab-bar" id="tabBar">
 <div class="tab-item active" onclick="switchTab('home')"><span class="tab-icon">🏠</span>主页</div>
 <div class="tab-item" onclick="switchTab('list')"><span class="tab-icon">💬</span>聊天</div>
+<div class="tab-item" onclick="switchTab('moments')"><span class="tab-icon">💫</span>朋友圈</div>
 <div class="tab-item" onclick="switchTab('mem')"><span class="tab-icon">📖</span>记忆</div>
 <div class="tab-item" onclick="openSettings()"><span class="tab-icon">⚙️</span>设置</div>
 <div class="tab-item" onclick="switchTab('checkin')"><span class="tab-icon">✅</span>打卡</div>
