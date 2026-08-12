@@ -149,7 +149,8 @@ async function loadPromptsFromCloud() {
 async function savePromptToCloud(character, promptText) {
   if (!PB_URL || !character) return;
   try {
-    let res = await fetch(PB_URL + '/api/collections/char_prompts/records?filter=(character="' + character + '")');
+    let filterStr = encodeURIComponent('character="' + character + '"');
+    let res = await fetch(PB_URL + '/api/collections/char_prompts/records?filter=' + filterStr);
     let data = await res.json();
     if (data && data.items && data.items.length > 0) {
       let id = data.items[0].id;
