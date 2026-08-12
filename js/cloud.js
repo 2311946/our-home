@@ -149,22 +149,27 @@ async function loadPromptsFromCloud() {
 async function savePromptToCloud(character, promptText) {
   if (!PB_URL || !character) return;
   try {
-    let filterStr = encodeURIComponent('character="' + character + '"');
-    let res = await fetch(PB_URL + '/api/collections/char_prompts/records?filter=' + filterStr);
+    let res = await fetch(PB_URL + '/api/collections/char_prompts/records?filter=(character="' + character + '")');
     let data = await res.json();
+    if (!res.ok) console.error('GET char_prompts 报错:', data);
+    
     if (data && data.items && data.items.length > 0) {
       let id = data.items[0].id;
-      await fetch(PB_URL + '/api/collections/char_prompts/records/' + id, {
+      let patchRes = await fetch(PB_URL + '/api/collections/char_prompts/records/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: promptText })
       });
+      if (!patchRes.ok) { let err = await patchRes.json(); console.error('PATCH char_prompts 报错:', err); }
     } else {
-      await fetch(PB_URL + '/api/collections/char_prompts/records', {
+      let postRes = await fetch(PB_URL + '/api/collections/char_prompts/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ character: character, prompt: promptText })
       });
+      if (!postRes.ok) { let err = await postRes.json(); console.error('POST char_prompts 报错:', err); }
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error('savePromptToCloud 捕获到异常:', e);
+  }
 }
