@@ -75,7 +75,20 @@ function loadPreviews(){
   });
 }
 
-if(bar){bar.innerHTML='';characters.forEach(c=>{let d=document.createElement('div');d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:60px;flex-shrink:0';d.onclick=function(){openProfile(c.id);};let status=localStorage.getItem('status_'+c.id)||'online';let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[status];let statusClass='status-'+status;d.innerHTML='<div style="width:48px;height:48px;border-radius:50%;background:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div><span style="font-size:11px;color:#aaa">'+c.name+'</span><span class="status-tag '+statusClass+'">'+statusText+'</span>';bar.appendChild(d);});}
+if(bar){bar.innerHTML='';
+  let allChars = [...characters, {id:'xuanxuan', name:'宣宣', emoji:'💕', color:'#e91e63'}];
+  allChars.forEach(c=>{
+    if(c.id==='group') return;
+    let d=document.createElement('div');
+    d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:60px;flex-shrink:0';
+    d.onclick=function(){openProfile(c.id);};
+    let status=localStorage.getItem('status_'+c.id)||'online';
+    let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[status];
+    let statusClass='status-'+status;
+    d.innerHTML='<div style="width:48px;height:48px;border-radius:50%;background:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div><span style="font-size:11px;color:#aaa">'+c.name+'</span><span class="status-tag '+statusClass+'">'+statusText+'</span>';
+    bar.appendChild(d);
+  });
+}
 
 function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let pv=chatPreviews[c.id];let preview=pv?(pv.content||'').slice(0,25):last?(last.content||'').slice(0,25):'还没有消息';let time=pv?pv.time:last?last.time:'';let item=document.createElement('div');item.className='contact-item';let avDiv=document.createElement('div');avDiv.className='contact-avatar';avDiv.style.background=c.color;avDiv.textContent=c.emoji;avDiv.onclick=function(e){e.stopPropagation();openProfile(c.id);};let info=document.createElement('div');info.className='contact-info';info.innerHTML='<div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div>';info.onclick=function(){enterChat(c.id);};let timeDiv=document.createElement('div');timeDiv.className='contact-time';timeDiv.textContent=time;timeDiv.onclick=function(){enterChat(c.id);};item.appendChild(avDiv);item.appendChild(info);item.appendChild(timeDiv);list.appendChild(item);});}
 

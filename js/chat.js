@@ -139,6 +139,13 @@ function doSearch() {
       av.className = 'avatar';
       av.style.background = avatarColors[role === 'user' ? 'user' : character] || '#555';
       av.textContent = avatarEmoji[role === 'user' ? 'user' : character] || '?';
+      if(role !== 'user'){
+        av.onclick=function(e){e.stopPropagation();openProfile(character);};
+        av.style.cursor='pointer';
+      }else{
+        av.onclick=function(e){e.stopPropagation();openProfile('xuanxuan');};
+        av.style.cursor='pointer';
+      }
       let body = document.createElement('div');
       body.className = 'msg-body ' + m.role;
       let d = document.createElement('div');
@@ -162,7 +169,7 @@ time.textContent = m.msg_time
 let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
 d.className='msg '+m.role+(charClass?' '+charClass:'');d.textContent=m.content;d.oncontextmenu=function(ev){ev.preventDefault();showReactMenu(ev,i);};if(m.reactions&&m.reactions.length){let rDiv=document.createElement('div');rDiv.style.cssText='font-size:14px;margin-top:2px;';rDiv.textContent=m.reactions.join('');d.appendChild(rDiv);}body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time + (m.model_name ? ' · 🤖 ' + m.model_name : '') + ((m.in_tokens || m.out_tokens) ? ' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇' : '');body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});}
 
-function render(){let box=document.getElementById('chatBox');box.innerHTML='';if(chatHasMore[currentChar]&&currentChar!=='group'){let btn=document.createElement('div');btn.style.cssText='text-align:center;padding:12px;color:#888;cursor:pointer;font-size:13px';btn.textContent='⬆ 加载更早的消息';btn.onclick=()=>loadCloudChat(currentChar,true);box.appendChild(btn);}(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role+(m.animate?' animate':'');row.dataset.role=m.role;row.dataset.content=m.content||'';if(isGroup&&m.role==='ai')row.dataset.char=m.character||'';let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';if(charKey!=='user'){av.onclick=function(e){e.stopPropagation();openProfile(charKey);};av.style.cursor='pointer';}let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');
+function render(){let box=document.getElementById('chatBox');box.innerHTML='';if(chatHasMore[currentChar]&&currentChar!=='group'){let btn=document.createElement('div');btn.style.cssText='text-align:center;padding:12px;color:#888;cursor:pointer;font-size:13px';btn.textContent='⬆ 加载更早的消息';btn.onclick=()=>loadCloudChat(currentChar,true);box.appendChild(btn);}(chats[currentChar]||[]).forEach((m,i)=>{let isGroup=currentChar==='group';let charKey=m.role==='user'?'user':(isGroup?m.character:currentChar);let row=document.createElement('div');row.className='msg-row '+m.role+(m.animate?' animate':'');row.dataset.role=m.role;row.dataset.content=m.content||'';if(isGroup&&m.role==='ai')row.dataset.char=m.character||'';let av=document.createElement('div');av.className='avatar';av.style.background=avatarColors[charKey]||'#555';av.textContent=avatarEmoji[charKey]||'?';if(charKey!=='user'){av.onclick=function(e){e.stopPropagation();openProfile(charKey);};av.style.cursor='pointer';}else{av.onclick=function(e){e.stopPropagation();openProfile('xuanxuan');};av.style.cursor='pointer';}let body=document.createElement('div');body.className='msg-body '+m.role;if(m.role==='ai'){let name=document.createElement('div');name.className='msg-name';name.textContent=charNames[charKey]||'';body.appendChild(name);}let d=document.createElement('div');
 let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
 d.className='msg '+m.role+(charClass?' '+charClass:'');if(m.content&&m.content.startsWith('[img]')){let img=document.createElement('img');img.src=m.content.slice(5);img.style.cssText='max-width:200px;border-radius:12px;cursor:pointer';img.onclick=()=>{showImgPreview(img.src)};d.appendChild(img);}else{
   let content=m.content||'正在输入...';
@@ -383,7 +390,12 @@ async function sendGroupMsg(text){let contextCount=parseInt(localStorage.getItem
   saveToCloud('group','user',text);
   render();
 
-let allChars=['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke'];let responders=[];if(text.includes('@全体')){responders=shuffle(allChars);}else{let mentioned=allChars.filter(id=>text.includes('@'+(charNames[id]||'')));if(mentioned.length>0){responders=mentioned;}else{let count=Math.floor(Math.random()*3)+1;responders=shuffle(allChars).slice(0,count);}}for(let c of responders){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let ctxCount=parseInt(localStorage.getItem('ctx_count'))||30;let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏、裴洵、江溯、溯、邹峥、柯柯。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];chats.group.slice(-ctxCount).forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let api = getApiForChar(c);
+let allChars=['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke'];let responders=[];if(text.includes('@全体')){responders=shuffle(allChars);}else{let mentioned=allChars.filter(id=>text.includes('@'+(charNames[id]||'')));if(mentioned.length>0){responders=mentioned;}else{let mode=localStorage.getItem('group_reply_mode')||'1-3';
+let count;
+if(mode==='all')count=allChars.length;
+else if(mode==='1-3')count=Math.floor(Math.random()*3)+1;
+else if(mode==='2-5')count=Math.floor(Math.random()*4)+2;
+else count=parseInt(mode)||1;responders=shuffle(allChars).slice(0,count);}}for(let c of responders){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let ctxCount=parseInt(localStorage.getItem('ctx_count'))||30;let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏、裴洵、江溯、溯、邹峥、柯柯。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];chats.group.slice(-ctxCount).forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let api = getApiForChar(c);
    let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+api.key,'Content-Type':'application/json'},body:JSON.stringify({model:api.model,messages:msgs,stream:true,stream_options:{include_usage:true}})});let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{
         let j=JSON.parse(d);
         if(j.usage){
@@ -655,3 +667,65 @@ function endCall() {
 }
 
 function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
+// @选人弹窗
+function initAtPicker(){
+  let input=document.getElementById('input');
+  if(!input)return;
+  let picker=document.createElement('div');
+  picker.id='atPicker';
+  picker.style.cssText='display:none;position:absolute;bottom:100%;left:0;right:0;background:#2a2a3e;border-radius:12px;padding:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:999';
+  let chars=['yan','peiji','shenyan','axun','jiangsu','su','zouzheng','keke'];
+  chars.forEach(id=>{
+    let btn=document.createElement('div');
+    btn.style.cssText='padding:10px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;color:#eee';
+    btn.innerHTML='<span style="width:26px;height:26px;border-radius:50%;background:'+(avatarColors[id]||'#555')+';display:inline-flex;align-items:center;justify-content:center;font-size:13px">'+(avatarEmoji[id]||'?')+'</span><span>'+(charNames[id]||id)+'</span>';
+    btn.onmouseenter=()=>btn.style.background='rgba(155,89,182,0.2)';
+    btn.onmouseleave=()=>btn.style.background='none';
+    btn.onclick=()=>{
+      let val=input.value;
+      let atIdx=val.lastIndexOf('@');
+      input.value=val.slice(0,atIdx)+'@'+charNames[id]+' ';
+      picker.style.display='none';
+      input.focus();
+    };
+    picker.appendChild(btn);
+  });
+  let allBtn=document.createElement('div');
+  allBtn.style.cssText='padding:10px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;color:#eee;border-top:1px solid rgba(255,255,255,0.1);margin-top:4px';
+  allBtn.innerHTML='<span style="width:26px;height:26px;border-radius:50%;background:#e74c3c;display:inline-flex;align-items:center;justify-content:center;font-size:13px">📢</span><span>全体</span>';
+  allBtn.onmouseenter=()=>allBtn.style.background='rgba(155,89,182,0.2)';
+  allBtn.onmouseleave=()=>allBtn.style.background='none';
+  allBtn.onclick=()=>{
+    let val=input.value;
+    let atIdx=val.lastIndexOf('@');
+    input.value=val.slice(0,atIdx)+'@全体 ';
+    picker.style.display='none';
+    input.focus();
+  };
+  picker.appendChild(allBtn);
+  input.parentElement.style.position='relative';
+  input.parentElement.appendChild(picker);
+  input.addEventListener('input',()=>{
+    if(currentChar!=='group'){picker.style.display='none';return;}
+    let val=input.value;
+    let atIdx=val.lastIndexOf('@');
+    if(atIdx>=0&&(atIdx===val.length-1||!val.slice(atIdx+1).includes(' '))){
+      picker.style.display='block';
+    }else{picker.style.display='none';}
+  });
+  document.addEventListener('click',(e)=>{
+    if(!picker.contains(e.target)&&e.target!==input)picker.style.display='none';
+  });
+}
+setTimeout(initAtPicker,1000);
+function showQuotePreview(){
+  let box = document.getElementById('quotePreview');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'quotePreview';
+    box.style.cssText = 'display:none;background:rgba(155,89,182,0.1);border-left:3px solid #9b59b6;padding:8px 12px;margin:8px 12px 0;border-radius:6px;font-size:13px;color:#aaa;position:relative';
+    document.querySelector('.chat-input').prepend(box);
+  }
+  box.innerHTML = '<div><strong>'+window.quoteMsg.sender+'</strong>: '+window.quoteMsg.text+'</div><span onclick="window.quoteMsg=null;this.parentElement.style.display=\'none\'" style="position:absolute;right:8px;top:8px;cursor:pointer;font-size:16px">✕</span>';
+  box.style.display = 'block';
+}

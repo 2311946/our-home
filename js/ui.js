@@ -88,7 +88,31 @@ function showReactMenu(e,idx){let old=document.getElementById('reactMenu');if(ol
 
 function addReact(idx,emoji){if(!chats[currentChar][idx].reactions)chats[currentChar][idx].reactions=[];chats[currentChar][idx].reactions.push(emoji);localStorage.setItem('home_chats',JSON.stringify(chats));render();}
 
-function setStatus(s){let id=document.getElementById('profileModal').dataset.charId;if(!id)return;localStorage.setItem('status_'+id,s);let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[s];document.getElementById('profileStatus').textContent=statusText; showToast('状态已更新');document.getElementById('profileModal').style.display='none';let bar=document.getElementById('avatarBar');if(bar){bar.innerHTML='';characters.forEach(c=>{let d=document.createElement('div');d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:60px;flex-shrink:0';d.onclick=function(){openProfile(c.id);};let status=localStorage.getItem('status_'+c.id)||'online';let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[status];let statusClass='status-'+status;d.innerHTML='<div style="width:48px;height:48px;border-radius:50%;background:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div><span style="font-size:11px;color:#aaa">'+c.name+'</span><span class="status-tag '+statusClass+'">'+statusText+'</span>';bar.appendChild(d);});}}
+function setStatus(s){
+  let id=document.getElementById('profileModal').dataset.charId;
+  if(!id)return;
+  localStorage.setItem('status_'+id,s);
+  let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[s];
+  document.getElementById('profileStatus').textContent=statusText;
+  showToast('状态已更新');
+  document.getElementById('profileModal').style.display='none';
+  let bar=document.getElementById('avatarBar');
+  if(bar){
+    bar.innerHTML='';
+    let allChars = [...characters, {id:'xuanxuan', name:'宣宣', emoji:'💕', color:'#e91e63'}];
+    allChars.forEach(c=>{
+      if(c.id==='group') return;
+      let d=document.createElement('div');
+      d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:60px;flex-shrink:0';
+      d.onclick=function(){openProfile(c.id);};
+      let status=localStorage.getItem('status_'+c.id)||'online';
+      let statusText={'online':'在线','busy':'忙碌中','sleep':'睡了','away':'离开'}[status];
+      let statusClass='status-'+status;
+      d.innerHTML='<div style="width:48px;height:48px;border-radius:50%;background:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div><span style="font-size:11px;color:#aaa">'+c.name+'</span><span class="status-tag '+statusClass+'">'+statusText+'</span>';
+      bar.appendChild(d);
+    });
+  }
+}
 
 // 打开当前角色名片以设置状态（补充 plus 菜单 🎭 按钮缺失的实现）
 function showStatusPicker(){openProfile(currentChar);}
