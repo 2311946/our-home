@@ -220,7 +220,7 @@ async function loadOBMemory(charId) {
     jsonrpc: "2.0",
     method: "tools/call",
     params: {
-      name: "breath_search",
+      name: "breath_advanced",
       arguments: { query: charId, domain: charId, max_results: 50 }
     },
     id: 1
