@@ -233,7 +233,7 @@ async function loadOBMemory(categoryQuery) {
   let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan'];
   
   let requests = domains.map(domain => {
-    let args = { max_results: 100, max_tokens: 10000 };
+    let args = { max_results: 0, max_tokens: 50000 };
     if(domain) args.domain = domain;
     if(categoryQuery) args.query = categoryQuery;
     return fetch("https://yanyan-ob.duckdns.org/mcp", {
@@ -276,10 +276,16 @@ function showOBMemory(){
       return;
     }
     // 按 📌 或 --- 拆分成多条记忆
-    let items = t.split(/\n(?=📌)|(?<=\n)---\n/);
+    let items = t.split(/\n(?=📌)|(?<=\n)---\n/).filter(i => i.trim());
     list.innerHTML='';
+    
+    // 加个统计头
+    let countDiv = document.createElement('div');
+    countDiv.style.cssText = 'font-size:12px;color:#9aa;text-align:center;padding-bottom:10px;margin-bottom:10px;border-bottom:1px dashed #2a2a4a;';
+    countDiv.textContent = `共加载到 ${items.length} 条记忆`;
+    list.appendChild(countDiv);
+
     items.forEach(item => {
-      if(!item.trim()) return;
       let card = document.createElement('div');
       card.className = 'mem-card';
       card.style.cssText = 'background:#1a1a2e;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #2a2a4a;white-space:pre-wrap;font-size:13px;line-height:1.6;color:#ddd;';
@@ -393,7 +399,13 @@ if(currentMemCategory==='intimate'&&currentMemPerson==='yan'){
     return;
   }
   
-  mems.forEach(m=>{
+  // 加个统计头
+  let countDiv = document.createElement('div');
+  countDiv.style.cssText = 'font-size:12px;color:#9aa;text-align:center;padding-bottom:10px;margin-bottom:10px;border-bottom:1px dashed #2a2a4a;';
+  countDiv.textContent = `共有 ${mems.length} 条记忆`;
+  list.appendChild(countDiv);
+  
+  mems.slice(0, 100).forEach(m=>{
   let item=document.createElement('div');
   item.className='mem-item';
   if(currentMemPerson==='group')item.style.position='relative';
