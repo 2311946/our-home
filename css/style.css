@@ -1,6 +1,6 @@
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.view{display:none;flex-direction:column;height:100vh}
+body{font-family:-apple-system,sans-serif;background:#1a1a2e;color:#eee;height:100vh;display:flex;flex-direction:column;overflow:hidden;overflow-x:hidden}
+.view{display:none;flex-direction:column;height:100vh;max-width:100vw;overflow-x:hidden}
 .view.active{display:flex}
 body.warm{background:#2d1f1a;color:#f5e6d3}
 body.warm .list-header,body.warm .chat-header{background:#3d2b1f;border-color:#5d3f2e}
