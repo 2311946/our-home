@@ -316,6 +316,7 @@ async function showModelPicker(){
           let chosenModel = el.dataset.model;
           localStorage.setItem('preset_'+currentChar, selEl.value);
           localStorage.setItem('model_'+currentChar, chosenModel);
+          if(typeof updateChatModelLabel==='function')updateChatModelLabel();
           modal.remove();
           togglePlusMenu();
           showToast('已切换: ' + chosenModel);

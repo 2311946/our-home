@@ -466,7 +466,7 @@ setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];save
 
 async function sendGroupMsg(text,quoteData){
   let contextCount=parseInt(localStorage.getItem('ctx_count'))||30;
-  
+
   if(!text)return;
 
   let msg={
@@ -480,33 +480,63 @@ async function sendGroupMsg(text,quoteData){
   saveToCloud('group','user',text);
   render();
 
-let allChars=characters.map(c=>c.id).filter(id=>id!=='group');let responders=[];if(text.includes('@全体')){responders=shuffle(allChars);}else{let mentioned=allChars.filter(id=>text.includes('@'+(charNames[id]||'')));if(mentioned.length>0){responders=mentioned;}else{let mode=localStorage.getItem('group_reply_mode')||'1-3';
-if(mode==='all'){responders=shuffle(allChars);}
-else{let count;if(mode==='1-3')count=Math.floor(Math.random()*3)+1;else if(mode==='2-5')count=Math.floor(Math.random()*4)+2;else count=parseInt(mode)||1;responders=shuffle(allChars).slice(0,count);}}}for(let c of responders){if(!prompts[c])continue;chats.group.push({role:'ai',content:'',character:c,time:nowTime()});render();let ctxCount=parseInt(localStorage.getItem('ctx_count_'+c)||localStorage.getItem('ctx_count'))||30;let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏、裴洵、江溯、溯、邹峥、柯柯。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];chats.group.slice(-ctxCount).forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});let idx=chats.group.length-1;try{let api = getApiForChar(c);
-  let useStream=localStorage.getItem('stream_'+c)!=='false';
-  let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+api.key,'Content-Type':'application/json'},body:JSON.stringify({model:api.model,messages:msgs,stream:useStream,stream_options:useStream?{include_usage:true}:undefined})});
-  if(!useStream){
-    let j=await res.json();
-    if(j.usage){
-        chats.group[idx].in_tokens = j.usage.prompt_tokens||0;
-        chats.group[idx].out_tokens = j.usage.completion_tokens||0;
-        chats.group[idx].model_name = j.model || (typeof api !== 'undefined' ? api.model : 'unknown');
-        let stats=JSON.parse(localStorage.getItem('api_usage_stats')||'{}');
-        let mName=api.model||'unknown';
-        if(!stats[mName]) stats[mName]={in:0,out:0};
-        stats[mName].in+=chats.group[idx].in_tokens;
-        stats[mName].out+=chats.group[idx].out_tokens;
-        localStorage.setItem('api_usage_stats',JSON.stringify(stats));
+  let allChars=characters.map(c=>c.id).filter(id=>id!=='group');
+  let responders=[];
+  if(text.includes('@全体')){responders=shuffle(allChars);}
+  else{
+    let mentioned=allChars.filter(id=>text.includes('@'+(charNames[id]||'')));
+    if(mentioned.length>0){responders=mentioned;}
+    else{
+      let mode=localStorage.getItem('group_reply_mode')||'1-3';
+      if(mode==='all'){responders=shuffle(allChars);}
+      else{let count;if(mode==='1-3')count=Math.floor(Math.random()*3)+1;else if(mode==='2-5')count=Math.floor(Math.random()*4)+2;else count=parseInt(mode)||1;responders=shuffle(allChars).slice(0,count);}
     }
-    if(j.choices && j.choices.length > 0){
-        let msgObj = j.choices[0].message||{};
-        chats.group[idx].content+=msgObj.content||'';
-    }
+  }
+
+  // 角色间@互动连锁回复：最多2轮连锁，每个角色最多回复一次，不能@自己触发自己
+  let replied=new Set(responders);
+  let queue=responders.map(c=>({c, level:0}));
+  let MAX_CHAIN=2;
+
+  while(queue.length){
+    let item=queue.shift();
+    let c=item.c;
+    let level=item.level;
+    if(!prompts[c])continue;
+    if(level>0){await new Promise(r=>setTimeout(r,500));} // 连锁回复之间加500ms延迟，模拟真实对话节奏
+
+    chats.group.push({role:'ai',content:'',character:c,time:nowTime()});
     render();
-  }else{
-    let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{
-        let j=JSON.parse(d);
+    let ctxCount=parseInt(localStorage.getItem('ctx_count_'+c)||localStorage.getItem('ctx_count'))||30;
+    let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏、裴洵、江溯、溯、邹峥、柯柯。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];
+    chats.group.slice(-ctxCount).forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});
+    let idx=chats.group.length-1;
+    try{
+      let api = getApiForChar(c);
+      let useStream=localStorage.getItem('stream_'+c)!=='false';
+      let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+api.key,'Content-Type':'application/json'},body:JSON.stringify({model:api.model,messages:msgs,stream:useStream,stream_options:useStream?{include_usage:true}:undefined})});
+      if(!useStream){
+        let j=await res.json();
         if(j.usage){
+          chats.group[idx].in_tokens = j.usage.prompt_tokens||0;
+          chats.group[idx].out_tokens = j.usage.completion_tokens||0;
+          chats.group[idx].model_name = j.model || (typeof api !== 'undefined' ? api.model : 'unknown');
+          let stats=JSON.parse(localStorage.getItem('api_usage_stats')||'{}');
+          let mName=api.model||'unknown';
+          if(!stats[mName]) stats[mName]={in:0,out:0};
+          stats[mName].in+=chats.group[idx].in_tokens;
+          stats[mName].out+=chats.group[idx].out_tokens;
+          localStorage.setItem('api_usage_stats',JSON.stringify(stats));
+        }
+        if(j.choices && j.choices.length > 0){
+          let msgObj = j.choices[0].message||{};
+          chats.group[idx].content+=msgObj.content||'';
+        }
+        render();
+      }else{
+        let reader=res.body.getReader();let dec=new TextDecoder();let buf='';while(true){let{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let lines=buf.split('\n');buf=lines.pop();for(let line of lines){if(!line.startsWith('data:'))continue;let d=line.slice(5).trim();if(d==='[DONE]')break;try{
+          let j=JSON.parse(d);
+          if(j.usage){
             chats.group[idx].in_tokens = j.usage.prompt_tokens||0;
             chats.group[idx].out_tokens = j.usage.completion_tokens||0;
             chats.group[idx].model_name = j.model || (typeof api !== 'undefined' ? api.model : 'unknown');
@@ -516,29 +546,44 @@ else{let count;if(mode==='1-3')count=Math.floor(Math.random()*3)+1;else if(mode=
             stats[mName].in+=chats.group[idx].in_tokens;
             stats[mName].out+=chats.group[idx].out_tokens;
             localStorage.setItem('api_usage_stats',JSON.stringify(stats));
-        }
-        if(j.choices && j.choices.length > 0){
+          }
+          if(j.choices && j.choices.length > 0){
             chats.group[idx].content+=j.choices[0].delta.content||'';
-        }
-        render();
-    }catch(e){}}}
-  }
-}catch(e){chats.group[idx].content='连接失败';render();}// 分条处理
-  // 新消息在下方拆分后统一写入 chat_messages（避免重复）
-  let fullContent=chats.group[idx].content;
-  if(fullContent.includes('|||')){
-    let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
-    chats.group.splice(idx,1);
-    parts.forEach((part,pi)=>{
-      chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime(),animate:true});
-      saveToCloud('group_'+c,'ai',part, chats.group[idx+pi]? (chats.group[idx+pi].thinking||'') + (chats.group[idx+pi].in_tokens?' <!--tokens:'+chats.group[idx+pi].in_tokens+'/'+chats.group[idx+pi].out_tokens+'-->':'') + (chats.group[idx+pi].model_name?' <!--model:'+chats.group[idx+pi].model_name+'-->':'') : '');
-    });
-    render();
-  }else{
-    saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':'') + (chats.group[idx].model_name?' <!--model:'+chats.group[idx].model_name+'-->':''));
-  }
+          }
+          render();
+        }catch(e){}}}
+      }
+    }catch(e){chats.group[idx].content='连接失败';render();}
 
-localStorage.setItem('home_chats',JSON.stringify(chats));}
+    // 新消息在下方拆分后统一写入 chat_messages（避免重复）
+    let fullContent=chats.group[idx].content;
+    if(fullContent.includes('|||')){
+      let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
+      chats.group.splice(idx,1);
+      parts.forEach((part,pi)=>{
+        chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime(),animate:true});
+        saveToCloud('group_'+c,'ai',part, chats.group[idx+pi]? (chats.group[idx+pi].thinking||'') + (chats.group[idx+pi].in_tokens?' <!--tokens:'+chats.group[idx+pi].in_tokens+'/'+chats.group[idx+pi].out_tokens+'-->':'') + (chats.group[idx+pi].model_name?' <!--model:'+chats.group[idx+pi].model_name+'-->':'') : '');
+      });
+      render();
+    }else{
+      saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':'') + (chats.group[idx].model_name?' <!--model:'+chats.group[idx].model_name+'-->':''));
+    }
+
+    localStorage.setItem('home_chats',JSON.stringify(chats));
+
+    // === 角色间@互动连锁触发检测 ===
+    if(level < MAX_CHAIN){
+      for(let id of allChars){
+        if(id===c) continue;                  // 不能@自己触发自己
+        if(replied.has(id)) continue;         // 每个角色最多回复一次
+        if(!prompts[id]) continue;
+        if(fullContent.includes('@'+(charNames[id]||''))){
+          replied.add(id);
+          queue.push({c:id, level:level+1});  // 加入待回复队列，下一轮生成回复（上下文已含触发它的消息）
+        }
+      }
+    }
+  }
 }
 
 function pokePoke() {
@@ -776,7 +821,9 @@ function endCall() {
   if (btn) { btn.classList.remove('calling'); btn.textContent = '📞'; }
 }
 
-function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
+function updateChatModelLabel(){let el=document.getElementById('chatModel');if(!el)return;let preset=localStorage.getItem('preset_'+currentChar);let model=localStorage.getItem('model_'+currentChar);let parts=[];if(preset)parts.push(preset);if(model)parts.push(model);el.textContent=parts.length?parts.join(' · '):'未设置';}
+
+function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';updateChatModelLabel();document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
 // @选人弹窗
 function initAtPicker(){
   let input=document.getElementById('input');
