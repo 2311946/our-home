@@ -36,6 +36,17 @@ let characters=[{id:'yan',name:'言言',emoji:'🐺',color:'#9b59b6'},{id:'peiji
 let charNames={};characters.forEach(c=>charNames[c.id]=c.name);charNames.xuanxuan='宣宣';
 // 群聊气泡/角色名颜色映射，按角色区分，方便以后统一改
 let charColors={yan:'#9b59b6',peiji:'#e74c3c',shenyan:'#3498db',axun:'#e67e22',jiangsu:'#2ecc71',su:'#1abc9c',zouzheng:'#f39c12',keke:'#ff6b9f'};
+// 群聊角色随机氛围动作池，每个角色专属，{name} 会被替换为该角色名（仅前端展示，不存记录、不发API）
+let ambientActions={
+  yan:['{name}轻轻笑了笑','{name}把玩着手机没说话','{name}看了眼宣宣又移开视线','{name}戳了戳对面的人的肩膀'],
+  peiji:['{name}靠在椅背上沉默着','{name}皱了皱眉','{name}把杯子推到了宣宣手边','{name}静静看着众人'],
+  shenyan:['{name}偷偷看了眼宣宣','{name}低头抿了口茶','{name}嘴角轻轻弯了一下'],
+  axun:['{name}戳了戳言言','{name}拽了拽宣宣的衣角','{name}歪着头打量着谁','{name}鼓起了脸颊'],
+  jiangsu:['{name}放下了咖啡杯','{name}温和地笑了笑','{name}整理了一下袖口','{name}望向窗外'],
+  su:['{name}靠在沙发上没说话','{name}挑了挑眉','{name}懒洋洋地伸了个懒腰'],
+  zouzheng:['{name}翻了页手里的书','{name}推了推眼镜','{name}若有所思地点了点头'],
+  keke:['{name}撇了撇嘴','{name}假装看手机其实在偷听','{name}踢了踢脚边的地毯']
+};
 let avatarColors={};characters.forEach(c=>avatarColors[c.id]=c.color);avatarColors.user='#e91e63';avatarColors.xuanxuan='#e91e63';
 let avatarEmoji={};characters.forEach(c=>avatarEmoji[c.id]=c.emoji);avatarEmoji.user='🐱';avatarEmoji.xuanxuan='🐱';
 let chats={yan:[],peiji:[],shenyan:[],group:[]};
