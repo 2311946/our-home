@@ -845,7 +845,7 @@ function showQuotePreview(){
   if(!box){
     box=document.createElement('div');
     box.id='quotePreview';
-    box.style.cssText='display:none;background:rgba(155,89,182,0.1);border-left:3px solid #9b59b6;padding:6px 10px;border-radius:6px;font-size:12px;color:#aaa;position:relative;max-height:60px;overflow-y:auto;white-space:pre-wrap;word-wrap:break-word;line-height:1.4';
+    box.style.cssText='display:none;background:rgba(155,89,182,0.1);border-left:3px solid #9b59b6;padding:6px 10px;border-radius:6px;font-size:12px;color:#aaa;position:relative;max-width:100%;box-sizing:border-box;width:calc(100% - 20px);left:10px;max-height:60px;overflow-y:auto;white-space:pre-wrap;word-wrap:break-word;line-height:1.4';
     let inputArea=document.querySelector('.input-area');
     let wrapper=document.createElement('div');
     wrapper.style.cssText='display:flex;flex-direction:column;flex:1;gap:6px';
