@@ -47,6 +47,8 @@ let ambientActions={
   zouzheng:['{name}翻了页手里的书','{name}推了推眼镜','{name}若有所思地点了点头'],
   keke:['{name}撇了撇嘴','{name}假装看手机其实在偷听','{name}踢了踢脚边的地毯']
 };
+// 群聊角色回复速度：fast=800-1500ms, normal=1000-2000ms, slow=1500-2500ms（用于角色间随机延迟）
+let replySpeed={axun:'fast',keke:'fast',yan:'normal',shenyan:'normal',zouzheng:'normal',peiji:'slow',jiangsu:'slow',su:'slow'};
 let avatarColors={};characters.forEach(c=>avatarColors[c.id]=c.color);avatarColors.user='#e91e63';avatarColors.xuanxuan='#e91e63';
 let avatarEmoji={};characters.forEach(c=>avatarEmoji[c.id]=c.emoji);avatarEmoji.user='🐱';avatarEmoji.xuanxuan='🐱';
 let chats={yan:[],peiji:[],shenyan:[],group:[]};
