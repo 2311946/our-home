@@ -41,6 +41,7 @@ function openProfile(charId){
   document.getElementById('profileAvatar').textContent=avatarEmoji[charId]||'?';
   document.getElementById('profileAvatar').style.background=avatarColors[charId]||'#555';
   document.getElementById('profileName').textContent=charNames[charId]||'';
+  document.getElementById('profileName').style.color=charColors[charId]||'#555';
   document.getElementById('profileBio').textContent=p.bio||'';
   document.getElementById('profileRelation').textContent=p.relation||'';
   document.getElementById('profileStatus').textContent=p.status||'在线';
