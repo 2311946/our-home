@@ -248,7 +248,7 @@ row.appendChild(av);row.appendChild(body);box.appendChild(row);});if(currentChar
 
 function copyMsg(i){navigator.clipboard.writeText(chats[currentChar][i].content);}
 
-function delMsg(i){let msg=chats[currentChar][i];if(msg&&msg.pb_id&&PB_URL){fetch(PB_URL+'/api/collections/chat_messages/records/'+msg.pb_id,{method:'DELETE'}).catch(()=>{});}chats[currentChar].splice(i,1);localStorage.setItem('home_chats',JSON.stringify(chats));render();}
+function delMsg(i){let box=document.getElementById('chatBox');let prevScroll=box?box.scrollTop:0;let prevHeight=box?box.scrollHeight:0;let msg=chats[currentChar][i];if(msg&&msg.pb_id&&PB_URL){fetch(PB_URL+'/api/collections/chat_messages/records/'+msg.pb_id,{method:'DELETE'}).catch(()=>{});}chats[currentChar].splice(i,1);localStorage.setItem('home_chats',JSON.stringify(chats));render();if(box){box.scrollTop=Math.max(0,prevScroll-(prevHeight-box.scrollHeight));}}
 
 function reGen(i){
   if(!currentChar || !chats[currentChar])return;
