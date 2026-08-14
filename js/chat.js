@@ -18,6 +18,22 @@ function getApiForChar(charId) {
   };
 }
 
+function hasApiConfigured(charId){
+  if(apiConfig.url && apiConfig.key) return true;
+  let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');
+  if(charId && charId!=='group'){
+    let pn=localStorage.getItem('preset_'+charId);
+    if(pn && presets[pn] && presets[pn].url && presets[pn].key) return true;
+  }else{
+    for(let c of characters){
+      if(c.id==='group')continue;
+      let pn=localStorage.getItem('preset_'+c.id);
+      if(pn && presets[pn] && presets[pn].url && presets[pn].key) return true;
+    }
+  }
+  return false;
+}
+
 function importChat(input){
   let file=input.files[0];
   if(!file)return;
@@ -227,7 +243,8 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(roleColor)d.style.bord
       d.textContent=content;
     }
   }
-}if(m.thinking){console.log('THINK HIT',m.thinking.slice(0,20));let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button><button onclick="quoteMsg('+i+')">💬 引用</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';t.textContent=m.time + (m.model_name ? ' · 🤖 ' + m.model_name : '') + ((m.in_tokens || m.out_tokens) ? ' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇' : '');body.appendChild(t);}row.appendChild(av);row.appendChild(body);box.appendChild(row);});if(currentChar==='group'&&groupTypingChar){let ti=document.createElement('div');ti.id='typingIndicator';ti.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:left;padding:8px';ti.textContent='🤔 '+(charNames[groupTypingChar]||groupTypingChar)+' 正在输入...';box.appendChild(ti);}if(currentChar==='group'&&groupAmbient){let ai=document.createElement('div');ai.className='ambient-msg';ai.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:center;padding:4px';ai.textContent=groupAmbient;box.appendChild(ai);}box.scrollTop=box.scrollHeight;}
+}if(m.thinking){console.log('THINK HIT',m.thinking.slice(0,20));let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button><button onclick="quoteMsg('+i+')">💬 引用</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';let timeText=m.time;if(m.model_name)timeText+=' · 🤖 '+m.model_name;if(m.in_tokens||m.out_tokens)timeText+=' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇';t.textContent=timeText;body.appendChild(t);}
+row.appendChild(av);row.appendChild(body);box.appendChild(row);});if(currentChar==='group'&&groupTypingChar){let ti=document.createElement('div');ti.id='typingIndicator';ti.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:left;padding:8px';ti.textContent='🤔 '+(charNames[groupTypingChar]||groupTypingChar)+' 正在输入...';box.appendChild(ti);}if(currentChar==='group'&&groupAmbient){let ai=document.createElement('div');ai.className='ambient-msg';ai.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:center;padding:4px';ai.textContent=groupAmbient;box.appendChild(ai);}box.scrollTop=box.scrollHeight;}
 
 function copyMsg(i){navigator.clipboard.writeText(chats[currentChar][i].content);}
 
@@ -316,11 +333,12 @@ function reGenGroup(i){
           let fullContent=chats.group[idx].content;
           let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
       if(parts.length>1){
+        let meta={model_name:chats.group[idx].model_name,thinking:chats.group[idx].thinking,in_tokens:chats.group[idx].in_tokens,out_tokens:chats.group[idx].out_tokens};
         chats.group[idx].content=parts[0];
         for(let pi=1;pi<parts.length;pi++){
-          chats.group.splice(idx+pi,0,{role:'ai',content:parts[pi],character:c,time:nowTime()});
+          chats.group.splice(idx+pi,0,{role:'ai',content:parts[pi],character:c,time:nowTime(),model_name:meta.model_name,thinking:meta.thinking,in_tokens:meta.in_tokens,out_tokens:meta.out_tokens});
         }
-        parts.forEach(p=>saveToCloud('group_'+c,'ai',p));
+        parts.forEach(p=>saveToCloud('group_'+c,'ai',p,(meta.thinking||'')+(meta.in_tokens?' <!--tokens:'+meta.in_tokens+'/'+meta.out_tokens+'-->':'')+(meta.model_name?' <!--model:'+meta.model_name+'-->':'')));
       }else{
         saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':'') + (chats.group[idx].model_name?' <!--model:'+chats.group[idx].model_name+'-->':''));
       }
@@ -386,7 +404,7 @@ async function sendMsg(isRegen){
   }
   
   if(!isRegen&&!text)return;
-  if(!apiConfig.url||!apiConfig.key){openSettings();return;}
+  if(!hasApiConfigured(currentChar)){openSettings();return;}
   if(currentChar==='group'){sendGroupMsg(text,quoteData);input.value='';return;}
   if(!isRegen){
     let msg={role:'user',content:text,time:nowTime()};
@@ -564,10 +582,11 @@ async function sendGroupMsg(text,quoteData){
     let fullContent=chats.group[idx].content;
     if(fullContent.includes('|||')){
       let parts=fullContent.split('|||').map(s=>s.trim()).filter(s=>s);
+      let meta={model_name:chats.group[idx].model_name,thinking:chats.group[idx].thinking,in_tokens:chats.group[idx].in_tokens,out_tokens:chats.group[idx].out_tokens};
       chats.group.splice(idx,1);
       parts.forEach((part,pi)=>{
-        chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime(),animate:true});
-        saveToCloud('group_'+c,'ai',part, chats.group[idx+pi]? (chats.group[idx+pi].thinking||'') + (chats.group[idx+pi].in_tokens?' <!--tokens:'+chats.group[idx+pi].in_tokens+'/'+chats.group[idx+pi].out_tokens+'-->':'') + (chats.group[idx+pi].model_name?' <!--model:'+chats.group[idx+pi].model_name+'-->':'') : '');
+        chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime(),animate:true,model_name:meta.model_name,thinking:meta.thinking,in_tokens:meta.in_tokens,out_tokens:meta.out_tokens});
+        saveToCloud('group_'+c,'ai',part, (meta.thinking||'') + (meta.in_tokens?' <!--tokens:'+meta.in_tokens+'/'+meta.out_tokens+'-->':'') + (meta.model_name?' <!--model:'+meta.model_name+'-->':''));
       });
       render();
     }else{
