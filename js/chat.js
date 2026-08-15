@@ -414,8 +414,17 @@ async function sendMsg(isRegen){
   }
   render();
   let contextCount=parseInt(localStorage.getItem('ctx_count_'+currentChar)||localStorage.getItem('ctx_count'))||30;
+  // 搜索相关记忆
+  const memoryBlock = await searchMemory(text, 5);
+  const memoryInject = memoryBlock ? '\n\n【相关记忆】自然融入回复，不要逐条复述：\n' + memoryBlock : '';
   let msgs=[];
-  if(prompts[currentChar])msgs.push({role:'system',content:prompts[currentChar]+'\n\n当前真实时间：'+aiNowTime()+'。'});
+  // 构建system prompt（有人设用人设，没有则用空字符串）
+  const basePrompt = prompts[currentChar] || '';
+  const timeStr = '\n\n当前真实时间：' + aiNowTime();
+  const systemContent = basePrompt + timeStr + memoryInject;
+  if (systemContent.trim()) {
+    msgs.push({role: 'system', content: systemContent});
+  }
   let groupMsgs=[];
   let useGroupCtx=localStorage.getItem('group_ctx_'+currentChar)==='true';
   let groupCtxCount=parseInt(localStorage.getItem('group_ctx_count_'+currentChar)||'10');
@@ -500,6 +509,10 @@ async function sendGroupMsg(text,quoteData){
   saveToCloud('group','user',text);
   render();
 
+  // 群聊只搜一次记忆
+  const memoryBlock = await searchMemory(text, 5);
+  const memoryInject = memoryBlock ? '\n\n【相关记忆】自然融入回复，不要逐条复述：\n' + memoryBlock : '';
+
   let allChars=characters.map(c=>c.id).filter(id=>id!=='group');
   let responders=[];
   if(text.includes('@全体')){responders=shuffle(allChars);}
@@ -531,7 +544,7 @@ async function sendGroupMsg(text,quoteData){
     render();
     await new Promise(r=>setTimeout(r,getReplyDelay(c))); // 角色间随机延迟（按角色回复速度 800-2500ms），延迟期间继续显示"正在输入"
     let ctxCount=parseInt(localStorage.getItem('ctx_count_'+c)||localStorage.getItem('ctx_count'))||30;
-    let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏、裴洵、江溯、溯、邹峥、柯柯。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'}];
+    let msgs=[{role:'system',content:prompts[c]+'\n\n当前真实时间：'+aiNowTime()+'。\n\n【这是群聊，参与者有：宣宣、言言、裴寂、沈晏、裴洵、江溯、溯、邹峥、柯柯。你回应任何人的话。不要说自己是AI，直接以角色身份回复。如果你想发多条消息，用 ||| 分隔每条消息。例如：第一句话|||第二句话|||第三句话。不要在回复里加时间戳或自己的名字前缀。】'+memoryInject}];
     chats.group.slice(-ctxCount).forEach(m=>{if(m.role==='user')msgs.push({role:'user',content:'宣宣: '+m.content});else if(m.role==='ai'&&m.content){if(m.character===c)msgs.push({role:'assistant',content:m.content});else msgs.push({role:'user',content:(charNames[m.character]||'')+': '+m.content});}});
     let idx=chats.group.length-1;
     try{
