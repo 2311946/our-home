@@ -243,7 +243,7 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(roleColor)d.style.bord
       d.textContent=content;
     }
   }
-}if(m.thinking){console.log('THINK HIT',m.thinking.slice(0,20));let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button><button onclick="quoteMsg('+i+')">💬 引用</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';let timeText=m.time;if(m.model_name)timeText+=' · 🤖 '+m.model_name;if(m.in_tokens||m.out_tokens)timeText+=' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇';t.textContent=timeText;body.appendChild(t);}
+}if(m.thinking){let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button><button onclick="quoteMsg('+i+')">💬 引用</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';let timeText=m.time;if(m.model_name)timeText+=' · 🤖 '+m.model_name;if(m.in_tokens||m.out_tokens)timeText+=' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇';t.textContent=timeText;body.appendChild(t);}
 row.appendChild(av);row.appendChild(body);box.appendChild(row);});if(currentChar==='group'&&groupTypingChar){let ti=document.createElement('div');ti.id='typingIndicator';ti.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:left;padding:8px';ti.textContent='🤔 '+(charNames[groupTypingChar]||groupTypingChar)+' 正在输入...';box.appendChild(ti);}if(currentChar==='group'&&groupAmbient){let ai=document.createElement('div');ai.className='ambient-msg';ai.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:center;padding:4px';ai.textContent=groupAmbient;box.appendChild(ai);}box.scrollTop=box.scrollHeight;}
 
 function copyMsg(i){navigator.clipboard.writeText(chats[currentChar][i].content);}
@@ -415,7 +415,7 @@ async function sendMsg(isRegen){
   render();
   let contextCount=parseInt(localStorage.getItem('ctx_count_'+currentChar)||localStorage.getItem('ctx_count'))||30;
   // 搜索相关记忆
-  const memoryBlock = await searchMemory(text, 5);
+  const memoryBlock = await searchMemory(text, currentChar, 5);
   const memoryInject = memoryBlock ? '\n\n【相关记忆】自然融入回复，不要逐条复述：\n' + memoryBlock : '';
   let msgs=[];
   // 构建system prompt（有人设用人设，没有则用空字符串）
@@ -509,10 +509,6 @@ async function sendGroupMsg(text,quoteData){
   saveToCloud('group','user',text);
   render();
 
-  // 群聊只搜一次记忆
-  const memoryBlock = await searchMemory(text, 5);
-  const memoryInject = memoryBlock ? '\n\n【相关记忆】自然融入回复，不要逐条复述：\n' + memoryBlock : '';
-
   let allChars=characters.map(c=>c.id).filter(id=>id!=='group');
   let responders=[];
   if(text.includes('@全体')){responders=shuffle(allChars);}
@@ -537,6 +533,9 @@ async function sendGroupMsg(text,quoteData){
     let c=item.c;
     let level=item.level;
     if(!prompts[c])continue;
+    // 群聊：按当前回复角色搜其专属记忆（含 shared）
+    let memoryBlock = await searchMemory(text, c, 5);
+    let memoryInject = memoryBlock ? '\n\n【相关记忆】自然融入回复，不要逐条复述：\n' + memoryBlock : '';
     if(level>0){await new Promise(r=>setTimeout(r,500));} // 连锁回复之间加500ms延迟，模拟真实对话节奏
     groupTypingChar=c; // 群聊：显示"正在输入"指示器（render 会追加到聊天区底部）
 

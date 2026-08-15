@@ -35,3 +35,21 @@ function popConfetti(){
     setTimeout(()=>el.remove(),1000);
   }
 }
+
+// === OB记忆自动注入 ===
+const OB_URL = 'https://yanyan-pb.duckdns.org/api/memory';
+
+async function searchMemory(query, character = 'yan', maxResults = 5) {
+  try {
+    const res = await fetch(OB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, domain: character + ',shared', max_results: maxResults })
+    });
+    const data = await res.json();
+    return data.memory || '';
+  } catch (e) {
+    console.warn('记忆搜索失败:', e);
+    return '';
+  }
+}
