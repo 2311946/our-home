@@ -197,74 +197,8 @@ function initSettings(){
   });
   document.getElementById('sysPrompt').value=prompts[editingPromptChar]||'';
   renderApiUsage();
-  // 当前角色模型区块（仅单人聊天有效）
-  let panel=document.getElementById('curModelPanel');
-  if(panel){
-    let charEl=document.getElementById('curModelChar');
-    let presetSel=document.getElementById('curModelPreset');
-    let listEl=document.getElementById('curModelList');
-    let nameEl=document.getElementById('curModelName');
-    let isSingle=currentChar&&currentChar!=='group'&&currentChar!=='user'&&characters.some(c=>c.id===currentChar);
-    if(!isSingle){
-      panel.style.display='block';
-      charEl.textContent='（群聊/全局设置不绑定单角色模型，请在角色名片中设置）';
-      if(presetSel)presetSel.style.display='none';
-      if(listEl)listEl.style.display='none';
-      if(nameEl)nameEl.textContent='-';
-    }else{
-      panel.style.display='block';
-      charEl.textContent='为「'+(charNames[currentChar]||currentChar)+'」设置模型';
-      presetSel.style.display='';
-      listEl.style.display='';
-      window.__curModelChar=currentChar;
-      let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');
-      let curPreset=localStorage.getItem('preset_'+currentChar)||'';
-      let pOpts='<option value="">-- 全局默认 API --</option>';
-      Object.keys(presets).forEach(n=>{pOpts+='<option value="'+n+'"'+(n===curPreset?' selected':'')+'>'+n+'</option>';});
-      presetSel.innerHTML=pOpts;
-      let curModel=localStorage.getItem('model_'+currentChar)||apiConfig.model||'';
-      nameEl.textContent=curModel||'全局默认';
-      presetSel.onchange=loadCurModels;
-      loadCurModels();
-    }
-  }
 }
 
-function loadCurModels(){
-  let presetSel=document.getElementById('curModelPreset');
-  let listEl=document.getElementById('curModelList');
-  let nameEl=document.getElementById('curModelName');
-  if(!presetSel||!listEl)return;
-  let charId=window.__curModelChar;
-  if(!charId)return;
-  let presetName=presetSel.value;
-  let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');
-  let url=apiConfig.url,key=apiConfig.key;
-  if(presetName&&presets[presetName]){url=presets[presetName].url;key=presets[presetName].key;}
-  url=(url||'').replace(/\/$/,'');
-  if(!url||!key){listEl.innerHTML='<div style="color:#e74c3c;font-size:13px;text-align:center;padding:12px">请先在「📡 API配置」中填写地址和 Key</div>';return;}
-  let curModel=localStorage.getItem('model_'+charId)||apiConfig.model||'';
-  listEl.innerHTML='<div style="color:#888;font-size:13px;text-align:center;padding:12px">加载中...</div>';
-  fetch(url+'/models',{headers:{'Authorization':'Bearer '+key}}).then(r=>{if(!r.ok)throw new Error('请求失败');return r.json();}).then(d=>{
-    let models=d.data||d;if(!models||!models.length)throw new Error('未获取到模型列表');
-    let html='';
-    models.forEach(m=>{let id=m.id||m;let active=id===curModel?'background:#9b59b6;color:#fff':'background:#253554;color:#aaa';
-      html+='<div class="cur-model-opt" data-model="'+id.replace(/"/g,'&quot;')+'" style="padding:9px 12px;margin:5px 0;border-radius:8px;cursor:pointer;font-size:13px;'+active+'">'+id+'</div>';});
-    listEl.innerHTML=html;
-    listEl.querySelectorAll('.cur-model-opt').forEach(el=>{
-      el.onclick=()=>{
-        let chosen=el.dataset.model;
-        localStorage.setItem('preset_'+charId,presetSel.value);
-        localStorage.setItem('model_'+charId,chosen);
-        if(nameEl)nameEl.textContent=chosen;
-        if(typeof updateChatModelLabel==='function')updateChatModelLabel();
-        listEl.querySelectorAll('.cur-model-opt').forEach(x=>x.style.cssText='padding:9px 12px;margin:5px 0;border-radius:8px;cursor:pointer;font-size:13px;background:#253554;color:#aaa');
-        el.style.cssText='padding:9px 12px;margin:5px 0;border-radius:8px;cursor:pointer;font-size:13px;background:#9b59b6;color:#fff';
-        if(typeof showToast==='function')showToast('已为 '+(charNames[charId]||charId)+' 设置: '+chosen);
-      };
-    });
-  }).catch(e=>{listEl.innerHTML='<div style="color:#e74c3c;font-size:12px;text-align:center;padding:12px">加载失败: '+e.message+'</div>';});
-}
 
 function closeSettings(){
   let m=document.getElementById('settingsModal');
@@ -528,9 +462,12 @@ function openCharSettings(charId){
           modelList.querySelectorAll('.cs-model-opt').forEach(x=>x.style.cssText='padding:8px 12px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:12px;background:#253554;color:#aaa');
           el.style.cssText='padding:8px 12px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:12px;background:#9b59b6;color:#fff';
           currentModel=el.dataset.model;
+          modelList.dataset.selected=currentModel;
           document.getElementById('csCurrentModel').textContent=currentModel;
         };
       });
+      // 记录当前已选模型（避免依赖 style 属性选择器反查，浏览器会把 #9b59b6 归一化为 rgb 导致匹配失败）
+      modelList.dataset.selected=(models.some(m=>(m.id||m)===currentModel))?currentModel:'';
     }).catch(e=>{modelList.innerHTML='<div style="color:#e74c3c;font-size:12px;text-align:center;padding:12px">加载失败</div>';});
   }
   presetSel.onchange=loadCSModels;
@@ -541,8 +478,8 @@ function openCharSettings(charId){
 async function saveCharSettings(){
   let charId=_csCharId;
   if(!charId)return;
-  let modelEl=document.querySelector('.cs-model-opt[style*="#9b59b6"]');
-  let model=modelEl?modelEl.dataset.model:'';
+  let csList=document.getElementById('csModelList');
+  let model=csList&&csList.dataset.selected?csList.dataset.selected:'';
   let promptText=document.getElementById('csPrompt').value;
   let ctxCount=document.getElementById('csCtxRange').value;
   let groupCtx=document.getElementById('csGroupCtx').checked;
