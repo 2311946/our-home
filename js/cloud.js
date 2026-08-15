@@ -15,7 +15,16 @@ fetch(url,opts).then(r=>r.json()).then(raw=>{let data=raw.items||raw;    if(!dat
 if(id==='group'){
   let nameMap={'宣宣':'user','顾言':'yan','裴寂':'peiji','裴洵':'axun','江溯':'jiangsu','溯':'su','邹峥':'zouzheng','柯柯':'keke','沈晏':'shenyan'};
   chats.group=data.map(m=>{
-    if(m.character&&m.character.indexOf('group_')===0){return {role:'ai',content:m.content,character:m.character.slice(6),time:fmtTime(m.msg_time),pb_id:m.id};}
+    if(m.character&&m.character.indexOf('group_')===0){
+    let gt=m.thinking||'';
+    let gin=0,gout=0,gm='';
+    let gtm=gt.match(/<!--tokens:(\d+)\/(\d+)-->/);
+    if(gtm){gin=parseInt(gtm[1]);gout=parseInt(gtm[2]);gt=gt.replace(gtm[0],'').trim();}
+    let gmm=gt.match(/<!--model:(.*?)-->/);
+    if(gmm){gm=gmm[1];gt=gt.replace(gmm[0],'').trim();}
+    if(m.model)gm=gm||m.model;
+    return {role:'ai',content:m.content,character:m.character.slice(6),thinking:gt,in_tokens:gin,out_tokens:gout,model_name:gm,time:fmtTime(m.msg_time),pb_id:m.id};
+  }
     let charId=nameMap[m.role]||m.role;
     if(charId==='user')return {role:'user',content:m.content,time:fmtTime(m.msg_time),pb_id:m.id};
    
@@ -32,6 +41,7 @@ if(id==='group'){
         model_name = mm[1];
         thinking = thinking.replace(mm[0], '').trim();
       }
+      if(!model_name && m.model) model_name = m.model;
 
    return {role:'ai',content:m.content,character:charId,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:fmtTime(m.msg_time),pb_id:m.id};
   });
@@ -103,7 +113,7 @@ async function saveToAiChat(sender,content){if(!content||!sender)return;try{awai
 async function loadFromCloud(){
   if(!SUPA_URL||!SUPA_KEY)return;
   try{
-    let all=await fetch(SUPA_URL+'/rest/v1/chat_messages?select=character,role,content,created_at&order=created_at.asc&limit=1000',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    let all=await fetch(SUPA_URL+'/rest/v1/chat_messages?select=character,role,content,created_at,model,thinking&order=created_at.asc&limit=1000',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
     let data=await all.json();
     if(!data||!data.length)return;
     let cloud={yan:[],peiji:[],shenyan:[],group:[]};
@@ -113,7 +123,10 @@ async function loadFromCloud(){
         cloud.group.push({role:'user',content:m.content,time:fmtTime(m.created_at)});
       }else if(m.character&&m.character.startsWith('group_')){
         let c=m.character.replace('group_','');
-        cloud.group.push({role:'ai',content:m.content,character:c,time:fmtTime(m.created_at)});
+        let gt=m.thinking||'';
+        let gmm=gt.match(/<!--model:(.*?)-->/);
+        let gmodel=gmm?gmm[1]:(m.model||'');
+        cloud.group.push({role:'ai',content:m.content,character:c,time:fmtTime(m.created_at),model_name:gmodel});
       }else if(cloud[m.character]!==undefined){
         cloud[m.character].push({role:m.role,content:m.content,time:fmtTime(m.created_at)});
       }

@@ -338,9 +338,9 @@ function reGenGroup(i){
         for(let pi=1;pi<parts.length;pi++){
           chats.group.splice(idx+pi,0,{role:'ai',content:parts[pi],character:c,time:nowTime(),model_name:meta.model_name,thinking:meta.thinking,in_tokens:meta.in_tokens,out_tokens:meta.out_tokens});
         }
-        parts.forEach(p=>saveToCloud('group_'+c,'ai',p,(meta.thinking||'')+(meta.in_tokens?' <!--tokens:'+meta.in_tokens+'/'+meta.out_tokens+'-->':'')+(meta.model_name?' <!--model:'+meta.model_name+'-->':'')));
+        parts.forEach(p=>saveToCloud('group_'+c,'ai',p,(meta.thinking||'')+(meta.in_tokens?' <!--tokens:'+meta.in_tokens+'/'+meta.out_tokens+'-->':'')+(meta.model_name?' <!--model:'+meta.model_name+'-->':''),meta.model_name));
       }else{
-        saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':'') + (chats.group[idx].model_name?' <!--model:'+chats.group[idx].model_name+'-->':''));
+        saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':'') + (chats.group[idx].model_name?' <!--model:'+chats.group[idx].model_name+'-->':''),chats.group[idx].model_name);
       }
       localStorage.setItem('home_chats',JSON.stringify(chats));
       render();
@@ -586,11 +586,11 @@ async function sendGroupMsg(text,quoteData){
       chats.group.splice(idx,1);
       parts.forEach((part,pi)=>{
         chats.group.splice(idx+pi,0,{role:'ai',content:part,character:c,time:nowTime(),animate:true,model_name:meta.model_name,thinking:meta.thinking,in_tokens:meta.in_tokens,out_tokens:meta.out_tokens});
-        saveToCloud('group_'+c,'ai',part, (meta.thinking||'') + (meta.in_tokens?' <!--tokens:'+meta.in_tokens+'/'+meta.out_tokens+'-->':'') + (meta.model_name?' <!--model:'+meta.model_name+'-->':''));
+        saveToCloud('group_'+c,'ai',part, (meta.thinking||'') + (meta.in_tokens?' <!--tokens:'+meta.in_tokens+'/'+meta.out_tokens+'-->':'') + (meta.model_name?' <!--model:'+meta.model_name+'-->':''),meta.model_name);
       });
       render();
     }else{
-      saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':'') + (chats.group[idx].model_name?' <!--model:'+chats.group[idx].model_name+'-->':''));
+      saveToCloud('group_'+c,'ai',fullContent, (chats.group[idx].thinking||'') + (chats.group[idx].in_tokens?' <!--tokens:'+chats.group[idx].in_tokens+'/'+chats.group[idx].out_tokens+'-->':'') + (chats.group[idx].model_name?' <!--model:'+chats.group[idx].model_name+'-->':''),chats.group[idx].model_name);
     }
 
     localStorage.setItem('home_chats',JSON.stringify(chats));
