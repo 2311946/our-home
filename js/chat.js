@@ -200,7 +200,7 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(roleColor)d.style.bord
     if(codePart){
       let fold=document.createElement('div');
       fold.style.cssText='margin-top:8px;padding:8px 12px;background:#1a1a2e;border-radius:8px;cursor:pointer;font-size:13px;color:#9b59b6';
-      fold.textContent='💭 daddy在想什么...';
+      fold.textContent='💭 '+((charKey==='yan')?'daddy在想什么...':((charNames[charKey]||'她')+'在想什么...'));
       let codeDiv=document.createElement('div');
       codeDiv.style.cssText='display:none;margin-top:6px;padding:10px;background:#1a1a2e;border-radius:8px;font-size:13px;color:#aaa;white-space:pre-wrap;line-height:1.5';
       codeDiv.textContent=codePart;
@@ -211,7 +211,7 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(roleColor)d.style.bord
           fold.textContent='💭 收起';
         }else{
           codeDiv.style.display='none';
-          fold.textContent='💭 daddy在想什么...';
+          fold.textContent='💭 '+((charKey==='yan')?'daddy在想什么...':((charNames[charKey]||'她')+'在想什么...'));
         }
       };
       d.appendChild(fold);

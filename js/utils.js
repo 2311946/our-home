@@ -44,7 +44,7 @@ async function searchMemory(query, character = 'yan', maxResults = 5) {
     const res = await fetch(OB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, domain: character + ',shared', max_results: maxResults })
+      body: JSON.stringify({ query, domain: character === 'yan' ? 'yan,shared' : character, max_results: maxResults })
     });
     const data = await res.json();
     return data.memory || '';
