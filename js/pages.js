@@ -256,20 +256,12 @@ async function loadOBMemory(filterDomain) {
     } else {
       args.query = '记忆';
     }
-    return fetch("https://yanyan-ob.duckdns.org/mcp", {
+    return fetch("https://yanyan-ob.duckdns.org/search", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ob-xuanxuan-yanyan-2026"
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: { name: "breath_search", arguments: args },
-        id: 1
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: args.query, domain: args.domain, max_results: args.max_results })
     }).then(r => r.json()).then(data => {
-      let t = data.result?.content?.[0]?.text || '';
+      let t = data.memory || '';
       return t ? cleanOBText(t) : '';
     }).catch(() => '');
   });

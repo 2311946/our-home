@@ -37,7 +37,7 @@ function popConfetti(){
 }
 
 // === OB记忆自动注入 ===
-const OB_URL = 'https://yanyan-pb.duckdns.org/api/memory';
+const OB_URL = 'https://yanyan-ob.duckdns.org/search';
 
 async function searchMemory(query, character = 'yan', maxResults = 5) {
   try {
