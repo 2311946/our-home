@@ -250,7 +250,7 @@ async function showModelPicker(){
   modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999';
   modal.onclick=e=>{if(e.target===modal)modal.remove();};
   
-  let currentPreset=localStorage.getItem('preset_'+currentChar)||'';
+  let currentPreset=localStorage.getItem('preset_'+currentChar)||localStorage.getItem('current_preset')||'';
   let currentModel=localStorage.getItem('model_'+currentChar)||apiConfig.model||'';
   
   let presets=JSON.parse(localStorage.getItem('api_presets')||'{}');
@@ -282,8 +282,6 @@ async function showModelPicker(){
   
   let selEl = document.getElementById('pickerPresetSel');
   let listEl = document.getElementById('pickerModelList');
-  // 记录进入选择器时的预设绑定，用于判断用户是否“主动切换过通道”，避免改模型时误覆盖预设
-  let initialPreset = currentPreset;
   
   async function loadModelsForPreset(presetName) {
     let url = apiConfig.url;
@@ -318,14 +316,8 @@ async function showModelPicker(){
       listEl.querySelectorAll('.model-opt').forEach(el=>{
         el.onclick = () => {
           let chosenModel = el.dataset.model;
-          // 单人模型永远优先写入，回复必走此模型
+          localStorage.setItem('preset_'+currentChar, selEl.value);
           localStorage.setItem('model_'+currentChar, chosenModel);
-          // 仅在用户主动把通道下拉框切到“与当前绑定不同的选项”时，才更新预设绑定
-          // 这样“改模型”不会再误覆盖/清除你在角色设置里保存的预设通道
-          if(selEl.value !== initialPreset){
-            if(selEl.value) localStorage.setItem('preset_'+currentChar, selEl.value);
-            else localStorage.removeItem('preset_'+currentChar);
-          }
           if(typeof updateChatModelLabel==='function')updateChatModelLabel();
           modal.remove();
           togglePlusMenu();
