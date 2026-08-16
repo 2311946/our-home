@@ -213,10 +213,14 @@ function cleanOBText(text) {
 
 async function loadMemoriesFromOB(domain, maxResults = 20) {
   try {
-    let res = await fetch('https://ob.xxyyhome.top/catalog', {
+    // OB /catalog 会忽略 domain（实测返回全部），/search 才支持按角色筛选
+    let args = { max_results: maxResults };
+    if (domain) { args.domain = domain; args.query = domain; }
+    else { args.query = '记忆'; }
+    let res = await fetch('https://ob.xxyyhome.top/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ domain: domain, max_results: maxResults })
+      body: JSON.stringify(args)
     });
     let data = await res.json();
     return cleanOBText(data.memory || '');
@@ -224,12 +228,15 @@ async function loadMemoriesFromOB(domain, maxResults = 20) {
 }
 
 async function loadOBMemory(filterDomain) {
-  // 记忆宫殿：调用 OB /catalog 接口加载记忆目录
-  // 全部记忆传 domain:''；按角色筛选传具体 domain
-  return fetch("https://ob.xxyyhome.top/catalog", {
+  // 记忆宫殿：OB /search 支持 domain 筛选（/catalog 实测忽略 domain，返回全部）
+  // 全部记忆传 query:'记忆'；按角色筛选传 domain+query
+  let args = { max_results: 50 };
+  if (filterDomain) { args.domain = filterDomain; args.query = filterDomain; }
+  else { args.query = '记忆'; }
+  return fetch("https://ob.xxyyhome.top/search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ domain: filterDomain || '', max_results: 50 })
+    body: JSON.stringify(args)
   }).then(r => r.json()).then(data => {
     let t = data.memory || '';
     return t ? cleanOBText(t) : '';
