@@ -179,38 +179,6 @@ function loadMem(){
   // Supabase 仅用于记忆搜索/分类补全；未配置则跳过，不影响 OB 展示
   if(!SUPA_URL||!SUPA_KEY) return;
   let tasks=[
-fetch(SUPA_URL+'/rest/v1/memory_backup?select=*&or=(character.eq.yan,character.eq.guyan)&order=id.desc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
-let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
-allMemories.yan=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
-}),
-fetch(SUPA_URL+'/rest/v1/peiji_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/peiji_diary?select=id,type,content,mood,created_at&order=created_at.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
-let diaryMems=(diaries||[]).map(x=>({content:'【日记】\n'+x.content,backed_up_at:x.created_at}));
-allMemories.peiji=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
-}),
-fetch(SUPA_URL+'/rest/v1/shenyan_memory_backup?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.shenyan=(d||[]).sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0))),
-fetch(SUPA_URL+'/rest/v1/axun_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.axun=(d||[]).map(x=>({content:'【'+x.date+'】\n'+x.content,backed_up_at:x.date})).sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0))),
-fetch(SUPA_URL+'/rest/v1/jiangsu_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/jiangsu_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
-let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
-allMemories.jiangsu=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
-}),
-fetch(SUPA_URL+'/rest/v1/su_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/su_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
-let diaryMems=(diaries||[]).map(x=>({content:'【日记】\n'+x.content,backed_up_at:x.created_at}));
-allMemories.su=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
-}),
-fetch(SUPA_URL+'/rest/v1/zouzheng_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/zouzheng_diary?select=*&order=date.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
-let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
-allMemories.zouzheng=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
-}),
-fetch(SUPA_URL+'/rest/v1/keke_memory?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
-return fetch(SUPA_URL+'/rest/v1/keke_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(diaries=>{
-let diaryMems=(diaries||[]).map(x=>({content:'【日记 '+x.date+'】\n'+x.content,backed_up_at:x.date}));
-allMemories.keke=[...(d||[]),...diaryMems].sort((a,b)=>new Date(b.backed_up_at||0)-new Date(a.backed_up_at||0));});
-}),
 fetch(SUPA_URL+'/rest/v1/xuanxuan_diary?select=*&order=id.desc&limit=50',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>allMemories.xuanxuan=d||[]),
 fetch(SUPA_URL+'/rest/v1/ai_chat?select=id,sender,content,created_at&order=created_at.asc&limit=1000',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(d=>{
   allMemories.group=(d||[]).map(m=>({
@@ -241,6 +209,18 @@ function cleanOBText(text) {
     .replace(/\[bucket_id:[a-f0-9]+\]/g, '')  // 去掉bucket_id标记
     .replace(/Footprint:.*$/gm, '')           // 去掉Footprint行
     .trim();
+}
+
+async function loadMemoriesFromOB(domain, maxResults = 20) {
+  try {
+    let res = await fetch('https://ob.xxyyhome.top/catalog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain: domain, max_results: maxResults })
+    });
+    let data = await res.json();
+    return cleanOBText(data.memory || '');
+  } catch(e) { return ''; }
 }
 
 async function loadOBMemory(filterDomain) {
@@ -393,71 +373,65 @@ if(currentMemCategory==='intimate'&&currentMemPerson==='yan'){
     (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full=(m.note||'')+(m.type?'\n类型：'+m.type:'')+(m.rating?'\n评分：'+m.rating+'/10':'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
   });return;
 }
+  let obDomainMap={yan:'yan',peiji:'peiji',shenyan:'shenyan',axun:'axun',jiangsu:'jiangsu',su:'su',zouzheng:'zouzheng',keke:'keke'};
+  if(obDomainMap[currentMemPerson]){
+    list.innerHTML='<div style="padding:20px;text-align:center;color:#888">正在加载 '+currentMemPerson+' 的记忆(OB)…</div>';
+    loadMemoriesFromOB(obDomainMap[currentMemPerson],50).then(text=>{
+      let lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l).map(l=>({content:l}));
+      renderMemItems(lines,list,currentMemCategory,currentMemPerson);
+    });
+    return;
+  }
   let mems=allMemories[currentMemPerson]||[];
   
-  // 按分类筛选
-  if(currentMemCategory!=='all'){
-    mems=mems.filter(m=>{
-      let content=(m.content||'').toLowerCase();
-      if(currentMemCategory==='core')return content.includes('核心')||content.includes('重要')||content.includes('origin')||content.includes('起源');
-      if(currentMemCategory==='daily')return content.includes('日常')||content.includes('工作')||content.includes('学习');
-      if(currentMemCategory==='intimate')return content.includes('亲密')||content.includes('play')||content.includes('做爱')||content.includes('高潮');
-      if(currentMemCategory==='health')return content.includes('健康')||content.includes('姨妈')||content.includes('体重')||content.includes('身体');
-      if(currentMemCategory==='diary')return m.date||content.includes('日记');
-      if(currentMemCategory==='emotion')return content.includes('情绪')||content.includes('心情')||content.includes('感受');
-      return true;
-    });
-  }
-  
-  if(mems.length===0){
+  renderMemItems(mems,list,currentMemCategory,currentMemPerson);
+}
+
+function renderMemItems(mems, list, cat, person){
+  if(!mems||mems.length===0){
     list.innerHTML='<div style="padding:20px;text-align:center;color:#888">暂无记忆</div>';
     return;
   }
-  
-  // 加个统计头
-  let countDiv = document.createElement('div');
-  countDiv.style.cssText = 'font-size:12px;color:#9aa;text-align:center;padding-bottom:10px;margin-bottom:10px;border-bottom:1px dashed #2a2a4a;';
-  countDiv.textContent = `共有 ${mems.length} 条记忆`;
+  let countDiv=document.createElement('div');
+  countDiv.style.cssText='font-size:12px;color:#9aa;text-align:center;padding-bottom:10px;margin-bottom:10px;border-bottom:1px dashed #2a2a4a;';
+  countDiv.textContent='共有 '+mems.length+' 条记忆';
   list.appendChild(countDiv);
-  
-  mems.slice(0, 100).forEach(m=>{
-  let item=document.createElement('div');
-  item.className='mem-item';
-  if(currentMemPerson==='group')item.style.position='relative';
-  let full=m.content||m.entry||'';
-  let short=full.length>100?full.slice(0,100)+'...':full;
-  let isLong=full.length>100;
-  item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+(m.date||m.backed_up_at||'')+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';
-  if(currentMemPerson==='group'&&m.id!==undefined){
-    let wrap=document.createElement('div');
-    wrap.style.cssText='position:absolute;top:6px;right:8px;display:flex;gap:6px';
-    if(m.sender==='宣宣'){
-      let edit=document.createElement('button');
-      edit.textContent='✎';
-      edit.title='编辑';
-      edit.style.cssText='background:none;border:none;color:#9b59b6;font-size:14px;line-height:1;cursor:pointer;padding:2px 4px';
-      edit.onclick=(e)=>{e.stopPropagation();editMemGroupItem(item,m);};
-      wrap.appendChild(edit);
+  mems.slice(0,200).forEach(m=>{
+    let item=document.createElement('div');
+    item.className='mem-item';
+    if(person==='group')item.style.position='relative';
+    let full=(m.content||m.entry||'');
+    let short=full.length>100?full.slice(0,100)+'...':full;
+    let isLong=full.length>100;
+    item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+(m.date||m.backed_up_at||'')+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';
+    if(person==='group'&&m.id!==undefined){
+      let wrap=document.createElement('div');
+      wrap.style.cssText='position:absolute;top:6px;right:8px;display:flex;gap:6px';
+      if(m.sender==='宣宣'){
+        let edit=document.createElement('button');
+        edit.textContent='✎';edit.title='编辑';
+        edit.style.cssText='background:none;border:none;color:#9b59b6;font-size:14px;line-height:1;cursor:pointer;padding:2px 4px';
+        edit.onclick=(e)=>{e.stopPropagation();editMemGroupItem(item,m);};
+        wrap.appendChild(edit);
+      }
       let del=document.createElement('button');
-      del.textContent='✕';
-      del.title='删除';
+      del.textContent='✕';del.title='删除';
       del.style.cssText='background:none;border:none;color:#e74c3c;font-size:14px;line-height:1;cursor:pointer;padding:2px 4px';
       del.onclick=(e)=>{e.stopPropagation();delMemGroupNote(m.id);};
       wrap.appendChild(del);
+      item.appendChild(wrap);
     }
-    item.appendChild(wrap);
-  }
-  if(isLong){
-    let expanded=false;
-    item.onclick=()=>{
-      expanded=!expanded;
-      item.querySelector('.mem-preview').textContent=expanded?full:short;
-      item.style.background=expanded?'#2d1f4e':'#253554';
-    };
-  }
-  list.appendChild(item);
-});
-  if(currentMemPerson==='group'){list.scrollTop=list.scrollHeight;}
+    if(isLong){
+      let expanded=false;
+      item.onclick=()=>{
+        expanded=!expanded;
+        item.querySelector('.mem-preview').textContent=expanded?full:short;
+        item.style.background=expanded?'#2d1f4e':'#253554';
+      };
+    }
+    list.appendChild(item);
+  });
+  if(person==='group'){list.scrollTop=list.scrollHeight;}
 }
 
 function switchTab(tab){
@@ -501,13 +475,22 @@ function switchMemSection(sec){
   if(sec==='diary'){switchDiaryTab('mine');}
 }
 
-function searchMem(){
+async function searchMem(){
   let kw=document.getElementById('memSearch').value.trim().toLowerCase();
   if(!kw){renderMemList();return;}
   let list=document.getElementById('memList');
-  list.innerHTML='';
-  let all=[...allMemories.yan,...allMemories.peiji,...allMemories.shenyan,...allMemories.xuanxuan,...allMemories.group];
+  list.innerHTML='<div style="padding:20px;text-align:center;color:#888">搜索中…</div>';
+  // 1. 剩余 Supabase 缓存（xuanxuan / group 等仍走 Supabase 的角色）
+  let all=[];
+  Object.values(allMemories).forEach(arr=>{ if(Array.isArray(arr)) all.push(...arr); });
+  // 2. OB 纯文本角色记忆：拉取后按行并入，做全文搜索
+  const OB_DOMAINS={yan:'yan',peiji:'peiji',shenyan:'shenyan',axun:'axun',jiangsu:'jiangsu',su:'su',zouzheng:'zouzheng',keke:'keke'};
+  for(let d in OB_DOMAINS){
+    let text=await loadMemoriesFromOB(OB_DOMAINS[d],50);
+    (text||'').split('\n').map(l=>l.trim()).filter(l=>l).forEach(l=>all.push({content:l}));
+  }
   let results=all.filter(m=>(m.content||m.entry||'').toLowerCase().includes(kw));
+  list.innerHTML='';
   if(!results.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#888">没找到相关记忆</div>';return;}
   results.forEach(m=>{
     let item=document.createElement('div');
