@@ -244,30 +244,16 @@ function cleanOBText(text) {
 }
 
 async function loadOBMemory(filterDomain) {
-  let domains = ['yan', 'jiangsu', 'shared', 'tech', 'peiji', 'axun', 'su', 'zouzheng', 'keke', 'shenyan'];
-  
-  if (filterDomain) domains = [filterDomain];
-
-  let requests = domains.map(domain => {
-    let args = { max_results: 50 };
-    if(domain) {
-      args.domain = domain;
-      args.query = domain;
-    } else {
-      args.query = '记忆';
-    }
-    return fetch("https://ob.xxyyhome.top/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: args.query, domain: args.domain, max_results: args.max_results })
-    }).then(r => r.json()).then(data => {
-      let t = data.memory || '';
-      return t ? cleanOBText(t) : '';
-    }).catch(() => '');
-  });
-  
-  let results = await Promise.all(requests);
-  return results.filter(t => t).join('\n---\n');
+  // 记忆宫殿：调用 OB /catalog 接口加载记忆目录
+  // 全部记忆传 domain:''；按角色筛选传具体 domain
+  return fetch("https://ob.xxyyhome.top/catalog", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ domain: filterDomain || '', max_results: 50 })
+  }).then(r => r.json()).then(data => {
+    let t = data.memory || '';
+    return t ? cleanOBText(t) : '';
+  }).catch(() => '');
 }
 
 function showOBMemory(){

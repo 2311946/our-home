@@ -49,6 +49,9 @@ body.warm .tab-item.active{color:#d4764e}
 .msg.ai.zouzheng{background:linear-gradient(135deg,#2d1a3d,#1e0f2a)}
 .msg.ai.keke{background:linear-gradient(135deg,#3d2d1a,#2a1e0f)}
 .msg-time{font-size:10px;color:#74788c;margin-top:4px;opacity:0.85}
+#sendBtn:disabled{opacity:.45;cursor:not-allowed}
+.bubble-copy{position:absolute;top:5px;right:6px;z-index:6;background:rgba(0,0,0,0.4);border:none;color:#fff;font-size:12px;line-height:1;padding:3px 6px;border-radius:6px;cursor:pointer;opacity:.45;transition:opacity .15s;font-family:inherit}
+.bubble-copy:hover{opacity:1}
 .msg-menu{position:absolute;top:-38px;background:rgba(26,26,46,0.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.12);border-radius:10px;display:flex;gap:2px;padding:5px;z-index:99;flex-wrap:nowrap;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,0.45)}
 .msg-menu button{background:none;border:none;color:#fff;font-size:12px;padding:4px 8px;cursor:pointer;border-radius:4px;white-space:nowrap;flex:0 0 auto}
 .msg-menu button:hover{background:#444}

@@ -243,7 +243,7 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(roleColor)d.style.bord
       d.innerHTML=formatMsg(content);
     }
   }
-}if(m.thinking){let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button><button onclick="quoteMsg('+i+')">💬 引用</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';let timeText=m.time;if(m.model_name)timeText+=' · 🤖 '+m.model_name;if(m.in_tokens||m.out_tokens)timeText+=' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇';t.textContent=timeText;body.appendChild(t);}
+}if(m.role==='ai'){let cp=document.createElement('button');cp.className='bubble-copy';cp.textContent='📋';cp.title='复制';cp.onclick=(e)=>{e.stopPropagation();copyMsg(i);cp.textContent='✓';setTimeout(()=>{cp.textContent='📋';},1200);};d.appendChild(cp);}if(m.thinking){let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="copyMsg('+i+')">复制</button><button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button><button onclick="quoteMsg('+i+')">💬 引用</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';let timeText=m.time;if(m.model_name)timeText+=' · 🤖 '+m.model_name;if(m.in_tokens||m.out_tokens)timeText+=' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇';t.textContent=timeText;body.appendChild(t);}
 row.appendChild(av);row.appendChild(body);box.appendChild(row);});if(currentChar==='group'&&groupTypingChar){let ti=document.createElement('div');ti.id='typingIndicator';ti.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:left;padding:8px';ti.textContent='🤔 '+(charNames[groupTypingChar]||groupTypingChar)+' 正在输入...';box.appendChild(ti);}if(currentChar==='group'&&groupAmbient){let ai=document.createElement('div');ai.className='ambient-msg';ai.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:center;padding:4px';ai.textContent=groupAmbient;box.appendChild(ai);}box.scrollTop=box.scrollHeight;}
 
 function escapeHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -408,6 +408,7 @@ function handleKey(e){
 
 async function sendMsg(isRegen){
   let input=document.getElementById('input');
+  let sendBtn=document.getElementById('sendBtn');
   let text=input.value.trim();
   
   let quoteData=null;
@@ -428,6 +429,7 @@ async function sendMsg(isRegen){
     input.value='';
   }
   render();
+  if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='...';}
   let contextCount=parseInt(localStorage.getItem('ctx_count_'+currentChar)||localStorage.getItem('ctx_count'))||30;
   // 搜索相关记忆
   const memoryBlock = await searchMemory(text, currentChar, 5);
@@ -453,7 +455,7 @@ chats[currentChar].slice(-contextCount).forEach(m=>{
   }
 });chats[currentChar].push({role:'ai',content:'',time:nowTime()});render();try{let api = getApiForChar(currentChar);
   let useStream=localStorage.getItem('stream_'+currentChar)!=='false';
-  let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+api.key},body:JSON.stringify({model:api.model,messages:msgs,stream:useStream,stream_options:useStream?{include_usage:true}:undefined})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();return;}
+  let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+api.key},body:JSON.stringify({model:api.model,messages:msgs,stream:useStream,stream_options:useStream?{include_usage:true}:undefined})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='↑';}return;}
   if(!useStream){
     let j=await res.json();
     let lastMsg=chats[currentChar][chats[currentChar].length-1];
@@ -506,6 +508,7 @@ if(lastMsg.content.includes('<think>')){let thinkMatch=lastMsg.content.match(/<t
 localStorage.setItem('home_chats',JSON.stringify(chats));
 if(!isRegen)saveToCloud(currentChar,'user',text);
 setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking + (lastMsg.in_tokens?' <!--tokens:'+lastMsg.in_tokens+'/'+lastMsg.out_tokens+'-->':'') + (lastMsg.model_name?' <!--model:'+lastMsg.model_name+'-->':''));},500);
+  if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='↑';}
 }
 
 async function sendGroupMsg(text,quoteData){

@@ -1,4 +1,18 @@
-function nowTime(){return new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
+function fmtChatTime(d){
+  if(!d)return '';
+  let date=(d instanceof Date)?d:new Date(d);
+  if(isNaN(date.getTime()))return '';
+  let now=new Date();
+  let pad=n=>String(n).padStart(2,'0');
+  let hm=pad(date.getHours())+':'+pad(date.getMinutes());
+  let startToday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  let startYesterday=new Date(startToday.getTime()-86400000);
+  let startMsg=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+  if(startMsg.getTime()===startToday.getTime())return hm;
+  if(startMsg.getTime()===startYesterday.getTime())return '昨天 '+hm;
+  return (date.getMonth()+1)+'/'+date.getDate()+' '+hm;
+}
+function nowTime(){return fmtChatTime(new Date());}
 
 function aiNowTime(){
   return new Date().toLocaleString('zh-CN',{
