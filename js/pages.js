@@ -256,7 +256,7 @@ async function loadOBMemory(filterDomain) {
     } else {
       args.query = '记忆';
     }
-    return fetch("https://yanyan-ob.duckdns.org/search", {
+    return fetch("https://ob.xxyyhome.top/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query: args.query, domain: args.domain, max_results: args.max_results })

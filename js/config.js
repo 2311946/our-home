@@ -63,7 +63,7 @@ let c2=localStorage.getItem('home_chats');if(c2){chats=JSON.parse(c2);}chats.gro
 delete chats.yan;delete chats.peiji;delete chats.shenyan;let chatPreviews={};
 
 // PB URL extracted from index.html
-const PB_URL="https://yanyan-pb.duckdns.org";
+const PB_URL="https://pb.xxyyhome.top";
 
 // Extracted from all.js
 var chatOffset={};
