@@ -292,3 +292,6 @@ body.warm .tab-item.active{color:#d4764e}
 .code-copy-btn { background: none; border: 1px solid #555; color: #ccc; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
 .code-block pre { margin: 0; padding: 12px; overflow-x: auto; }
 .code-block code { color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 13px; white-space: pre; }
+
+/* 记忆宫殿内容分割线：独占一行的 --- 或 —— 渲染为此分隔线 */
+.memory-divider { border: none; border-top: 1px solid rgba(150,150,150,0.3); margin: 12px 0; }

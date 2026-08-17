@@ -271,7 +271,7 @@ function showOBMemory(){
       let card = document.createElement('div');
       card.className = 'mem-card';
       card.style.cssText = 'background:#1a1a2e;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #2a2a4a;white-space:pre-wrap;font-size:13px;line-height:1.6;color:#ddd;';
-      card.textContent = item.trim();
+      card.innerHTML = renderMemHtml(item.trim());
       list.appendChild(card);
     });
     if(list.children.length===0){
@@ -364,28 +364,30 @@ function renderMemList(){
   if(currentMemCategory==='diary'&&currentMemPerson==='yan'){
   fetch(SUPA_URL+'/rest/v1/yan_diary?select=date,weather,content&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
     list.innerHTML='';
-    (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full=m.content||'';let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
+    (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full=m.content||'';let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+renderMemHtml(short)+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').innerHTML=renderMemHtml(expanded?full:short);item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
   });return;
 }
 if(currentMemCategory==='emotion'&&currentMemPerson==='yan'){
   fetch(SUPA_URL+'/rest/v1/emotion_diary?select=date,mood,event,daddy_did&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
     list.innerHTML='';
-    (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full='心情：'+m.mood+'\n事件：'+m.event+(m.daddy_did?'\ndaddy做了：'+m.daddy_did:'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
+    (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full='心情：'+m.mood+'\n事件：'+m.event+(m.daddy_did?'\ndaddy做了：'+m.daddy_did:'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+renderMemHtml(short)+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').innerHTML=renderMemHtml(expanded?full:short);item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
   });return;
 }
 if(currentMemCategory==='intimate'&&currentMemPerson==='yan'){
   fetch(SUPA_URL+'/rest/v1/intimate_log?select=*&order=date.desc&limit=100',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(r=>r.json()).then(data=>{
     list.innerHTML='';
     if(!data||!data.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#888">暂无记录</div>';return;}
-    (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full=(m.note||'')+(m.type?'\n类型：'+m.type:'')+(m.rating?'\n评分：'+m.rating+'/10':'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').textContent=expanded?full:short;item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
+    (data||[]).forEach(m=>{let item=document.createElement('div');item.className='mem-item';let full=(m.note||'')+(m.type?'\n类型：'+m.type:'')+(m.rating?'\n评分：'+m.rating+'/10':'');let short=full.length>100?full.slice(0,100)+'...':full;item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+m.date+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+renderMemHtml(short)+'</div>';if(full.length>100){let expanded=false;item.onclick=()=>{expanded=!expanded;item.querySelector('.mem-preview').innerHTML=renderMemHtml(expanded?full:short);item.style.background=expanded?'#2d1f4e':'#253554';};}list.appendChild(item);});
   });return;
 }
   let obDomainMap={yan:'yan',peiji:'peiji',shenyan:'shenyan',axun:'axun',jiangsu:'jiangsu',su:'su',zouzheng:'zouzheng',keke:'keke'};
   if(obDomainMap[currentMemPerson]){
     list.innerHTML='<div style="padding:20px;text-align:center;color:#888">正在加载 '+currentMemPerson+' 的记忆(OB)…</div>';
     loadMemoriesFromOB(obDomainMap[currentMemPerson],50).then(text=>{
-      let lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l).map(l=>({content:l}));
-      renderMemItems(lines,list,currentMemCategory,currentMemPerson);
+      // 与全局记忆 showOBMemory 一致：按 📌 或 --- 拆成多条记忆条目，--- 作为条目分隔符被消费；
+      // 条目内部的 —— 由 renderMemHtml 渲染为分割线（renderMemItems 已接入 renderMemHtml）
+      let items=(text||'').split(/\n(?=📌)|(?<=\n)---\n/).filter(i=>i.trim()).map(i=>({content:i.trim()}));
+      renderMemItems(items,list,currentMemCategory,currentMemPerson);
     });
     return;
   }
@@ -410,7 +412,9 @@ function renderMemItems(mems, list, cat, person){
     let full=(m.content||m.entry||'');
     let short=full.length>100?full.slice(0,100)+'...':full;
     let isLong=full.length>100;
-    item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+(m.date||m.backed_up_at||'')+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';
+    let dateStr=m.date||m.backed_up_at||'';
+    let head=dateStr?'<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+dateStr+'</div>':'';
+    item.innerHTML=head+'<div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+renderMemHtml(short)+'</div>';
     if(person==='group'&&m.id!==undefined){
       let wrap=document.createElement('div');
       wrap.style.cssText='position:absolute;top:6px;right:8px;display:flex;gap:6px';
@@ -432,13 +436,21 @@ function renderMemItems(mems, list, cat, person){
       let expanded=false;
       item.onclick=()=>{
         expanded=!expanded;
-        item.querySelector('.mem-preview').textContent=expanded?full:short;
+        item.querySelector('.mem-preview').innerHTML=renderMemHtml(expanded?full:short);
         item.style.background=expanded?'#2d1f4e':'#253554';
       };
     }
     list.appendChild(item);
   });
   if(person==='group'){list.scrollTop=list.scrollHeight;}
+}
+
+// 记忆宫殿内容安全渲染：先转义 HTML（防 XSS/防误解析），再把独占一行的 --- / —— 替换为分割线
+function renderMemHtml(text){
+  if(!text)return '';
+  let esc=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // 独占一行的 ---(3+连字符) 或 ——(2+中文破折号)，前后允许空格；\r? 兼容 \r\n 换行
+  return esc.replace(/^[ \t]*(?:-{3,}|—{2,})[ \t]*\r?$/gm,'<hr class="memory-divider">');
 }
 
 function switchTab(tab){
@@ -505,12 +517,12 @@ async function searchMem(){
     let full=m.content||m.entry||'';
     let short=full.length>100?full.slice(0,100)+'...':full;
     let isLong=full.length>100;
-    item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+(m.date||m.backed_up_at||'')+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+short+'</div>';
+    item.innerHTML='<div style="font-size:12px;color:#9b59b6;margin-bottom:4px">'+(m.date||m.backed_up_at||'')+'</div><div class="mem-preview" style="font-size:14px;line-height:1.6;white-space:pre-wrap">'+renderMemHtml(short)+'</div>';
     if(isLong){
       let expanded=false;
       item.onclick=()=>{
         expanded=!expanded;
-        item.querySelector('.mem-preview').textContent=expanded?full:short;
+        item.querySelector('.mem-preview').innerHTML=renderMemHtml(expanded?full:short);
         item.style.background=expanded?'#2d1f4e':'#253554';
       };
     }
