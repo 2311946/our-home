@@ -192,31 +192,8 @@ let charClass=(m.role==='ai')?(isGroup?(m.character||''):(currentChar||'')):'';
 d.className='msg '+m.role+(charClass?' '+charClass:'');if(roleColor)d.style.borderLeft='3px solid '+roleColor;if(m.content&&m.content.startsWith('[img]')){let img=document.createElement('img');img.src=m.content.slice(5);img.style.cssText='max-width:200px;border-radius:12px;cursor:pointer';img.onclick=()=>{showImgPreview(img.src)};d.appendChild(img);}else{
   let content=m.content||'正在输入...';
   if(m.role==='ai'&&content.includes('```')){
-    let parts=content.split(/```[\s\S]*?```/);
-    let codes=content.match(/```[\s\S]*?```/g)||[];
-    let textPart=parts.join('').trim();
-    let codePart=codes.map(c=>c.replace(/```\w*\n?/g,'').replace(/```/g,'').trim()).join('\n');
-    d.textContent=textPart;
-    if(codePart){
-      let fold=document.createElement('div');
-      fold.style.cssText='margin-top:8px;padding:8px 12px;background:#1a1a2e;border-radius:8px;cursor:pointer;font-size:13px;color:#9b59b6';
-      fold.textContent='💭 '+((charKey==='yan')?'daddy在想什么...':((charNames[charKey]||'她')+'在想什么...'));
-      let codeDiv=document.createElement('div');
-      codeDiv.style.cssText='display:none;margin-top:6px;padding:10px;background:#1a1a2e;border-radius:8px;font-size:13px;color:#aaa;white-space:pre-wrap;line-height:1.5';
-      codeDiv.textContent=codePart;
-      fold.onclick=(e)=>{
-        e.stopPropagation();
-        if(codeDiv.style.display==='none'){
-          codeDiv.style.display='block';
-          fold.textContent='💭 收起';
-        }else{
-          codeDiv.style.display='none';
-          fold.textContent='💭 '+((charKey==='yan')?'daddy在想什么...':((charNames[charKey]||'她')+'在想什么...'));
-        }
-      };
-      d.appendChild(fold);
-      d.appendChild(codeDiv);
-    }
+    d.style.whiteSpace='pre-wrap';
+    renderRichContent(d, content, charKey);
   }else{
     if(m.quote){
       let quoteDiv=document.createElement('div');
@@ -247,6 +224,50 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(roleColor)d.style.bord
 row.appendChild(av);row.appendChild(body);box.appendChild(row);});if(currentChar==='group'&&groupTypingChar){let ti=document.createElement('div');ti.id='typingIndicator';ti.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:left;padding:8px';ti.textContent='🤔 '+(charNames[groupTypingChar]||groupTypingChar)+' 正在输入...';box.appendChild(ti);}if(currentChar==='group'&&groupAmbient){let ai=document.createElement('div');ai.className='ambient-msg';ai.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:center;padding:4px';ai.textContent=groupAmbient;box.appendChild(ai);}box.scrollTop=box.scrollHeight;}
 
 function copyMsg(i){navigator.clipboard.writeText(chats[currentChar][i].content);}
+
+// 渲染 AI 消息正文的三段结构（只改显示，不动发送/API/存储）：
+//   顶部 思考过程 → 由 m.thinking 字段单独渲染（💭 思考过程 details）
+//   中间 代码     → ```lang 带语言块渲染为代码块（输出代码），复制按钮按规格用 this.parentElement.nextElementSibling.textContent
+//   末尾 在想什么 → 裸 ``` 或无语言/thinking 块，保持原折叠行为（跟之前一样）
+function renderRichContent(d, content, charKey){
+  let re=/```(\w*)\n?([\s\S]*?)```/g;
+  let last=0, m;
+  while((m=re.exec(content))){
+    let text=content.slice(last,m.index);
+    if(text) d.appendChild(document.createTextNode(text));
+    last=re.lastIndex;
+    let lang=(m[1]||'').trim();
+    let code=m[2].replace(/\n$/,'');
+    if(lang && !/^(thinking|think|thought|thinkingprocess)$/i.test(lang)){
+      // 带语言（非 thinking）→ 渲染为代码块（消息正文里的代码输出）
+      let block=document.createElement('div');block.className='code-block';
+      let header=document.createElement('div');header.className='code-header';
+      let langSpan=document.createElement('span');langSpan.className='code-lang';langSpan.textContent=lang;
+      let btn=document.createElement('button');btn.className='code-copy-btn';btn.textContent='复制';
+      btn.setAttribute('onclick',"navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent)");
+      header.appendChild(langSpan);header.appendChild(btn);
+      let pre=document.createElement('pre');let codeEl=document.createElement('code');codeEl.textContent=code;pre.appendChild(codeEl);
+      block.appendChild(header);block.appendChild(pre);
+      d.appendChild(block);
+    }else{
+      // 无语言 / thinking → 保留原有的"在想什么"折叠
+      let fold=document.createElement('div');
+      fold.style.cssText='margin-top:8px;padding:8px 12px;background:#1a1a2e;border-radius:8px;cursor:pointer;font-size:13px;color:#9b59b6';
+      fold.textContent='💭 '+((charKey==='yan')?'daddy在想什么...':((charNames[charKey]||'她')+'在想什么...'));
+      let codeDiv=document.createElement('div');
+      codeDiv.style.cssText='display:none;margin-top:6px;padding:10px;background:#1a1a2e;border-radius:8px;font-size:13px;color:#aaa;white-space:pre-wrap;line-height:1.5';
+      codeDiv.textContent=code;
+      fold.onclick=(e)=>{
+        e.stopPropagation();
+        if(codeDiv.style.display==='none'){codeDiv.style.display='block';fold.textContent='💭 收起';}
+        else{codeDiv.style.display='none';fold.textContent='💭 '+((charKey==='yan')?'daddy在想什么...':((charNames[charKey]||'她')+'在想什么...'));}
+      };
+      d.appendChild(fold);d.appendChild(codeDiv);
+    }
+  }
+  let tail=content.slice(last);
+  if(tail) d.appendChild(document.createTextNode(tail));
+}
 
 function delMsg(i){let box=document.getElementById('chatBox');let prevScroll=box?box.scrollTop:0;let prevHeight=box?box.scrollHeight:0;let msg=chats[currentChar][i];if(msg&&msg.pb_id&&PB_URL){fetch(PB_URL+'/api/collections/chat_messages/records/'+msg.pb_id,{method:'DELETE'}).catch(()=>{});}chats[currentChar].splice(i,1);localStorage.setItem('home_chats',JSON.stringify(chats));render();if(box){box.scrollTop=Math.max(0,prevScroll-(prevHeight-box.scrollHeight));}}
 

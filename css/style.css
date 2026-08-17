@@ -285,3 +285,10 @@ body.warm .tab-item.active{color:#d4764e}
 .status-busy{color:#f39c12;background:rgba(243,156,18,0.15);}
 .status-sleep{color:#9b59b6;background:rgba(155,89,182,0.15);}
 .status-away{color:#95a5a6;background:rgba(149,165,166,0.15);}
+
+/* AI 消息代码块渲染 */
+.code-block { background: #1e1e1e; border-radius: 8px; margin: 8px 0; overflow: hidden; }
+.code-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #2d2d2d; color: #ccc; font-size: 12px; }
+.code-copy-btn { background: none; border: 1px solid #555; color: #ccc; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+.code-block pre { margin: 0; padding: 12px; overflow-x: auto; }
+.code-block code { color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 13px; white-space: pre; }
