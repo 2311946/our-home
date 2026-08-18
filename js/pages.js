@@ -1076,6 +1076,19 @@ async function renderMoments() {
   list.innerHTML = html;
 }
 
+// 朋友圈输入框自适应高度（2~5 行），纯展示行为，不涉及发送逻辑
+function autoGrow(el){
+  if(!el)return;
+  el.style.height='auto';
+  let cs=getComputedStyle(el);
+  let lh=parseFloat(cs.lineHeight)||21;
+  let pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+  let minH=lh*2+pad, maxH=lh*5+pad;
+  let target=el.scrollHeight;
+  el.style.height=Math.min(Math.max(target,minH),maxH)+'px';
+  el.style.overflowY=target>maxH?'auto':'hidden';
+}
+
 async function postMoment() {
   let input = document.getElementById('momentInput');
   let btn = document.getElementById('momentBtn');
@@ -1096,6 +1109,7 @@ async function postMoment() {
 
     // 2. 刷新动态列表
     input.value = '';
+    autoGrow(input);
     await renderMoments();
   } catch(e) {
     console.log('postMoment 失败', e);

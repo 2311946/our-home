@@ -100,6 +100,14 @@ body.warm .tab-item.active{color:#d4764e}
 .confetti-pop{position:fixed;top:50%;left:50%;pointer-events:none;z-index:9999;font-size:32px;animation:confetti 1.2s ease-out forwards}
 .msg-new{animation:slideIn 200ms ease-out}
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+/* 朋友圈发布动态输入区 */
+.moment-card{background:#16213e;border-radius:12px;padding:12px;margin-bottom:12px;border:1px solid rgba(155,89,182,0.12)}
+.moment-input{width:100%;background:#1b2747;border:1.5px solid #e0d4f5;border-radius:12px;padding:12px;color:#eee;font-size:14px;line-height:1.5;outline:none;resize:none;box-sizing:border-box;min-height:calc(1.5em*2 + 24px);max-height:calc(1.5em*5 + 24px);overflow-y:hidden;transition:border-color .15s;font-family:inherit}
+.moment-input::placeholder{color:#9b8bbd}
+.moment-input:focus{border-color:#9b59b6}
+.moment-send-btn{background:linear-gradient(135deg,#9b59b6,#8e44ad);border:none;color:#fff;border-radius:999px;padding:8px 22px;font-size:14px;cursor:pointer;transition:transform .1s,box-shadow .15s;box-shadow:0 4px 12px rgba(155,89,182,0.35)}
+.moment-send-btn:active{transform:scale(.96)}
+.moment-send-btn:disabled{opacity:.6;cursor:default;box-shadow:none}
 .msg-row.flash{animation:msgFlash 2s ease-out;border-radius:12px}
 @keyframes msgFlash{
   0%{background-color:rgba(241,196,15,.95)}
