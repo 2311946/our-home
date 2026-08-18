@@ -98,8 +98,8 @@ body.warm .tab-item.active{color:#d4764e}
 .mem-item:active{background:#2d1f4e}
 @keyframes confetti{0%{transform:translateY(0) scale(1) rotate(0);opacity:1}50%{transform:translateY(-40px) scale(1.5) rotate(180deg);opacity:1}100%{transform:translateY(-100px) scale(0.5) rotate(360deg);opacity:0}}
 .confetti-pop{position:fixed;top:50%;left:50%;pointer-events:none;z-index:9999;font-size:32px;animation:confetti 1.2s ease-out forwards}
-@keyframes msgIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-.msg-row.animate{animation:msgIn .38s cubic-bezier(.22,1,.36,1)}
+.msg-new{animation:slideIn 200ms ease-out}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .msg-row.flash{animation:msgFlash 2s ease-out;border-radius:12px}
 @keyframes msgFlash{
   0%{background-color:rgba(241,196,15,.95)}
