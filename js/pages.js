@@ -887,7 +887,7 @@ function getMoments() {
 async function renderMoments() {
   let list = document.getElementById('momentsList');
   if(!list) return;
-  // 一次性拉取所有动态（loadMoments 已按 created 倒序），前端按 type 分组
+  // 一次性拉取所有动态，前端按 type 分组，并按"最近活动"排序（有新评论的帖排上面）
   let all = await loadMoments(50);
   if(!all || all.length === 0) {
     list.innerHTML = '<div style="text-align:center;color:#888;padding:40px">还没有动态哦，快来发第一条吧！</div>';
@@ -930,6 +930,18 @@ async function renderMoments() {
       posts.push(m);
     }
   });
+
+  // 按"最近活动"排序：last_activity = max(主帖 created, 最新评论 created)，没评论就用主帖 created
+  posts.forEach(m => {
+    let t = new Date(m.created).getTime() || 0;
+    let cs = commentsByPost[m.id] || [];
+    cs.forEach(c => {
+      let ct = new Date(c.created).getTime() || 0;
+      if(ct > t) t = ct;
+    });
+    m.last_activity = t;
+  });
+  posts.sort((a, b) => (b.last_activity || 0) - (a.last_activity || 0));
 
   let html = '';
   posts.forEach(m => {

@@ -442,7 +442,10 @@ async function sendMsg(isRegen){
   // 构建system prompt（有人设用人设，没有则用空字符串）
   const basePrompt = prompts[currentChar] || '';
   const timeStr = '\n\n当前真实时间：' + aiNowTime();
-  const systemContent = basePrompt + timeStr + memoryInject;
+  // 朋友圈上下文：追加到 system prompt 末尾（为空则不追加）
+  const momentsCtx = await getMomentsContext(currentChar);
+  const momentsInject = momentsCtx ? '\n\n' + momentsCtx : '';
+  const systemContent = basePrompt + timeStr + memoryInject + momentsInject;
   if (systemContent.trim()) {
     msgs.push({role: 'system', content: systemContent});
   }

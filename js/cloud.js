@@ -243,3 +243,36 @@ let res = await fetch((api.url || 'https://youzi.today/v1') + '/chat/completions
     } catch(e) { console.log(char.name + '回复失败', e); }
   }
 }
+// 获取最近朋友圈动态作为聊天上下文
+async function getMomentsContext(characterId) {
+  try {
+    let res = await fetch(PB_URL + '/api/collections/moments/records?sort=-created&perPage=15');
+    let data = await res.json();
+    let items = data.items || [];
+    if (!items.length) return '';
+
+    let charNames = {
+      yan:'言言', peiji:'裴寂', axun:'裴洵', jiangsu:'江溯',
+      su:'溯', zouzheng:'邹峥', keke:'柯柯', shenyan:'沈晏', xuanxuan:'宣宣'
+    };
+
+    let lines = [];
+    let moments = items.filter(i => i.type === 'moment');
+    let comments = items.filter(i => i.type === 'comment');
+
+    for (let m of moments.slice(0, 5)) {
+      let name = charNames[m.character] || m.character;
+      let line = `${name}发了朋友圈："${m.content}"`;
+      // 找这条的评论
+      let cmts = comments.filter(c => c.triggered_by === m.id);
+      if (cmts.length) {
+        let cmtTexts = cmts.slice(0, 3).map(c => `${charNames[c.character]||c.character}评论：${c.content}`);
+        line += ' | ' + cmtTexts.join(' | ');
+      }
+      lines.push(line);
+    }
+
+    if (!lines.length) return '';
+    return `\n[最近朋友圈动态，你可以自然地提到这些]\n${lines.join('\n')}`;
+  } catch(e) { return ''; }
+}
