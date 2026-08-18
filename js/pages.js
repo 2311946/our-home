@@ -975,7 +975,6 @@ async function renderMoments() {
     return;
   }
 
-  let now = Date.now();
   let esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   // 角色头像/名称：优先 characters 数组，xuanxuan 回退到 avatarEmoji/charNames
   let emojiOf = id => {
@@ -989,16 +988,7 @@ async function renderMoments() {
     let c = characters.find(x => x.id === id);
     return c ? c.name : (id || '某人');
   };
-  let fmtTime = m => {
-    if(!m.created) return '';
-    let diff = Math.floor((now - new Date(m.created).getTime()) / 60000);
-    if(diff < 1) return '刚刚';
-    if(diff < 60) return diff + '分钟前';
-    if(diff < 1440) return Math.floor(diff/60) + '小时前';
-    let d = new Date(m.created);
-    let p = n => String(n).padStart(2,'0');
-    return p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
-  };
+  // 时间统一复用 utils.js 的 fmtChatTime（与聊天页时间戳逻辑一致：刚刚/分钟前/今天/昨天/MM-DD）
   // 个性签名（按角色 id 匹配）
   let signatures = {
     yan: '你是我的。',
@@ -1041,7 +1031,7 @@ async function renderMoments() {
     let emoji = emojiOf(m.character);
     let name = nameOf(m.character);
     let color = (characters.find(c => c.id === m.character) || {}).color || '#555';
-    let timeStr = fmtTime(m);
+    let timeStr = fmtChatTime(m.created);
 
     // 点赞：likes 字段是逗号分隔的角色 id 字符串
     let likesArr = (m.likes ? String(m.likes) : '').split(',').map(s => s.trim()).filter(Boolean);
@@ -1054,7 +1044,7 @@ async function renderMoments() {
     if(cs.length) {
       let items = cs.map(c => {
         let ce = emojiOf(c.character), cn = nameOf(c.character);
-        return `<div style="margin-bottom:6px;font-size:13px;line-height:1.5"><span style="margin-right:4px">${ce}</span><b style="color:#fff">${cn}</b>：<span style="color:#ccc">${esc(c.content)}</span></div>`;
+        return `<div style="margin-bottom:6px;font-size:13px;line-height:1.5"><span style="margin-right:4px">${ce}</span><b style="color:#fff">${cn}</b>：<span style="color:#ccc">${esc(c.content)}</span> <span style="color:#999;font-size:11px">${fmtChatTime(c.created)}</span></div>`;
       }).join('');
       commentHtml = `<div style="margin-top:8px;margin-left:4px;padding:8px 0 4px 10px;border-left:3px solid rgba(150,150,150,0.4)">${items}</div>`;
     }
@@ -1075,7 +1065,7 @@ async function renderMoments() {
             <div style="font-weight:bold;color:#fff;font-size:15px">${name}</div>
             ${signatures[m.character] ? `<div style="color:#999;font-size:12px;font-style:italic;margin-top:2px">${signatures[m.character]}</div>` : ''}
             <div style="color:#ddd;font-size:14px;margin-top:4px;line-height:1.6;white-space:pre-wrap">${esc(m.content)}</div>
-            <div style="color:#888;font-size:11px;margin-top:6px">${timeStr}</div>
+            <div style="color:#999;font-size:11px;margin-top:6px">${timeStr}</div>
             ${commentHtml}
             ${likeRow}
           </div>
