@@ -884,60 +884,49 @@ function getMoments() {
   return JSON.parse(localStorage.getItem('moments')||'[]');
 }
 
-function renderMoments() {
+async function renderMoments() {
   let list = document.getElementById('momentsList');
   if(!list) return;
-  let moments = getMoments();
-  if(moments.length === 0) {
+  // 从云端 PB 拉取动态列表（loadMoments 已按 created 倒序，最新的在最上面）
+  let moments = await loadMoments();
+  if(!moments || moments.length === 0) {
     list.innerHTML = '<div style="text-align:center;color:#888;padding:40px">还没有动态哦，快来发第一条吧！</div>';
     return;
   }
-  
-  let html = '';
-  moments.forEach((m, idx) => {
-    let charId = m.char_id || 'xuanxuan';
-    let name = charNames[charId] || charId;
-    let emoji = avatarEmoji[charId] || '👤';
-    let color = avatarColors[charId] || '#555';
-    let likesCount = m.likes ? m.likes.length : 0;
-    
-    // 点赞的人名列表
-    let likesText = '';
-    if (likesCount > 0) {
-      let likeNames = m.likes.map(id => charNames[id]||id).join(', ');
-      likesText = `<div style="background:rgba(255,255,255,0.05);padding:6px 12px;border-radius:6px;font-size:12px;color:#9b59b6;margin-top:8px">❤️ ${likeNames}</div>`;
-    }
 
-    // 评论区
-    let commentsHtml = '';
-    if (m.comments && m.comments.length > 0) {
-      let cItems = m.comments.map(c => `
-        <div style="margin-bottom:4px;font-size:13px">
-          <span style="color:#9b59b6;font-weight:bold">${charNames[c.from]||c.from}</span>: 
-          <span style="color:#eee">${c.text}</span>
-        </div>
-      `).join('');
-      commentsHtml = `<div style="background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:6px;margin-top:4px">${cItems}</div>`;
+  let now = Date.now();
+  // 简单转义，防内容里的 HTML 被误解析
+  let esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  let html = '';
+  moments.forEach(m => {
+    // 角色头像/名称/颜色：从 characters 数组按 character 字段匹配
+    let char = characters.find(c => c.id === (m.character||'')) || {};
+    let emoji = char.emoji || '👤';
+    let name = char.name || m.character || '某人';
+    let color = char.color || '#555';
+
+    // 发布时间格式化：x小时前 / MM-DD HH:mm
+    let timeStr = '';
+    if(m.created) {
+      let diff = Math.floor((now - new Date(m.created).getTime()) / 60000); // 距现在多少分钟
+      if(diff < 1) timeStr = '刚刚';
+      else if(diff < 60) timeStr = diff + '分钟前';
+      else if(diff < 1440) timeStr = Math.floor(diff/60) + '小时前';
+      else {
+        let d = new Date(m.created);
+        let p = n => String(n).padStart(2,'0');
+        timeStr = p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+      }
     }
 
     html += `
-      <div style="background:#16213e;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
-        <div style="display:flex;gap:12px">
-          <div style="width:44px;height:44px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0" onclick="openProfile('${charId}')">${emoji}</div>
-          <div style="flex:1">
-            <div style="display:flex;justify-content:space-between;align-items:baseline">
-              <div style="font-weight:bold;color:#fff;font-size:15px">${name}</div>
-              <div style="color:#666;font-size:11px">${m.time}</div>
-            </div>
-            <div style="color:#ddd;font-size:14px;margin-top:8px;line-height:1.6;white-space:pre-wrap">${m.content}</div>
-            
-            <div style="display:flex;gap:16px;margin-top:12px">
-              <span onclick="likeMoment(${idx})" style="color:#888;font-size:13px;cursor:pointer">❤️ 赞 ${likesCount>0?likesCount:''}</span>
-              <span onclick="commentMoment(${idx})" style="color:#888;font-size:13px;cursor:pointer">💬 评论</span>
-            </div>
-            ${likesText}
-            ${commentsHtml}
-          </div>
+      <div style="display:flex;gap:12px;background:#16213e;border-radius:12px;padding:12px;margin-bottom:12px">
+        <div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${emoji}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:bold;color:#fff;font-size:15px">${name}</div>
+          <div style="color:#ddd;font-size:14px;margin-top:4px;line-height:1.6;white-space:pre-wrap">${esc(m.content)}</div>
+          <div style="color:#888;font-size:11px;margin-top:6px">${timeStr}</div>
         </div>
       </div>
     `;
@@ -945,27 +934,45 @@ function renderMoments() {
   list.innerHTML = html;
 }
 
-function postMoment() {
+async function postMoment() {
   let input = document.getElementById('momentInput');
+  let btn = document.getElementById('momentBtn');
   let text = input.value.trim();
   if(!text) return;
-  
-  let moments = getMoments();
-  // 插入到最前面
-  moments.unshift({
-    id: Date.now().toString(),
-    char_id: 'xuanxuan', // 宣宣自己发
-    content: text,
-    time: new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'}),
-    likes: [],
-    comments: []
-  });
-  localStorage.setItem('moments', JSON.stringify(moments));
-  input.value = '';
-  
-  logActivity('xuanxuan', '发了朋友圈', text.length > 10 ? text.slice(0,10)+'...' : text);
-  renderMoments();
-  showToast('发布成功！');
+
+  // 发布期间按钮禁用 + 文案
+  btn.disabled = true;
+  let originText = btn.textContent;
+  btn.textContent = '角色们在回复中...';
+
+  try {
+    // 1. 写入 PB moments 表
+    let res = await fetch(PB_URL + '/api/collections/moments/records', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({character: 'xuanxuan', content: text, type: 'moment'})
+    });
+    let rec = await res.json();
+    let recordId = rec.id;
+
+    // 2. 触发角色评论（异步生成，写入 PB）
+    if(typeof triggerMomentReactions === 'function' && recordId) {
+      await triggerMomentReactions(text, recordId);
+    }
+
+    // 3. 评论生成完成后刷新动态列表
+    input.value = '';
+    logActivity('xuanxuan', '发了朋友圈', text.length > 10 ? text.slice(0,10)+'...' : text);
+    await renderMoments();
+    showToast('发布成功！');
+  } catch(e) {
+    console.log('postMoment 失败', e);
+    showToast('发布失败，请重试');
+  } finally {
+    // 5. 全部完成恢复按钮
+    btn.disabled = false;
+    btn.textContent = originText;
+  }
 }
 
 function likeMoment(idx) {

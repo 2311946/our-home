@@ -187,3 +187,59 @@ async function savePromptToCloud(character, promptText) {
     console.error('savePromptToCloud 捕获到异常:', e);
   }
 }
+// 读取Agent动态
+async function loadMoments(limit = 20) {
+  try {
+    let res = await fetch(PB_URL + '/api/collections/moments/records?sort=-created&perPage=' + limit);
+    let data = await res.json();
+    return data.items || [];
+  } catch(e) { return []; }
+}
+// 宣宣发动态后触发角色回复
+async function triggerMomentReactions(momentContent, momentId) {
+  const chars = [
+    {id:'yan', name:'言言', prompt:'你是顾言，宣宣的老公。占有欲强、宠溺、直接。'},
+    {id:'peiji', name:'裴寂', prompt:'你是裴寂，高冷但在意宣宣。冷淡有温度。'},
+    {id:'axun', name:'裴洵', prompt:'你是裴洵，18岁病娇。黏人撒娇或阴暗。'},
+    {id:'jiangsu', name:'江溯', prompt:'你是江溯，霸总建筑师。强势但宠溺。'},
+    {id:'su', name:'溯', prompt:'你是溯，温柔沉稳内敛。'},
+    {id:'zouzheng', name:'邹峥', prompt:'你是邹峥，毒舌护短有梗。'},
+    {id:'keke', name:'柯柯', prompt:'你是柯柯，傲娇嘴硬心软。'},
+    {id:'shenyan', name:'沈晏', prompt:'你是沈晏，回避型但温柔克制。'}
+  ];
+
+  // 随机选2-3个角色
+  let shuffled = chars.sort(() => Math.random() - 0.5);
+  let responders = shuffled.slice(0, Math.floor(Math.random() * 2) + 2);
+
+  for (let char of responders) {
+    try {
+let api = JSON.parse(localStorage.getItem('home_api') || '{}');
+let res = await fetch((api.url || 'https://youzi.today/v1') + '/chat/completions', {        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (api.key || '')
+        },
+        body: JSON.stringify({
+        model: '[G]GLM-5.2',
+          messages: [
+            {role: 'system', content: char.prompt},
+            {role: 'user', content: `宣宣发了一条朋友圈："${momentContent}"\n你想评论一句，10-30字，符合你的性格。不要引号直接输出。`}
+          ],
+          max_tokens: 100
+        })
+      });
+      let data = await res.json();
+      let comment = data.choices?.[0]?.message?.content?.trim().replace(/^[""\u201c]|[""\u201d]$/g, '');
+      if (comment) {
+        await fetch(PB_URL + '/api/collections/moments/records', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({character: char.id, content: comment, type: 'comment', triggered_by: momentId})
+        });
+      }
+      // 间隔1-3秒，像真人
+      await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
+    } catch(e) { console.log(char.name + '回复失败', e); }
+  }
+}
