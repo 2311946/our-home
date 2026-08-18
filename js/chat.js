@@ -172,8 +172,7 @@ function doSearch() {
       );
       let time = document.createElement('div');
       time.style.cssText = 'font-size:11px;color:#888;margin-top:4px';
-time.textContent = m.msg_time
-  ? new Date(m.msg_time).toLocaleString('zh-CN') : '';      body.appendChild(d);
+time.textContent = fmtChatTime(m.msg_time);      body.appendChild(d);
       body.appendChild(time);
       row.appendChild(av);
       row.appendChild(body);

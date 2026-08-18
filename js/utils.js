@@ -3,14 +3,17 @@ function fmtChatTime(d){
   let date=(d instanceof Date)?d:new Date(d);
   if(isNaN(date.getTime()))return '';
   let now=new Date();
+  let diffMin=Math.floor((now.getTime()-date.getTime())/60000);
+  if(diffMin<1)return '刚刚';
+  if(diffMin<60)return diffMin+'分钟前';
   let pad=n=>String(n).padStart(2,'0');
   let hm=pad(date.getHours())+':'+pad(date.getMinutes());
   let startToday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   let startYesterday=new Date(startToday.getTime()-86400000);
   let startMsg=new Date(date.getFullYear(),date.getMonth(),date.getDate());
-  if(startMsg.getTime()===startToday.getTime())return hm;
+  if(startMsg.getTime()===startToday.getTime())return '今天 '+hm;
   if(startMsg.getTime()===startYesterday.getTime())return '昨天 '+hm;
-  return (date.getMonth()+1)+'/'+date.getDate()+' '+hm;
+  return pad(date.getMonth()+1)+'-'+pad(date.getDate())+' '+hm;
 }
 function nowTime(){return fmtChatTime(new Date());}
 

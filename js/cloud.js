@@ -23,10 +23,10 @@ if(id==='group'){
     let gmm=gt.match(/<!--model:(.*?)-->/);
     if(gmm){gm=gmm[1];gt=gt.replace(gmm[0],'').trim();}
     if(m.model)gm=gm||m.model;
-    return {role:'ai',content:m.content,character:m.character.slice(6),thinking:gt,in_tokens:gin,out_tokens:gout,model_name:gm,time:fmtTime(m.msg_time),pb_id:m.id};
+    return {role:'ai',content:m.content,character:m.character.slice(6),thinking:gt,in_tokens:gin,out_tokens:gout,model_name:gm,time:fmtChatTime(m.msg_time),pb_id:m.id};
   }
     let charId=nameMap[m.role]||m.role;
-    if(charId==='user')return {role:'user',content:m.content,time:fmtTime(m.msg_time),pb_id:m.id};
+    if(charId==='user')return {role:'user',content:m.content,time:fmtChatTime(m.msg_time),pb_id:m.id};
    
             let thinking = m.thinking || '';
       let in_tokens = 0, out_tokens = 0, model_name = '';
@@ -43,7 +43,7 @@ if(id==='group'){
       }
       if(!model_name && m.model) model_name = m.model;
 
-   return {role:'ai',content:m.content,character:charId,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:fmtTime(m.msg_time),pb_id:m.id};
+   return {role:'ai',content:m.content,character:charId,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:fmtChatTime(m.msg_time),pb_id:m.id};
   });
   chatLoading=false;render();renderList();return;
 }let msgs=data.reverse().map(m=>{
@@ -62,7 +62,7 @@ if(id==='group'){
         thinking = thinking.replace(mm[0], '').trim();
       }
 
-      return {role:m.role,content:m.content,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:m.msg_time?new Date(m.msg_time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'',character:m.character,pb_id:m.id};
+      return {role:m.role,content:m.content,thinking:thinking,in_tokens:in_tokens,out_tokens:out_tokens,model_name:model_name,time:fmtChatTime(m.msg_time),character:m.character,pb_id:m.id};
   });
     if(loadMore){chats[id]=(msgs).concat(chats[id]||[]);}else{chats[id]=msgs;}
     chatOffset[id]=offset+data.length;
@@ -127,7 +127,7 @@ async function loadFromCloud(){
         let gt=m.thinking||'';
         let gmm=gt.match(/<!--model:(.*?)-->/);
         let gmodel=gmm?gmm[1]:(m.model||'');
-        cloud.group.push({role:'ai',content:m.content,character:c,time:fmtTime(m.msg_time),model_name:gmodel});
+        cloud.group.push({role:'ai',content:m.content,character:c,time:fmtChatTime(m.msg_time),model_name:gmodel});
       }else if(cloud[m.character]!==undefined){
         cloud[m.character].push({role:m.role,content:m.content,time:fmtTime(m.msg_time)});
       }
