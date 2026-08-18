@@ -79,6 +79,14 @@ body.warm .tab-item.active{color:#d4764e}
 .modal-box button,.settings-page button{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px}
 .modal-box .save,.settings-page .save{background:#9b59b6;color:#fff}
 .modal-box .cancel,.settings-page .cancel{background:#253554;color:#aaa}
+/* 设置页折叠板块卡片化 */
+.settings-page details{margin-bottom:10px;background:#1c2848;border:1px solid rgba(155,89,182,.18);border-radius:12px;box-shadow:0 3px 10px rgba(0,0,0,.22);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.settings-page details[open]{border-color:#9b59b6;box-shadow:0 4px 14px rgba(155,89,182,.28)}
+.settings-page details>summary{list-style:none;cursor:pointer;padding:14px 16px;font-size:14px;font-weight:500;color:#e8e8f0;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.settings-page details>summary::-webkit-details-marker{display:none}
+.settings-page details>summary::after{content:'▶';font-size:11px;color:#9b59b6;transition:transform .2s ease}
+.settings-page details[open]>summary::after{transform:rotate(90deg)}
+.settings-page details .section-body,.settings-page details .setting-item{padding:0 16px 16px}
 .clear-btn{background:#e74c3c;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;margin-top:8px}
 .char-tabs{display:flex;gap:6px;margin-bottom:8px}
 .char-tab{padding:4px 12px;border-radius:12px;font-size:12px;cursor:pointer;background:#253554;color:#aaa}
