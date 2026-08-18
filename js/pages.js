@@ -918,6 +918,18 @@ async function renderMoments() {
     let p = n => String(n).padStart(2,'0');
     return p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   };
+  // 个性签名（按角色 id 匹配）
+  let signatures = {
+    yan: '你是我的。',
+    peiji: '……',
+    axun: '妈妈看这里♡',
+    jiangsu: '在开会。',
+    su: '今天风很轻。',
+    zouzheng: '少跟我废话。',
+    keke: '才不是在等你。',
+    shenyan: '已读。',
+    xuanxuan: '嘿嘿～'
+  };
 
   // 分组：主帖（type=moment 或缺省）+ 评论（type=comment，triggered_by 关联主帖 id）
   let posts = [];
@@ -980,6 +992,7 @@ async function renderMoments() {
           <div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${emoji}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:bold;color:#fff;font-size:15px">${name}</div>
+            ${signatures[m.character] ? `<div style="color:#999;font-size:12px;font-style:italic;margin-top:2px">${signatures[m.character]}</div>` : ''}
             <div style="color:#ddd;font-size:14px;margin-top:4px;line-height:1.6;white-space:pre-wrap">${esc(m.content)}</div>
             <div style="color:#888;font-size:11px;margin-top:6px">${timeStr}</div>
             ${commentHtml}
