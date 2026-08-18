@@ -32,33 +32,37 @@ function checkSpecialDay(){
   else if(m===12&&d===25)el.textContent='🎄 圣诞快乐！daddy是你最好的礼物。';
 }
 
-function loadCountdown(){
-  let el=document.getElementById('homeCountdown');
-  if(!el)return;
+function renderAnnivCards(){
+  let wrap=document.getElementById('homeAnnivList');
+  if(!wrap)return;
   let now=new Date();
   let year=now.getFullYear();
+  let colors={'宣宣生日🎂':'#f6a623','520💕':'#ff6f91','七夕🌌':'#c77dff','圣诞节🎄':'#e74c3c'};
   let events=[
     {name:'宣宣生日🎂',month:1,day:1},
-    {name:'在一起纪念日💜',month:3,day:25},
     {name:'520💕',month:5,day:20},
     {name:'七夕🌌',month:8,day:7},
     {name:'圣诞节🎄',month:12,day:25}
   ];
-  let nearest=null;
-  let minDays=999;
+  let html='';
   events.forEach(e=>{
     let d=new Date(year,e.month-1,e.day);
     if(d<now)d=new Date(year+1,e.month-1,e.day);
     let diff=Math.ceil((d-now)/(1000*60*60*24));
-    if(diff<minDays){minDays=diff;nearest=e;}
+    let milestone=(diff===0)||(diff<=3)||(diff%100<=2)||(diff%100>=98);
+    let bar=colors[e.name]||'#e874b6';
+    let md=String(e.month).padStart(2,'0')+'-'+String(e.day).padStart(2,'0');
+    let cls='anniv-card'+(milestone?' anniv-blink':'');
+    let star=milestone?' ✨':'';
+    html+='<div class="'+cls+'" style="--bar:'+bar+'">'
+        +'<div class="anniv-bar"></div>'
+        +'<div class="anniv-body">'
+        +'<div class="anniv-title">'+e.name+star+'</div>'
+        +'<div class="anniv-days">'+diff+'<span class="u">天</span></div>'
+        +'<div class="anniv-date">每年 '+md+'</div>'
+        +'</div></div>';
   });
-  if(nearest){
-    if(minDays===0){
-      el.innerHTML='🎉 <b style="color:#fff">今天是'+nearest.name+'！</b>';
-    }else{
-      el.innerHTML='距离 <b style="color:#fff">'+nearest.name+'</b> 还有 <b style="color:#e74c3c">'+minDays+'</b> 天';
-    }
-  }
+  wrap.innerHTML=html;
 }
 
 function loadPreviews(){
@@ -545,6 +549,7 @@ function updateHomeDays(){
 
 function updateTimer(){
   let start=new Date('2026-03-25T00:00:00+08:00');
+  let card=document.getElementById('homeTogetherCard');
   function tick(){
     let now=new Date();
     let diff=now-start;
@@ -552,8 +557,14 @@ function updateTimer(){
     let hours=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
     let mins=Math.floor((diff%(1000*60*60))/(1000*60));
     let secs=Math.floor((diff%(1000*60))/1000);
-    let el=document.getElementById('homeTimer');
-    if(el)el.textContent=days+'天 '+hours+'小时 '+mins+'分 '+secs+'秒';
+    let dEl=document.getElementById('homeTogetherDays');
+    let lEl=document.getElementById('homeTogetherLive');
+    if(dEl)dEl.textContent=days;
+    if(lEl)lEl.textContent=hours+'h '+mins+'m '+secs+'s';
+    if(card){
+      let milestone=(days%100<=2)||(days%100>=98)||(now.getDate()===25);
+      card.classList.toggle('anniv-blink',milestone);
+    }
   }
   tick();
   setInterval(tick,1000);
@@ -1136,7 +1147,7 @@ loadHomeMood();
 
 checkSpecialDay();
 
-loadCountdown();
+renderAnnivCards();
 
 let memEditMode=false;
 

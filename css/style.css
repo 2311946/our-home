@@ -124,6 +124,27 @@ body.warm .tab-item.active{color:#d4764e}
 .home-card .days{font-size:48px;font-weight:700;color:#9b59b6;margin:8px 0}
 .home-card .label{font-size:14px;color:#aaa}
 .home-card .since{font-size:12px;color:#666;margin-top:4px}
+
+/* 计时 & 纪念日卡片（温馨暖色调） */
+.anniv-wrap{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.anniv-card{position:relative;display:flex;align-items:stretch;border-radius:12px;overflow:hidden;
+  background:linear-gradient(135deg,#fff3ea 0%,#ffe1ec 100%);
+  box-shadow:0 3px 10px rgba(232,116,182,.15)}
+.anniv-bar{width:5px;flex:0 0 5px;background:var(--bar,#e874b6)}
+.anniv-body{flex:1;padding:12px 14px}
+.anniv-title{font-size:13px;font-weight:600;color:#c2567f;margin-bottom:4px}
+.anniv-days{font-size:28px;font-weight:800;color:#e874b6;line-height:1.1}
+.anniv-days .u{font-size:13px;font-weight:600;color:#d99;margin-left:4px}
+.anniv-date{font-size:12px;color:#999;margin-top:3px}
+.anniv-blink{animation:annivBlink 1.1s ease-in-out infinite}
+@keyframes annivBlink{
+  0%,100%{box-shadow:0 3px 10px rgba(232,116,182,.15)}
+  50%{box-shadow:0 0 16px 2px rgba(255,193,77,.85)}
+}
+/* warm 主题下微调，保持暖色协调 */
+body.warm .anniv-card{background:linear-gradient(135deg,#fff0e6,#ffe0ee)}
+body.warm .anniv-title{color:#b5497a}
+body.warm .anniv-days{color:#d4608f}
 /* 打卡页样式 */
 .checkin-page{flex:1;overflow-y:auto;padding:16px;padding-bottom:70px}
 .checkin-card{background:#253554;border-radius:16px;padding:20px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}

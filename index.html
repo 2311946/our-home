@@ -36,14 +36,17 @@
 </div>
 
 <details open style="margin:0 12px">
-<summary style="font-size:13px;color:#888;padding:10px 0;cursor:pointer;border-bottom:1px solid #1a1a2e">💕 计时 & 纪念日</summary>
-<div class="home-card">
-<div class="label">⏱️ 在一起</div>
-<div id="homeTimer" style="font-size:16px;color:#9b59b6;margin-top:8px;font-weight:500">计算中...</div>
-</div>
-<div class="home-card" style="text-align:left">
-<div style="font-size:14px;color:#e74c3c;margin-bottom:8px">📅 下一个纪念日</div>
-<div id="homeCountdown" style="font-size:14px;color:#aaa">计算中...</div>
+<summary style="font-size:13px;color:#c98;padding:10px 0;cursor:pointer;border-bottom:1px solid #5d3f2e">💕 计时 & 纪念日</summary>
+<div class="anniv-wrap">
+  <div class="anniv-card" id="homeTogetherCard" style="--bar:#e874b6">
+    <div class="anniv-bar"></div>
+    <div class="anniv-body">
+      <div class="anniv-title">在一起 💜</div>
+      <div class="anniv-days"><span id="homeTogetherDays">0</span><span class="u">天</span></div>
+      <div class="anniv-date">2026-03-25 起 · 实时 <span id="homeTogetherLive">--</span></div>
+    </div>
+  </div>
+  <div id="homeAnnivList"></div>
 </div>
 </details>
 
