@@ -887,46 +887,92 @@ function getMoments() {
 async function renderMoments() {
   let list = document.getElementById('momentsList');
   if(!list) return;
-  // 从云端 PB 拉取动态列表（loadMoments 已按 created 倒序，最新的在最上面）
-  let moments = await loadMoments();
-  if(!moments || moments.length === 0) {
+  // 一次性拉取所有动态（loadMoments 已按 created 倒序），前端按 type 分组
+  let all = await loadMoments(50);
+  if(!all || all.length === 0) {
     list.innerHTML = '<div style="text-align:center;color:#888;padding:40px">还没有动态哦，快来发第一条吧！</div>';
     return;
   }
 
   let now = Date.now();
-  // 简单转义，防内容里的 HTML 被误解析
   let esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // 角色头像/名称：优先 characters 数组，xuanxuan 回退到 avatarEmoji/charNames
+  let emojiOf = id => {
+    let c = characters.find(x => x.id === id);
+    if(c) return c.emoji;
+    if(id === 'xuanxuan') return avatarEmoji.xuanxuan || '🐱';
+    return avatarEmoji[id] || '👤';
+  };
+  let nameOf = id => {
+    if(charNames[id]) return charNames[id];
+    let c = characters.find(x => x.id === id);
+    return c ? c.name : (id || '某人');
+  };
+  let fmtTime = m => {
+    if(!m.created) return '';
+    let diff = Math.floor((now - new Date(m.created).getTime()) / 60000);
+    if(diff < 1) return '刚刚';
+    if(diff < 60) return diff + '分钟前';
+    if(diff < 1440) return Math.floor(diff/60) + '小时前';
+    let d = new Date(m.created);
+    let p = n => String(n).padStart(2,'0');
+    return p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  };
+
+  // 分组：主帖（type=moment 或缺省）+ 评论（type=comment，triggered_by 关联主帖 id）
+  let posts = [];
+  let commentsByPost = {};
+  all.forEach(m => {
+    if(m.type === 'comment') {
+      let pid = m.triggered_by;
+      if(pid) (commentsByPost[pid] = commentsByPost[pid] || []).push(m);
+    } else {
+      posts.push(m);
+    }
+  });
 
   let html = '';
-  moments.forEach(m => {
-    // 角色头像/名称/颜色：从 characters 数组按 character 字段匹配
-    let char = characters.find(c => c.id === (m.character||'')) || {};
-    let emoji = char.emoji || '👤';
-    let name = char.name || m.character || '某人';
-    let color = char.color || '#555';
+  posts.forEach(m => {
+    let emoji = emojiOf(m.character);
+    let name = nameOf(m.character);
+    let color = (characters.find(c => c.id === m.character) || {}).color || '#555';
+    let timeStr = fmtTime(m);
 
-    // 发布时间格式化：x小时前 / MM-DD HH:mm
-    let timeStr = '';
-    if(m.created) {
-      let diff = Math.floor((now - new Date(m.created).getTime()) / 60000); // 距现在多少分钟
-      if(diff < 1) timeStr = '刚刚';
-      else if(diff < 60) timeStr = diff + '分钟前';
-      else if(diff < 1440) timeStr = Math.floor(diff/60) + '小时前';
-      else {
-        let d = new Date(m.created);
-        let p = n => String(n).padStart(2,'0');
-        timeStr = p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
-      }
+    // 点赞：likes 字段是逗号分隔的角色 id 字符串
+    let likesArr = (m.likes ? String(m.likes) : '').split(',').map(s => s.trim()).filter(Boolean);
+    let liked = likesArr.indexOf('xuanxuan') > -1;
+    let likeEmojis = likesArr.map(id => emojiOf(id)).join(' ');
+
+    // 嵌套评论：缩进 + 左侧灰色竖线 + 字体小一号，按时间正序
+    let cs = (commentsByPost[m.id] || []).slice().sort((a,b) => new Date(a.created) - new Date(b.created));
+    let commentHtml = '';
+    if(cs.length) {
+      let items = cs.map(c => {
+        let ce = emojiOf(c.character), cn = nameOf(c.character);
+        return `<div style="margin-bottom:6px;font-size:13px;line-height:1.5"><span style="margin-right:4px">${ce}</span><b style="color:#fff">${cn}</b>：<span style="color:#ccc">${esc(c.content)}</span></div>`;
+      }).join('');
+      commentHtml = `<div style="margin-top:8px;margin-left:4px;padding:8px 0 4px 10px;border-left:3px solid rgba(150,150,150,0.4)">${items}</div>`;
     }
 
+    // 点赞按钮：已点赞红色，显示点赞数与点赞角色 emoji
+    let likeRow = `
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+        <span onclick="likeMoment('${m.id}')" style="cursor:pointer;font-size:15px;color:${liked ? '#e74c3c' : '#888'}">❤️</span>
+        ${likesArr.length ? `<span style="color:#888;font-size:12px">${likesArr.length}</span>` : ''}
+        ${likeEmojis ? `<span style="font-size:13px;letter-spacing:2px">${likeEmojis}</span>` : ''}
+      </div>`;
+
     html += `
-      <div style="display:flex;gap:12px;background:#16213e;border-radius:12px;padding:12px;margin-bottom:12px">
-        <div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${emoji}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:bold;color:#fff;font-size:15px">${name}</div>
-          <div style="color:#ddd;font-size:14px;margin-top:4px;line-height:1.6;white-space:pre-wrap">${esc(m.content)}</div>
-          <div style="color:#888;font-size:11px;margin-top:6px">${timeStr}</div>
+      <div style="background:#16213e;border-radius:12px;padding:12px;margin-bottom:12px">
+        <div style="display:flex;gap:12px">
+          <div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:bold;color:#fff;font-size:15px">${name}</div>
+            <div style="color:#ddd;font-size:14px;margin-top:4px;line-height:1.6;white-space:pre-wrap">${esc(m.content)}</div>
+            <div style="color:#888;font-size:11px;margin-top:6px">${timeStr}</div>
+            ${commentHtml}
+            ${likeRow}
+          </div>
         </div>
       </div>
     `;
@@ -962,21 +1008,26 @@ async function postMoment() {
   }
 }
 
-function likeMoment(idx) {
-  let moments = getMoments();
-  let m = moments[idx];
-  if(!m.likes) m.likes = [];
-  // 简单模拟：每次点赞，宣宣的名字加入（如果已有点赞则取消）
-  let myId = 'xuanxuan';
-  let i = m.likes.indexOf(myId);
-  if(i > -1) {
-    m.likes.splice(i, 1);
-  } else {
-    m.likes.push(myId);
-    logActivity('xuanxuan', '赞了', (charNames[m.char_id]||m.char_id) + ' 的朋友圈');
+async function likeMoment(id) {
+  if(!id) return;
+  try {
+    // 读取当前记录，取 likes 字段（逗号分隔的角色 id 字符串）
+    let rec = await (await fetch(PB_URL + '/api/collections/moments/records/' + id)).json();
+    let likes = (rec.likes ? String(rec.likes) : '').split(',').map(s => s.trim()).filter(Boolean);
+    // 宣宣点赞切换：已赞则取消，未赞则追加
+    let i = likes.indexOf('xuanxuan');
+    if(i > -1) likes.splice(i, 1);
+    else likes.push('xuanxuan');
+    // PATCH 更新 PB 记录的 likes 字段
+    await fetch(PB_URL + '/api/collections/moments/records/' + id, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({likes: likes.join(',')})
+    });
+  } catch(e) {
+    console.log('likeMoment 失败', e);
   }
-  localStorage.setItem('moments', JSON.stringify(moments));
-  renderMoments();
+  await renderMoments();
 }
 
 function commentMoment(idx) {
