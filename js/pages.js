@@ -940,38 +940,25 @@ async function postMoment() {
   let text = input.value.trim();
   if(!text) return;
 
-  // 发布期间按钮禁用 + 文案
+  // 异步期间禁用按钮，防止重复发布
   btn.disabled = true;
-  let originText = btn.textContent;
-  btn.textContent = '角色们在回复中...';
 
   try {
-    // 1. 写入 PB moments 表
+    // 1. 保存到 PB moments 表
     let res = await fetch(PB_URL + '/api/collections/moments/records', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({character: 'xuanxuan', content: text, type: 'moment'})
     });
-    let rec = await res.json();
-    let recordId = rec.id;
+    await res.json();
 
-    // 2. 触发角色评论（异步生成，写入 PB）
-    if(typeof triggerMomentReactions === 'function' && recordId) {
-      await triggerMomentReactions(text, recordId);
-    }
-
-    // 3. 评论生成完成后刷新动态列表
+    // 2. 刷新动态列表
     input.value = '';
-    logActivity('xuanxuan', '发了朋友圈', text.length > 10 ? text.slice(0,10)+'...' : text);
     await renderMoments();
-    showToast('发布成功！');
   } catch(e) {
     console.log('postMoment 失败', e);
-    showToast('发布失败，请重试');
   } finally {
-    // 5. 全部完成恢复按钮
     btn.disabled = false;
-    btn.textContent = originText;
   }
 }
 
