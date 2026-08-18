@@ -925,7 +925,29 @@ function endCall() {
 
 function updateChatModelLabel(){let el=document.getElementById('chatModel');if(!el)return;let preset=localStorage.getItem('preset_'+currentChar);let model=localStorage.getItem('model_'+currentChar);let parts=[];if(preset)parts.push(preset);if(model)parts.push(model);el.textContent=parts.length?parts.join(' · '):'未设置';}
 
-function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';updateChatModelLabel();document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
+// 聊天页顶部状态行：在线绿点 / 最近发朋友圈时间
+async function updateChatStatus(){
+  let el=document.getElementById('chatStatus');
+  if(!el)return;
+  let dot='<span class="online-dot"></span>';
+  let id=currentChar;
+  if(!id||id==='group'){el.innerHTML=dot+'在线';return;}
+  try{
+    let all=await loadMoments(50);
+    let mine=(all||[]).filter(m=>m.character===id).sort((a,b)=>new Date(b.created)-new Date(a.created));
+    if(mine.length){
+      let diffMin=Math.floor((Date.now()-new Date(mine[0].created).getTime())/60000);
+      if(diffMin>=0&&diffMin<1440){
+        let rel=diffMin<1?'刚刚':(diffMin<60?diffMin+'分钟前':Math.floor(diffMin/60)+'小时前');
+        el.innerHTML=dot+rel+'发了朋友圈';
+        return;
+      }
+    }
+  }catch(e){}
+  el.innerHTML=dot+'在线';
+}
+
+function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';updateChatModelLabel();updateChatStatus();document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
 // @选人弹窗
 function initAtPicker(){
   let input=document.getElementById('input');
