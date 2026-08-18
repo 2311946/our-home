@@ -133,11 +133,15 @@ async function loadFromCloud(){
       }
     });
     // 取多的那个版本
+    let _u=getUnread();let _changed=false;
     for(let key in cloud){
-      if(cloud[key].length>(chats[key]||[]).length){
+      let _old=(chats[key]||[]).length;
+      if(cloud[key].length>_old){
         chats[key]=cloud[key];
+        if(key!==currentChar){_u[key]=true;_changed=true;}
       }
     }
+    if(_changed)setUnread(_u);
     localStorage.setItem('home_chats',JSON.stringify(chats));
   }catch(e){}
 }

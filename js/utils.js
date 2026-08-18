@@ -16,6 +16,8 @@ function fmtChatTime(d){
   return pad(date.getMonth()+1)+'-'+pad(date.getDate())+' '+hm;
 }
 function nowTime(){return fmtChatTime(new Date());}
+function getUnread(){try{return JSON.parse(localStorage.getItem('ourhome_unread')||'{}')}catch(e){return{}}}
+function setUnread(o){try{localStorage.setItem('ourhome_unread',JSON.stringify(o||{}))}catch(e){}}
 
 function aiNowTime(){
   return new Date().toLocaleString('zh-CN',{

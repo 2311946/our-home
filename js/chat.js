@@ -965,7 +965,7 @@ async function updateChatStatus(){
   el.innerHTML=dot+'在线';
 }
 
-function enterChat(id){currentChar=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';updateChatModelLabel();updateChatStatus();document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
+function enterChat(id){currentChar=id;let _u=getUnread();_u[id]=false;setUnread(_u);document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';updateChatModelLabel();updateChatStatus();document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
 // @选人弹窗
 function initAtPicker(){
   let input=document.getElementById('input');
