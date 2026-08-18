@@ -204,7 +204,7 @@ function cleanOBText(text) {
     .filter(line => !line.match(/^\[OBM2/))  // 去掉[OBM2...]行
     .filter(line => !line.match(/^h=/))       // 去掉h=hash行
     .filter(line => !line.match(/^\[权重:/))   // 去掉[权重:]行
-    .filter(line => !line.match(/^token 预算不足/)) // 去掉预算不足提示
+    .filter(line => !line.match(/token 预算不足/))
     .join('\n')
     .replace(/\[bucket_id:[a-f0-9]+\]/g, '')  // 去掉bucket_id标记
     .replace(/Footprint:.*$/gm, '')           // 去掉Footprint行
@@ -214,7 +214,7 @@ function cleanOBText(text) {
 async function loadMemoriesFromOB(domain, maxResults = 20) {
   try {
     // OB /catalog 会忽略 domain（实测返回全部），/search 才支持按角色筛选
-    let args = { max_results: maxResults };
+let args = { max_results: maxResults, max_tokens: 30000 };
     if (domain) { args.domain = domain; args.query = domain; }
     else { args.query = '记忆'; }
     let res = await fetch('https://ob.xxyyhome.top/search', {
@@ -230,7 +230,7 @@ async function loadMemoriesFromOB(domain, maxResults = 20) {
 async function loadOBMemory(filterDomain) {
   // 记忆宫殿：OB /search 支持 domain 筛选（/catalog 实测忽略 domain，返回全部）
   // 全部记忆传 query:'记忆'；按角色筛选传 domain+query
-  let args = { max_results: 50 };
+let args = { max_results: 50, max_tokens: 30000 };
   if (filterDomain) { args.domain = filterDomain; args.query = filterDomain; }
   else { args.query = '记忆'; }
   return fetch("https://ob.xxyyhome.top/search", {
