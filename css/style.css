@@ -190,6 +190,14 @@ body.warm .mood-cell.has-mood{background:#5d3f2e}
 body.warm .mood-cell.today{border-color:#d4764e;box-shadow:0 0 0 1px #d4764e}
 body.warm .mood-arrow{background:#4d3525}
 body.warm .mood-emo{background:#4d3525}
+/* 健康管理功能卡片（与主页纪念日卡片风格一致） */
+.checkin-card{position:relative;border-radius:12px;overflow:hidden;
+  background:linear-gradient(135deg,#fff3ea 0%,#ffe1ec 100%);
+  box-shadow:0 3px 10px rgba(232,116,182,.15);
+  padding:16px 16px 16px 20px;margin-bottom:12px;text-align:left}
+.checkin-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--bar,#e874b6)}
+.checkin-card>div[id]{color:#8a6a72}
+body.warm .checkin-card{background:linear-gradient(135deg,#fff0e6,#ffe0ee)}
 /* 打卡页样式 */
 .checkin-page{flex:1;overflow-y:auto;padding:16px;padding-bottom:70px}
 .checkin-card{background:#253554;border-radius:16px;padding:20px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}

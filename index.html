@@ -118,18 +118,18 @@
 <h2>✅ 健康管理</h2>
 </div>
 <div class="checkin-page" id="checkinPage">
-<div class="home-card" style="text-align:left">
+<div class="checkin-card" style="--bar:#e874b6;text-align:left">
 <div style="font-size:14px;color:#9b59b6;margin-bottom:8px">⚖️ 体重记录</div>
-<div id="weightDisplay" style="font-size:14px;color:#aaa">加载中...</div>
+<div id="weightDisplay" style="font-size:14px;color:#8a6a72">加载中...</div>
 <canvas id="weightChart" width="320" height="120" style="width:100%;margin-top:10px;display:none"></canvas>
 <div style="display:flex;gap:8px;margin-top:10px">
 <input id="weightInput" type="number" step="0.1" placeholder="今日体重(kg)" style="flex:1;background:#253554;border:1px solid #0f3460;border-radius:8px;padding:8px;color:#eee;font-size:14px;outline:none">
 <button onclick="saveWeight()" style="background:#9b59b6;border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer">记录</button>
 </div>
 </div>
-<div class="home-card" style="text-align:left">
+<div class="checkin-card" style="--bar:#e74c3c;text-align:left">
 <div style="font-size:14px;color:#e74c3c;margin-bottom:8px">🩸 姨妈记录</div>
-<div id="periodDisplay" style="font-size:14px;color:#aaa">加载中...</div>
+<div id="periodDisplay" style="font-size:14px;color:#8a6a72">加载中...</div>
 <div style="display:flex;gap:8px;margin-top:10px">
 <button onclick="markPeriodStart()" style="flex:1;background:#e74c3c;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">姨妈来了</button>
 <button onclick="markPeriodEnd()" style="flex:1;background:#27ae60;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">姨妈走了</button>
@@ -137,24 +137,24 @@
 </div>
 <div id="periodHistory" style="margin-top:12px"></div>
 <button onclick="loadPeriodHistory()" style="width:100%;background:#253554;border:1px solid #0f3460;color:#aaa;border-radius:8px;padding:8px;font-size:13px;cursor:pointer;margin-top:8px">查看/编辑姨妈记录 📝</button>
-<div class="home-card" style="text-align:left">
+<div class="checkin-card" style="--bar:#3498db;text-align:left">
 <div style="font-size:14px;color:#3498db;margin-bottom:8px">💧 今日喝水</div>
-<div id="waterDisplay" style="font-size:14px;color:#aaa">加载中...</div>
+<div id="waterDisplay" style="font-size:14px;color:#8a6a72">加载中...</div>
 <div style="margin-top:10px">
 <button onclick="addWater()" style="width:100%;background:#3498db;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">喝了一杯 +1 💧</button>
 </div>
 </div>
-<div class="home-card" style="text-align:left">
-<div style="font-size:14px;color:#27ae60;margin-bottom:8px">🚶‍♀️ 运动/散步</div>
-<div id="exerciseDisplay" style="font-size:14px;color:#aaa">今天还没运动</div>
+<div class="checkin-card" style="--bar:#27ae60;text-align:left">
+<div style="font-size:14px;color:#27ae60;margin-bottom:8px">🏃 运动/散步</div>
+<div id="exerciseDisplay" style="font-size:14px;color:#8a6a72">今天还没运动</div>
 <div style="display:flex;gap:8px;margin-top:10px">
 <button onclick="markExercise('散步30分钟')" style="flex:1;background:#27ae60;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">散步 🚶‍♀️</button>
 <button onclick="markExercise('逛街')" style="flex:1;background:#27ae60;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">逛街 🛍️</button>
 </div>
 </div>
-<div class="home-card" style="text-align:left">
+<div class="checkin-card" style="--bar:#9c6b3f;text-align:left">
 <div style="font-size:14px;color:#f39c12;margin-bottom:8px">💩 拉粑粑</div>
-<div id="poopDisplay" style="font-size:14px;color:#aaa">今天还没拉</div>
+<div id="poopDisplay" style="font-size:14px;color:#8a6a72">今天还没拉</div>
 <div style="margin-top:10px">
 <button onclick="markPoop()" style="width:100%;background:#f39c12;border:none;color:#fff;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">拉了！💩</button>
 </div>
