@@ -618,6 +618,76 @@ function loadCheckins(){
   loadPeriod();
   loadWater();
   loadPoop();
+  renderMoodCal();
+}
+
+/* 心情日历（localStorage 键 mood_calendar，格式 {"2026-08-18":"🥰",...}） */
+let moodYear=new Date().getFullYear();
+let moodMonth=new Date().getMonth();
+let moodSelKey=null;
+const MOOD_EMOJIS=['😊','😐','😢','😡','🥰','😴','🤩'];
+const MOOD_LABELS={'😊':'开心','😐':'平静','😢':'难过','😡':'生气','🥰':'恩爱','😴':'困倦','🤩':'兴奋'};
+function moodKey(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+function getMoodData(){try{return JSON.parse(localStorage.getItem('mood_calendar')||'{}');}catch(e){return {};}}
+function saveMoodData(d){localStorage.setItem('mood_calendar',JSON.stringify(d));}
+function renderMoodCal(){
+  let grid=document.getElementById('moodCalGrid');
+  let title=document.getElementById('moodCalTitle');
+  if(!grid)return;
+  let y=moodYear,m=moodMonth;
+  title.textContent=y+'-'+String(m+1).padStart(2,'0');
+  let first=new Date(y,m,1);
+  let startDay=(first.getDay()+6)%7;
+  let daysInMonth=new Date(y,m+1,0).getDate();
+  let data=getMoodData();
+  let today=new Date();
+  let html='';
+  for(let i=0;i<startDay;i++)html+='<div class="mood-cell empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    let key=moodKey(y,m,d);
+    let emo=data[key]||'';
+    let isToday=(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d);
+    let cls='mood-cell'+(emo?' has-mood':'')+(isToday?' today':'');
+    html+='<div class="'+cls+'" data-key="'+key+'" onclick="moodPickDay(\''+key+'\')">'+emo+'</div>';
+  }
+  grid.innerHTML=html;
+  renderMoodPick();
+  renderMoodStat();
+}
+function moodPrevMonth(){moodMonth--;if(moodMonth<0){moodMonth=11;moodYear--;}renderMoodCal();}
+function moodNextMonth(){moodMonth++;if(moodMonth>11){moodMonth=0;moodYear++;}renderMoodCal();}
+function moodPickDay(key){moodSelKey=key;renderMoodPick();}
+function renderMoodPick(){
+  let wrap=document.getElementById('moodCalPick');
+  if(!wrap)return;
+  let head=moodSelKey?('为 '+moodSelKey+' 选心情：'):'点击下方日期，记录那一天的心情';
+  let html='<div class="mood-pick-head">'+head+'</div><div class="mood-pick-row">';
+  MOOD_EMOJIS.forEach(e=>{html+='<span class="mood-emo" onclick="moodSet(\''+e+'\')">'+e+'</span>';});
+  html+='</div>';
+  wrap.innerHTML=html;
+}
+function moodSet(emo){
+  if(!moodSelKey)return;
+  let data=getMoodData();
+  if(data[moodSelKey]===emo)delete data[moodSelKey];
+  else data[moodSelKey]=emo;
+  saveMoodData(data);
+  renderMoodCal();
+}
+function renderMoodStat(){
+  let el=document.getElementById('moodCalStat');
+  if(!el)return;
+  let data=getMoodData();
+  let y=moodYear,m=moodMonth;
+  let prefix=y+'-'+String(m+1).padStart(2,'0');
+  let count={};let total=0;
+  Object.keys(data).forEach(k=>{
+    if(k.indexOf(prefix)===0){count[data[k]]=(count[data[k]]||0)+1;total++;}
+  });
+  if(total===0){el.textContent='本月还没有心情记录～';return;}
+  let parts=[];
+  Object.keys(count).forEach(e=>{parts.push((MOOD_LABELS[e]||e)+' '+Math.round(count[e]/total*100)+'%');});
+  el.textContent=parts.join('  ');
 }
 
 async function loadWeight(){
