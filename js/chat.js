@@ -611,6 +611,16 @@ chats[currentChar].slice(-contextCount).forEach(m=>{
   }
 });render();try{let api = getApiForChar(currentChar);
   let useStream=localStorage.getItem('stream_'+currentChar)!=='false';
+  // 先试工具调用
+  let toolResult = await handleToolCalls(api, [...msgs]);
+  if(toolResult) {
+    chats[currentChar][chats[currentChar].length-1].content = toolResult;
+    chats[currentChar][chats[currentChar].length-1].time = new Date().toLocaleString();
+    localStorage.setItem('home_chats', JSON.stringify(chats));
+    saveToCloud(currentChar, 'ai', toolResult);
+    render();
+    return;
+  }
   let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+api.key},body:JSON.stringify({model:api.model,messages:msgs,stream:useStream,stream_options:useStream?{include_usage:true}:undefined})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();return;}
   if(!useStream){
     let j=await res.json();
