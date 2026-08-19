@@ -44,7 +44,7 @@ async function executeToolCall(name, args) {
         let res = await fetch('https://ob.xxyyhome.top/search', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({query: args.query, max_results: 5})
+          body: JSON.stringify({query: args.query, domain: currentChar || 'yan', max_results: 5})
         });
         let data = await res.json();
         if(data.results && data.results.length > 0) {
