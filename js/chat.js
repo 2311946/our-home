@@ -331,7 +331,8 @@ if(currentChar !== 'group' && aiTyping){
       ti.appendChild(av);ti.appendChild(col);
       box.appendChild(ti);
     }
-  }box.scrollTop=box.scrollHeight;}
+  }box.scrollTop=box.scrollHeight;{let cc=document.getElementById('chatCount');if(cc&&currentChar)cc.textContent='（'+((chats[currentChar]||[]).length)+'条）';}
+}
 
 function copyMsg(i){let text=chats[currentChar][i].content||'';navigator.clipboard.writeText(text).then(()=>showToast('已复制')).catch(()=>showToast('复制失败'));}
 
@@ -1085,7 +1086,7 @@ async function updateChatStatus(){
   el.innerHTML=dot+'在线';
 }
 
-function enterChat(id){currentChar=id;let _u=getUnread();_u[id]=false;setUnread(_u);document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';updateChatModelLabel();updateChatStatus();document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);setTimeout(() => {
+function enterChat(id){currentChar=id;let _u=getUnread();_u[id]=false;setUnread(_u);document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';updateChatModelLabel();updateChatStatus();{let cc=document.getElementById('chatCount');if(cc)cc.textContent='（'+((chats[currentChar]||[]).length)+'条）';}document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);setTimeout(() => {
   let box = document.getElementById('chatBox');
   if(box){let rows=box.querySelectorAll('.msg-row');let last=rows[rows.length-1];(last||box).scrollIntoView({behavior:'smooth',block:'end'});}
 }, 50);

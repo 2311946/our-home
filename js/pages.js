@@ -94,7 +94,7 @@ if(bar){bar.innerHTML='';
   });
 }
 
-function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let pv=chatPreviews[c.id];let preview=pv?(pv.content||'').slice(0,25):last?(last.content||'').slice(0,25):'还没有消息';let time=pv?pv.time:last?last.time:'';let item=document.createElement('div');item.className='contact-item';let avDiv=document.createElement('div');avDiv.className='contact-avatar';avDiv.style.background=c.color;avDiv.style.boxShadow='0 0 0 2.5px '+c.color;avDiv.textContent=c.emoji;avDiv.onclick=function(e){e.stopPropagation();openProfile(c.id);};let info=document.createElement('div');info.className='contact-info';info.innerHTML='<div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div>';info.onclick=function(){enterChat(c.id);};let timeDiv=document.createElement('div');timeDiv.className='contact-time';timeDiv.textContent=time;timeDiv.onclick=function(){enterChat(c.id);};item.appendChild(avDiv);item.appendChild(info);item.appendChild(timeDiv);list.appendChild(item);});}
+function renderList(){let list=document.getElementById('contactList');list.innerHTML='';characters.forEach(c=>{let msgs=chats[c.id]||[];let last=msgs[msgs.length-1];let pv=chatPreviews[c.id];let raw=pv?(pv.content||''):last?(last.content||''):'';let preview=raw.length>20?raw.slice(0,20)+'...':(raw||'还没有消息');let time=pv?pv.time:last?last.time:'';let item=document.createElement('div');item.className='contact-item';let avDiv=document.createElement('div');avDiv.className='contact-avatar';avDiv.style.background=c.color;avDiv.style.boxShadow='0 0 0 2.5px '+c.color;avDiv.textContent=c.emoji;avDiv.onclick=function(e){e.stopPropagation();openProfile(c.id);};let info=document.createElement('div');info.className='contact-info';info.innerHTML='<div class="contact-name">'+c.name+'</div><div class="contact-preview">'+preview+'</div>';info.onclick=function(){enterChat(c.id);};let timeDiv=document.createElement('div');timeDiv.className='contact-time';timeDiv.textContent=time;timeDiv.onclick=function(){enterChat(c.id);};item.appendChild(avDiv);item.appendChild(info);item.appendChild(timeDiv);list.appendChild(item);});}
 
 function goBack(){document.getElementById('tabBar').style.display='flex';currentChar='';switchTab('list');renderList();}
 
@@ -1094,6 +1094,8 @@ function autoGrow(el){
   el.style.height=Math.min(Math.max(target,minH),maxH)+'px';
   el.style.overflowY=target>maxH?'auto':'hidden';
 }
+function updateMomentCount(el){let c=document.getElementById('momentCount');if(!c||!el)return;let len=el.value.length;c.textContent=len+'/200';c.style.color=len>200?'#e74c3c':'#999';}
+function copyHomeLove(){let el=document.getElementById('homeLove');if(!el)return;let txt=el.textContent.trim();if(!txt||txt==='loading...')return;navigator.clipboard.writeText(txt).then(()=>showToast('已复制')).catch(()=>showToast('复制失败'));}
 
 async function postMoment() {
   let input = document.getElementById('momentInput');
