@@ -614,10 +614,12 @@ chats[currentChar].slice(-contextCount).forEach(m=>{
   // 先试工具调用
   let toolResult = await handleToolCalls(api, [...msgs]);
   if(toolResult) {
-    chats[currentChar][chats[currentChar].length-1].content = toolResult;
-    chats[currentChar][chats[currentChar].length-1].time = new Date().toLocaleString();
+    let aiMsg = chats[currentChar][chats[currentChar].length-1];
+    aiMsg.content = toolResult;
+    aiMsg.time = new Date().toLocaleString();
     localStorage.setItem('home_chats', JSON.stringify(chats));
-    saveToCloud(currentChar, 'ai', toolResult);
+    let pid = await saveToCloud(currentChar, 'ai', toolResult);
+    if(pid){ aiMsg.pb_id = pid; localStorage.setItem('home_chats', JSON.stringify(chats)); }
     render();
     return;
   }
