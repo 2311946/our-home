@@ -564,7 +564,7 @@ chats[currentChar].slice(-contextCount).forEach(m=>{
   }
 });render();try{let api = getApiForChar(currentChar);
   let useStream=localStorage.getItem('stream_'+currentChar)!=='false';
-  let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+api.key},body:JSON.stringify({model:api.model,messages:msgs,stream:false,tools:getTools(),tool_choice:"auto"})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();return;}
+  let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+api.key},body:JSON.stringify({model:api.model,messages:msgs,stream:useStream,stream_options:useStream?{include_usage:true}:undefined})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();return;}
   if(!useStream){
     let j=await res.json();
     let lastMsg=chats[currentChar][chats[currentChar].length-1];
