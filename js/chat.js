@@ -1,3 +1,61 @@
+function getTools() {
+  return [
+    {
+      type: "function",
+      function: {
+        name: "get_weather",
+        description: "查询指定城市的天气",
+        parameters: {
+          type: "object",
+          properties: {
+            city: { type: "string", description: "城市名" }
+          },
+          required: ["city"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "search_memory",
+        description: "搜索记忆库中的相关记忆",
+        parameters: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "搜索关键词" }
+          },
+          required: ["query"]
+        }
+      }
+    }
+  ];
+}// ========== 工具执行 ==========
+async function executeToolCall(name, args) {
+  switch(name) {
+    case 'get_weather':
+      try {
+        let res = await fetch('https://wttr.in/' + encodeURIComponent(args.city) + '?format=j1');
+        let data = await res.json();
+        let cur = data.current_condition[0];
+        return `${args.city}天气：${cur.lang_zh[0].value}，温度${cur.temp_C}°C，体感${cur.FeelsLikeC}°C，湿度${cur.humidity}%，风速${cur.windspeedKmph}km/h`;
+      } catch(e) { return '天气查询失败：' + e.message; }
+    case 'search_memory':
+      try {
+        let res = await fetch('https://ob.xxyyhome.top/search', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({query: args.query, max_results: 5})
+        });
+        let data = await res.json();
+        if(data.results && data.results.length > 0) {
+          return data.results.map(r => r.title + ': ' + (r.content||'').slice(0,100)).join('\n');
+        }
+        return '没有找到相关记忆';
+      } catch(e) { return '记忆搜索失败：' + e.message; }
+    default:
+      return '未知工具：' + name;
+  }
+}
 
 function getApiForChar(charId) {
   let presetName = localStorage.getItem('preset_'+charId);
@@ -222,8 +280,8 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(roleColor)d.style.bord
   }
 }if(m.thinking){let thinkDiv=document.createElement('details');thinkDiv.style.cssText='margin-bottom:6px;padding:6px 10px;background:rgba(155,89,182,0.1);border-radius:8px;font-size:12px;color:#888';let sum=document.createElement('summary');sum.style.cssText='cursor:pointer;color:#9b59b6;font-size:12px';sum.textContent='💭 思考过程';thinkDiv.appendChild(sum);let thinkText=document.createElement('div');thinkText.style.cssText='margin-top:6px;white-space:pre-wrap;line-height:1.6';thinkText.textContent=m.thinking;thinkDiv.appendChild(thinkText);d.insertBefore(thinkDiv,d.firstChild);}d.onclick=()=>{document.querySelectorAll('.msg-menu').forEach(x=>x.remove());let menu=document.createElement('div');menu.className='msg-menu';let btns='<button onclick="delMsg('+i+')">删除</button><button onclick="showReactPick('+i+')">表情</button><button onclick="quoteMsg('+i+')">💬 引用</button><button onclick="copyMsg('+i+')">📋 复制</button>';if(m.role==='ai')btns+='<button onclick="reGen('+i+')">重新回复</button>';menu.innerHTML=btns;d.appendChild(menu);setTimeout(()=>menu.remove(),3000);};body.appendChild(d);if(m.time){let t=document.createElement('div');t.className='msg-time';let timeText=m.time;if(m.model_name)timeText+=' · 🤖 '+m.model_name;if(m.in_tokens||m.out_tokens)timeText+=' · 消耗: '+m.in_tokens+'⬆ '+m.out_tokens+'⬇';t.textContent=timeText;body.appendChild(t);}
 row.appendChild(av);row.appendChild(body);box.appendChild(row);if(isNew)animatedMsgs.add(m);});if(currentChar==='group'&&groupTypingChar){let ti=document.createElement('div');ti.id='typingIndicator';ti.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:left;padding:8px';ti.textContent='🤔 '+(charNames[groupTypingChar]||groupTypingChar)+' 正在输入...';box.appendChild(ti);}if(currentChar==='group'&&groupAmbient){let ai=document.createElement('div');ai.className='ambient-msg';ai.style.cssText='font-size:12px;color:#888;font-style:italic;text-align:center;padding:4px';ai.textContent=groupAmbient;box.appendChild(ai);}
-  if(!isGroup && aiTyping){
-    let lastAi=(chats[currentChar]||[]).slice().reverse().find(x=>x.role==='ai');
+if(currentChar !== 'group' && aiTyping){
+      let lastAi=(chats[currentChar]||[]).slice().reverse().find(x=>x.role==='ai');
     if(lastAi && !lastAi.content){
       let ti=document.createElement('div');ti.id='typingIndicator';ti.className='typing-indicator';
       let av=document.createElement('div');av.className='avatar';
@@ -506,7 +564,7 @@ chats[currentChar].slice(-contextCount).forEach(m=>{
   }
 });render();try{let api = getApiForChar(currentChar);
   let useStream=localStorage.getItem('stream_'+currentChar)!=='false';
-  let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+api.key},body:JSON.stringify({model:api.model,messages:msgs,stream:useStream,stream_options:useStream?{include_usage:true}:undefined})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();return;}
+  let res=await fetch(api.url+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+api.key},body:JSON.stringify({model:api.model,messages:msgs,stream:false,tools:getTools(),tool_choice:"auto"})});if(!res.ok){chats[currentChar][chats[currentChar].length-1].content='❌ API错误 '+res.status+': '+(await res.text()).slice(0,200);render();return;}
   if(!useStream){
     let j=await res.json();
     let lastMsg=chats[currentChar][chats[currentChar].length-1];
@@ -965,7 +1023,11 @@ async function updateChatStatus(){
   el.innerHTML=dot+'在线';
 }
 
-function enterChat(id){currentChar=id;let _u=getUnread();_u[id]=false;setUnread(_u);document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';updateChatModelLabel();updateChatStatus();document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);}
+function enterChat(id){currentChar=id;let _u=getUnread();_u[id]=false;setUnread(_u);document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('chatView').classList.add('active');document.getElementById('chatName').textContent=charNames[id]||'';updateChatModelLabel();updateChatStatus();document.getElementById('tabBar').style.display='none';if(id==='group'){chats.group=[];loadCloudChat('group');return;}chats[id]=[];chatOffset[id]=0;loadCloudChat(id);setTimeout(() => {
+  let box = document.getElementById('chatBox');
+  if(box){let rows=box.querySelectorAll('.msg-row');let last=rows[rows.length-1];(last||box).scrollIntoView({behavior:'smooth',block:'end'});}
+}, 50);
+}
 // @选人弹窗
 function initAtPicker(){
   let input=document.getElementById('input');
