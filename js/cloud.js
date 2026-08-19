@@ -106,7 +106,7 @@ async function syncCloudChats(){
   }
 }
 
-async function saveToCloud(character,role,content,thinking,model){if(!content)return;let body={character,role,content,msg_time:new Date().toISOString()};if(thinking)body.thinking=thinking;if(model)body.model=model;try{await fetch(PB_URL+'/api/collections/chat_messages/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}catch(e){}}
+async function saveToCloud(character,role,content,thinking,model){if(!content)return null;let body={character,role,content,msg_time:new Date().toISOString()};if(thinking)body.thinking=thinking;if(model)body.model=model;try{let res=await fetch(PB_URL+'/api/collections/chat_messages/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(res.ok){let data=await res.json();return data.id||null;}}catch(e){}return null;}
 
 async function saveToAiChat(sender,content){if(!content||!sender)return;try{await fetch(SUPA_URL+'/rest/v1/ai_chat',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({sender,content})});}catch(e){}}
 
@@ -121,15 +121,15 @@ async function loadFromCloud(){
     data.forEach(m=>{
       if(!m.content)return;
       if(m.character==='group'){
-        cloud.group.push({role:'user',content:m.content,time:fmtTime(m.msg_time)});
+        cloud.group.push({role:'user',content:m.content,time:fmtTime(m.msg_time),pb_id:m.id});
       }else if(m.character&&m.character.startsWith('group_')){
         let c=m.character.replace('group_','');
         let gt=m.thinking||'';
         let gmm=gt.match(/<!--model:(.*?)-->/);
         let gmodel=gmm?gmm[1]:(m.model||'');
-        cloud.group.push({role:'ai',content:m.content,character:c,time:fmtChatTime(m.msg_time),model_name:gmodel});
+        cloud.group.push({role:'ai',content:m.content,character:c,time:fmtChatTime(m.msg_time),model_name:gmodel,pb_id:m.id});
       }else if(cloud[m.character]!==undefined){
-        cloud[m.character].push({role:m.role,content:m.content,time:fmtTime(m.msg_time)});
+        cloud[m.character].push({role:m.role,content:m.content,time:fmtTime(m.msg_time),pb_id:m.id});
       }
     });
     // 取多的那个版本

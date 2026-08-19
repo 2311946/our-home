@@ -56,6 +56,42 @@ async function executeToolCall(name, args) {
       return '未知工具：' + name;
   }
 }
+// ========== 工具调用处理 ==========
+async function handleToolCalls(api, msgs) {
+  // 第一次请求：非流式，带tools
+  let res = await fetch(api.url + '/chat/completions', {
+    method: 'POST',
+    headers: {'Authorization':'Bearer '+api.key, 'Content-Type':'application/json'},
+    body: JSON.stringify({model:api.model, messages:msgs, tools:getTools(), tool_choice:'auto'})
+  });
+  let data = await res.json();
+  let choice = data.choices[0];
+  
+  // 没有tool_calls → 普通回复，返回null让主流程走流式
+  if(!choice.message.tool_calls || choice.message.tool_calls.length === 0) {
+    return null;
+  }
+  
+  // 有tool_calls → 执行每个工具
+  let toolResults = [];
+  for(let tc of choice.message.tool_calls) {
+    let args = JSON.parse(tc.function.arguments);
+    let result = await executeToolCall(tc.function.name, args);
+    toolResults.push({role:'tool', tool_call_id:tc.id, content:result});
+  }
+  
+  // 第二次请求：把工具结果喂回，拿最终回复
+  msgs.push(choice.message); // 加上assistant的tool_calls消息
+  msgs.push(...toolResults); // 加上工具结果
+  
+  let res2 = await fetch(api.url + '/chat/completions', {
+    method: 'POST',
+    headers: {'Authorization':'Bearer '+api.key, 'Content-Type':'application/json'},
+    body: JSON.stringify({model:api.model, messages:msgs})
+  });
+  let data2 = await res2.json();
+  return data2.choices[0].message.content;
+}
 
 function getApiForChar(charId) {
   let presetName = localStorage.getItem('preset_'+charId);
@@ -381,6 +417,10 @@ function reGen(i){
     return;
   }
 
+  let oldMsg=chats[currentChar][i];
+  if(oldMsg&&oldMsg.pb_id&&PB_URL){
+    fetch(PB_URL+'/api/collections/chat_messages/records/'+oldMsg.pb_id,{method:'DELETE'}).catch(()=>{});
+  }
   chats[currentChar].splice(i);
   localStorage.setItem('home_chats',JSON.stringify(chats));
   render();
@@ -418,6 +458,11 @@ function reGenGroup(i){
   let endIdx=i+1;
   while(endIdx<chats.group.length && chats.group[endIdx].role==='ai' && chats.group[endIdx].character===c){
     endIdx++;
+  }
+  // 同步删除这些消息在 PB 中的记录
+  for(let k=i;k<endIdx;k++){
+    let m=chats.group[k];
+    if(m&&m.pb_id&&PB_URL){fetch(PB_URL+'/api/collections/chat_messages/records/'+m.pb_id,{method:'DELETE'}).catch(()=>{});}
   }
   chats.group.splice(i, endIdx-i);
 
@@ -528,10 +573,12 @@ async function sendMsg(isRegen){
   if(!isRegen&&!text)return;
   if(!hasApiConfigured(currentChar)){openSettings();return;}
   if(currentChar==='group'){sendGroupMsg(text,quoteData);input.value='';return;}
+  let userMsgRef=null;
   if(!isRegen){
     let msg={role:'user',content:text,time:nowTime(),animate:true};
     if(quoteData)msg.quote=quoteData;
     chats[currentChar].push(msg);
+    userMsgRef=msg;
     input.value='';
   }
   chats[currentChar].push({role:'ai',content:'',time:nowTime(),animate:true});
@@ -615,8 +662,11 @@ chats[currentChar].slice(-contextCount).forEach(m=>{
 aiTyping=false;let lastMsg=chats[currentChar][chats[currentChar].length-1];
 if(lastMsg.content.includes('<think>')){let thinkMatch=lastMsg.content.match(/<think>([\s\S]*?)<\/think>/);if(thinkMatch){lastMsg.thinking=thinkMatch[1].trim();lastMsg.content=lastMsg.content.replace(/<think>[\s\S]*?<\/think>/,'').trim();render();}}
 localStorage.setItem('home_chats',JSON.stringify(chats));
-if(!isRegen)saveToCloud(currentChar,'user',text);
-setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking + (lastMsg.in_tokens?' <!--tokens:'+lastMsg.in_tokens+'/'+lastMsg.out_tokens+'-->':'') + (lastMsg.model_name?' <!--model:'+lastMsg.model_name+'-->':''));},500);
+if(!isRegen&&userMsgRef){
+  userMsgRef.pb_id=await saveToCloud(currentChar,'user',text);
+  localStorage.setItem('home_chats',JSON.stringify(chats));
+}
+setTimeout(()=>{let lastMsg=chats[currentChar][chats[currentChar].length-1];saveToCloud(currentChar,'ai',lastMsg.content,lastMsg.thinking + (lastMsg.in_tokens?' <!--tokens:'+lastMsg.in_tokens+'/'+lastMsg.out_tokens+'-->':'') + (lastMsg.model_name?' <!--model:'+lastMsg.model_name+'-->':'')).then(id=>{if(id){lastMsg.pb_id=id;localStorage.setItem('home_chats',JSON.stringify(chats));}});},500);
 }
 
 async function sendGroupMsg(text,quoteData){
