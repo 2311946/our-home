@@ -600,10 +600,13 @@ function loadStickerPack(packName, container) {
 
 function sendStickerMessage(url, label) {
   const imgMarkdown = '![' + label + '](' + url + ')';
-  const input = document.getElementById('chatInput') || document.querySelector('textarea');
+  // 表情塞进聊天输入框（id=input），再点发送按钮触发 sendMsg
+  const input = document.getElementById('input');
   if (input) {
-    input.value = imgMarkdown;
-    const sendBtn = document.getElementById('sendBtn') || document.querySelector('[onclick*="send"]');
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+    nativeInputValueSetter.call(input, imgMarkdown);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const sendBtn = document.getElementById('sendBtn');
     if (sendBtn) sendBtn.click();
   }
 }
