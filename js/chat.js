@@ -341,6 +341,17 @@ function copyMsg(i){let text=chats[currentChar][i].content||'';navigator.clipboa
 //   中间 代码     → ```lang 带语言块渲染为代码块（输出代码），复制按钮按规格用 this.parentElement.nextElementSibling.textContent
 //   末尾 在想什么 → 裸 ``` 或无语言/thinking 块，保持原折叠行为（跟之前一样）
 function renderRichContent(d, content, charKey){
+  if (content.startsWith('![') && content.includes('](https://')) {
+    const match = content.match(/!\[.*?\]\((https?:\/\/[^)]+)\)/);
+    if (match) {
+      const img = document.createElement('img');
+      img.src = match[1];
+      img.style.cssText = 'max-width:120px;max-height:120px;border-radius:8px;cursor:pointer;';
+      img.onclick = () => window.open(img.src);
+      d.appendChild(img);
+      return;
+    }
+  }
   let re=/```(\w*)\n?([\s\S]*?)```/g;
   let last=0, m;
   let inlineRe=/`([^`\n]+)`/g;

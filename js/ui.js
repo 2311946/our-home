@@ -525,3 +525,85 @@ async function saveCharSettings(){
   document.getElementById('charSettingsModal').remove();
   showToast('设置已保存 ✅');
 }
+
+// ========== 表情包面板功能 ==========
+function toggleStickerPanel() {
+  const panel = document.getElementById('stickerPanel');
+  if (panel) {
+    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    return;
+  }
+  createStickerPanel();
+}
+
+function createStickerPanel() {
+  const panel = document.createElement('div');
+  panel.id = 'stickerPanel';
+  panel.style.cssText = 'position:fixed;bottom:60px;left:5%;width:90%;max-width:400px;height:300px;background:var(--bg-card,#fff);border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);display:flex;flex-direction:column;z-index:9999;overflow:hidden;';
+
+  const tabBar = document.createElement('div');
+  tabBar.style.cssText = 'display:flex;overflow-x:auto;border-bottom:1px solid #eee;padding:8px;gap:8px;flex-shrink:0;';
+
+  const content = document.createElement('div');
+  content.id = 'stickerContent';
+  content.style.cssText = 'flex:1;overflow-y:auto;padding:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-content:start;';
+
+  const packNames = Object.keys(STICKER_PACKS);
+  packNames.forEach((name, i) => {
+    const tab = document.createElement('button');
+    tab.textContent = name;
+    tab.style.cssText = 'padding:4px 10px;border-radius:16px;border:1px solid #ddd;background:' + (i === 0 ? '#e8d5f5' : '#f5f5f5') + ';font-size:12px;white-space:nowrap;cursor:pointer;';
+    tab.onclick = () => {
+      tabBar.querySelectorAll('button').forEach(b => b.style.background = '#f5f5f5');
+      tab.style.background = '#e8d5f5';
+      loadStickerPack(name, content);
+    };
+    tabBar.appendChild(tab);
+  });
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = 'position:absolute;top:6px;right:10px;background:none;border:none;font-size:16px;cursor:pointer;color:#999;';
+  closeBtn.onclick = () => panel.style.display = 'none';
+
+  panel.appendChild(tabBar);
+  panel.appendChild(content);
+  panel.appendChild(closeBtn);
+  document.body.appendChild(panel);
+  loadStickerPack(packNames[0], content);
+}
+
+function loadStickerPack(packName, container) {
+  container.innerHTML = '';
+  const stickers = STICKER_PACKS[packName];
+  if (!stickers) return;
+  stickers.forEach(s => {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:4px;border-radius:8px;';
+    const img = document.createElement('img');
+    img.src = s.url;
+    img.alt = s.label;
+    img.style.cssText = 'width:60px;height:60px;object-fit:contain;border-radius:4px;';
+    img.loading = 'lazy';
+    const label = document.createElement('span');
+    label.textContent = s.label;
+    label.style.cssText = 'font-size:10px;color:#666;margin-top:2px;';
+    item.appendChild(img);
+    item.appendChild(label);
+    item.onclick = () => {
+      sendStickerMessage(s.url, s.label);
+      document.getElementById('stickerPanel').style.display = 'none';
+    };
+    container.appendChild(item);
+  });
+}
+
+function sendStickerMessage(url, label) {
+  const imgMarkdown = '![' + label + '](' + url + ')';
+  const input = document.getElementById('chatInput') || document.querySelector('textarea');
+  if (input) {
+    input.value = imgMarkdown;
+    const sendBtn = document.getElementById('sendBtn') || document.querySelector('[onclick*="send"]');
+    if (sendBtn) sendBtn.click();
+  }
+}
