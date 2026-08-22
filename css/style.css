@@ -41,7 +41,7 @@ body.warm .contact-item:active{background:#e8d3c0}
 .msg pre code{background:transparent;padding:0;color:#a8c7fa;display:block}
 .code-copy{position:absolute;top:6px;right:6px;background:#2a2a4a;color:#ccc;border:none;border-radius:6px;font-size:11px;padding:3px 9px;cursor:pointer;font-family:inherit;z-index:2}
 .code-copy:hover{background:#3a3a5a;color:#fff}
-.msg.user{background:linear-gradient(135deg,#b069ff,#7c3aed);border-bottom-right-radius:6px;box-shadow:0 4px 14px rgba(155,89,182,0.4)}
+.msg.user{background:linear-gradient(135deg,#b069ff,#7c3aed);border-bottom-right-radius:6px;box-shadow:0 4px 14px rgba(155,89,182,0.4);word-break:break-word;overflow-wrap:break-word;max-width:100%}
 .msg.ai{background:rgba(37,53,84,0.92);border-bottom-left-radius:6px;box-shadow:0 3px 12px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08)}
 .msg.ai.yan{background:linear-gradient(135deg,#2d1f4e,#1e1145)}
 .msg.ai.peiji{background:linear-gradient(135deg,#3d1a1a,#2a0f0f)}
