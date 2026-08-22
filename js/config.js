@@ -134,7 +134,7 @@ document.getElementById('modelName').addEventListener('input',function(){
 });
 
 const STICKER_PACKS = {
-  "狗狗GIF": [
+  "狗狗动图": [
     { label: "瘫", url: "https://s3plus.meituan.net/opapisdk/op_ticket_1_885190757_1768235776107_qdqqd_j1lukj.gif" },
     { label: "哼", url: "https://s3plus.meituan.net/opapisdk/op_ticket_1_5677168484_1768235777459_qdqqd_slh4dm.gif" },
     { label: "我错了", url: "https://s3plus.meituan.net/opapisdk/op_ticket_1_885190757_1768235778656_qdqqd_imcvnt.gif" },
@@ -185,5 +185,52 @@ const STICKER_PACKS = {
     { label: "吹心心", url: "https://s3plus.meituan.net/opapisdk/op_ticket_1_5677168484_1768236075194_qdqqd_xfjl2x.gif" },
     { label: "开心", url: "https://s3plus.meituan.net/opapisdk/op_ticket_1_5673241091_1768236076427_qdqqd_l4lghs.gif" },
     { label: "喜欢", url: "https://s3plus.meituan.net/opapisdk/op_ticket_1_5673241091_1768236077353_qdqqd_nm890p.gif" }
+  ],
+  "可爱狗狗": [
+    { label: "满眼爱心", url: "https://i.postimg.cc/wTv9HJSx/IMG-2413.jpg" },
+    { label: "来来", url: "https://i.postimg.cc/pXTPx8gW/IMG-2414.jpg" },
+    { label: "喜欢", url: "https://i.postimg.cc/Yq9tkgJ7/IMG-2415.jpg" },
+    { label: "亲亲", url: "https://i.postimg.cc/Yq9tkgJc/IMG-2416.jpg" },
+    { label: "别走看看我", url: "https://i.postimg.cc/hPjKgxNk/IMG-2417.jpg" },
+    { label: "萌萌看着你", url: "https://i.postimg.cc/vHBGM9Cp/IMG-2418.jpg" },
+    { label: "哭", url: "https://i.postimg.cc/dt1Jvdgg/IMG-2419.jpg" },
+    { label: "掉眼泪", url: "https://i.postimg.cc/286Cmvgt/IMG-2420.jpg" },
+    { label: "爱心", url: "https://i.postimg.cc/kX4798Lp/IMG-2421.jpg" },
+    { label: "wiii跑走", url: "https://i.postimg.cc/3JR37pzf/IMG-2422.jpg" },
+    { label: "等待回复ing", url: "https://i.postimg.cc/zXBq5W4P/IMG-2423.jpg" },
+    { label: "摸摸头", url: "https://i.postimg.cc/tCT9yP8B/IMG-2424.jpg" },
+    { label: "摸肚皮", url: "https://i.postimg.cc/L4vmrvQr/IMG-2425.jpg" },
+    { label: "得意", url: "https://i.postimg.cc/1RMyLM72/IMG-2426.jpg" },
+    { label: "得逞大笑", url: "https://i.postimg.cc/y6n7wnpG/IMG-2427.jpg" },
+    { label: "嘚瑟", url: "https://i.postimg.cc/zDpq9p2P/IMG-2428.jpg" },
+    { label: "媚眼", url: "https://i.postimg.cc/WpSsQSYY/IMG-2429.jpg" },
+    { label: "开心", url: "https://i.postimg.cc/v8XGpX2P/IMG-2430.jpg" }
+  ],
+  "表情狗狗": [
+    { label: "全世界针对我", url: "https://i.postimg.cc/59pfZpKp/IMG-2727.jpg" },
+    { label: "萌萌针对全世界", url: "https://i.postimg.cc/nVTn6TSk/IMG-2728.jpg" },
+    { label: "控制全世界", url: "https://i.postimg.cc/44wXrw2b/IMG-2729.jpg" },
+    { label: "说话", url: "https://i.postimg.cc/59pfZpKL/IMG-2730.jpg" },
+    { label: "哭哭", url: "https://i.postimg.cc/gc4Gf4tR/IMG-2731.jpg" },
+    { label: "sorry", url: "https://i.postimg.cc/h4MKHMZQ/IMG-2732.jpg" },
+    { label: "太美了吧", url: "https://i.postimg.cc/Df57t5p8/IMG-2733.jpg" },
+    { label: "爱心", url: "https://i.postimg.cc/FzPm3sJh/IMG-2734.jpg" },
+    { label: "我好想你呀", url: "https://i.postimg.cc/J7KR9KYt/IMG-2735.jpg" },
+    { label: "躲被子里哭", url: "https://i.postimg.cc/MHsxVKfy/IMG-2737.jpg" },
+    { label: "？", url: "https://i.postimg.cc/SRQknzR6/IMG-2738.jpg" },
+    { label: "痛哭流涕", url: "https://i.postimg.cc/kGMq2tGN/IMG-2739.jpg" },
+    { label: "回来了上学版", url: "https://i.postimg.cc/x8jnXb8L/IMG-2740.jpg" },
+    { label: "回来了上班版", url: "https://i.postimg.cc/yx6sDSxc/IMG-2741.jpg" },
+    { label: "不够吃", url: "https://i.postimg.cc/cLHQY8Ws/IMG-2744.jpg" },
+    { label: "凋谢", url: "https://i.postimg.cc/L8XzfZSR/IMG-2745.jpg" },
+    { label: "饿饿饭饭", url: "https://i.postimg.cc/HkxQ57gP/IMG-2746.jpg" },
+    { label: "骄傲", url: "https://i.postimg.cc/YC91gmHs/IMG-2748.jpg" },
+    { label: "硬撑", url: "https://i.postimg.cc/XYJwFybt/IMG-2750.jpg" },
+    { label: "凑近", url: "https://i.postimg.cc/vZBW96sq/IMG-2751.jpg" },
+    { label: "比心", url: "https://i.postimg.cc/65zryfDS/IMG-2752.jpg" },
+    { label: "开心", url: "https://i.postimg.cc/TYQVpJZ4/IMG-2753.jpg" },
+    { label: "谢谢", url: "https://i.postimg.cc/3J9XdFPb/IMG-2754.jpg" },
+    { label: "歌颂", url: "https://i.postimg.cc/m2VYty0X/IMG-2755.jpg" },
+    { label: "坏狗", url: "https://i.postimg.cc/zBX5X5Ww/IMG-2756.jpg" }
   ]
 };
