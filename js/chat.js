@@ -311,6 +311,20 @@ d.className='msg '+m.role+(charClass?' '+charClass:'');if(roleColor)d.style.bord
         d.textContent=content;
       }
     }else{
+      // 表情包图片渲染
+      if (content.startsWith('![') && content.includes('](http')) {
+        var match = content.match(/!\[.*?\]\((https?:\/\/[^)]+)\)/);
+        if (match) {
+          var img = document.createElement('img');
+          img.src = match[1];
+          img.style.cssText = 'max-width:120px;max-height:120px;border-radius:8px;';
+          img.loading = 'lazy';
+          // 把img加到气泡里，替代文字
+          d.innerHTML = '';
+          d.appendChild(img);
+          return;
+        }
+      }
       d.textContent=content;
     }
   }
